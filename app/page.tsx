@@ -537,17 +537,8 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", letterSpacing: "-0.01em", fontFamily: "var(--font-sans)" }}>Pellet Finance</span>
-        </motion.div>
-        <motion.div
-          variants={fadeUp}
-          style={{
-            fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
-            textTransform: "uppercase" as const, letterSpacing: "0.06em",
-            color: "var(--color-text-tertiary)", marginBottom: 32,
-            display: "flex", alignItems: "center", gap: 8,
-          }}
-        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", letterSpacing: "-0.01em" }}>Pellet Finance</span>
+          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span>MPP-Native Compute Layer</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
