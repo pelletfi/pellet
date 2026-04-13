@@ -12,11 +12,10 @@ export default function Search({ defaultValue = "" }: { defaultValue?: string })
     const q = value.trim();
     if (!q) return;
 
-    // If it looks like a hex address, go directly to token detail
     if (/^0x[0-9a-fA-F]{40}$/.test(q)) {
       router.push(`/token/${q}`);
     } else {
-      router.push(`/?q=${encodeURIComponent(q)}`);
+      router.push(`/tokens?q=${encodeURIComponent(q)}`);
     }
   }
 
@@ -30,32 +29,32 @@ export default function Search({ defaultValue = "" }: { defaultValue?: string })
         style={{
           flex: 1,
           padding: "9px 14px",
-          background: "#13131a",
-          border: "1px solid #1a1a1f",
-          borderRadius: "8px",
-          color: "#e8e8e8",
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+          background: "#fff",
+          border: "1px solid var(--color-border)",
+          borderRadius: "6px",
+          color: "var(--color-text)",
+          fontFamily: "var(--font-inter), system-ui, sans-serif",
           fontSize: "14px",
           outline: "none",
           transition: "border-color 0.15s",
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = "#333340";
+          e.currentTarget.style.borderColor = "var(--color-muted)";
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = "#1a1a1f";
+          e.currentTarget.style.borderColor = "var(--color-border)";
         }}
       />
       <button
         type="submit"
         style={{
           padding: "9px 18px",
-          background: "#4ade80",
+          background: "var(--color-text)",
           border: "none",
-          borderRadius: "8px",
-          color: "#0f0f11",
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-          fontSize: "14px",
+          borderRadius: "6px",
+          color: "#fff",
+          fontFamily: "var(--font-inter), system-ui, sans-serif",
+          fontSize: "13px",
           fontWeight: 600,
           cursor: "pointer",
           transition: "opacity 0.15s",

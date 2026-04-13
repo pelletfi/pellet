@@ -1,14 +1,12 @@
 import Link from "next/link";
-import type { GeckoPool } from "@/lib/gecko";
 
 function formatUsd(value: number): string {
   if (value === 0) return "$0";
   const abs = Math.abs(value);
   if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
   if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
   if (abs >= 1) return `$${value.toFixed(4)}`;
-  // Small numbers: show up to 8 sig figs
   return `$${value.toPrecision(4)}`;
 }
 
@@ -16,86 +14,115 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-interface TokenCardProps {
-  pool: GeckoPool;
+export interface TokenCardProps {
+  address: string;
+  name: string;
+  imageUrl?: string | null;
+  priceUsd: number;
+  priceChange24h: number;
+  volume24h: number;
+  liquidity: number;
 }
 
-export default function TokenCard({ pool }: TokenCardProps) {
-  const attrs = pool.attributes;
-  const baseTokenId = pool.relationships?.base_token?.data?.id ?? "";
-  // GeckoTerminal token IDs are "network_address"
-  const address = baseTokenId.includes("_") ? baseTokenId.split("_")[1] : baseTokenId;
-
-  const price = parseFloat(attrs.base_token_price_usd ?? "0");
-  const volume = parseFloat(attrs.volume_usd?.h24 ?? "0");
-  const reserve = parseFloat(attrs.reserve_in_usd ?? "0");
-  const priceChange = parseFloat(attrs.price_change_percentage?.h24 ?? "0");
-
-  const poolName = attrs.name ?? "";
-  // Pool name is often "TOKEN / QUOTE" — extract token name
-  const tokenName = poolName.split(" / ")[0] ?? poolName;
-
+export default function TokenCard({
+  address,
+  name,
+  imageUrl,
+  priceUsd,
+  priceChange24h,
+  volume24h,
+  liquidity,
+}: TokenCardProps) {
   return (
     <Link
       href={`/token/${address}`}
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 140px 120px 120px",
+        gridTemplateColumns: "2fr 1fr 1fr 1fr",
         alignItems: "center",
         padding: "12px 16px",
-        borderBottom: "1px solid #1a1a1f",
+        borderBottom: "1px solid #f5f5f5",
         textDecoration: "none",
         color: "inherit",
         transition: "background 0.1s",
       }}
-      className="hover:bg-[#13131a]"
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--color-surface)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+      }}
     >
-      {/* Token name + address */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-            fontSize: "14px",
-            fontWeight: 500,
-            color: "#e8e8e8",
-          }}
-        >
-          {tokenName}
-        </span>
-        {address && (
+      {/* Token: icon + name + address */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            width={28}
+            height={28}
+            style={{ borderRadius: "50%", flexShrink: 0 }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "var(--color-border)",
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "11px",
-              color: "#555",
+              fontFamily: "var(--font-inter), system-ui, sans-serif",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "var(--color-text)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
-            {truncateAddress(address)}
+            {name}
           </span>
-        )}
+          {address && (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                color: "var(--color-muted)",
+              }}
+            >
+              {truncateAddress(address)}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Price + 24h change */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px", textAlign: "right" }}>
+      {/* Price + change */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1px", textAlign: "right" }}>
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "#e8e8e8",
+            color: "var(--color-text)",
           }}
         >
-          {price > 0 ? formatUsd(price) : "—"}
+          {priceUsd > 0 ? formatUsd(priceUsd) : "—"}
         </span>
-        {attrs.price_change_percentage?.h24 && (
+        {priceChange24h !== 0 && (
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: priceChange >= 0 ? "#4ade80" : "#f87171",
+              color: priceChange24h >= 0 ? "var(--color-positive)" : "var(--color-negative)",
             }}
           >
-            {priceChange >= 0 ? "+" : ""}
-            {priceChange.toFixed(2)}%
+            {priceChange24h >= 0 ? "+" : ""}
+            {priceChange24h.toFixed(2)}%
           </span>
         )}
       </div>
@@ -104,12 +131,12 @@ export default function TokenCard({ pool }: TokenCardProps) {
       <div style={{ textAlign: "right" }}>
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "#c4c4c4",
+            color: "var(--color-secondary)",
           }}
         >
-          {volume > 0 ? formatUsd(volume) : "—"}
+          {volume24h > 0 ? formatUsd(volume24h) : "—"}
         </span>
       </div>
 
@@ -117,12 +144,12 @@ export default function TokenCard({ pool }: TokenCardProps) {
       <div style={{ textAlign: "right" }}>
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "#c4c4c4",
+            color: "var(--color-secondary)",
           }}
         >
-          {reserve > 0 ? formatUsd(reserve) : "—"}
+          {liquidity > 0 ? formatUsd(liquidity) : "—"}
         </span>
       </div>
     </Link>
