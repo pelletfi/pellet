@@ -121,7 +121,15 @@ export default async function TokenPage({
     <main className="page-container-narrow">
       {/* Header */}
       <div style={{ marginBottom: "28px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://tokenlist.tempo.xyz/icon/4217/${address.toLowerCase()}`}
+            alt=""
+            width={32}
+            height={32}
+            style={{ borderRadius: "50%" }}
+          />
           {compliance && (
             <span
               style={{

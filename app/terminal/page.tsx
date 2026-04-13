@@ -252,8 +252,17 @@ export default function TerminalPage() {
   }, []);
 
   return (
-    <div style={{ background: "var(--color-terminal)", minHeight: "100vh" }}>
-      <Terminal lines={lines} interactive onCommand={handleCommand} />
+    <div style={{ padding: "24px 48px", background: "var(--color-bg)" }}>
+      <div
+        style={{
+          background: "var(--color-terminal)",
+          borderRadius: "8px",
+          height: "calc(100vh - 120px)",
+          overflow: "hidden",
+        }}
+      >
+        <Terminal lines={lines} interactive onCommand={handleCommand} />
+      </div>
     </div>
   );
 }

@@ -19,13 +19,14 @@ export type { TerminalLine };
 
 export function Terminal({ lines, interactive = false, onCommand }: TerminalProps) {
   const [input, setInput] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasInteracted = useRef(false);
 
   useEffect(() => {
-    if (interactive) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (hasInteracted.current && containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [lines, interactive]);
+  }, [lines]);
 
   const colorMap: Record<string, string> = {
     green: "var(--color-terminal-green)",
@@ -36,16 +37,15 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
 
   return (
     <div
+      ref={containerRef}
       style={{
         background: "var(--color-terminal)",
-        borderRadius: interactive ? "0" : "0",
         padding: "24px",
         fontFamily: "var(--font-mono)",
         fontSize: "13px",
         lineHeight: 1.8,
-        overflow: "auto",
+        overflowY: "auto",
         height: "100%",
-        minHeight: interactive ? "100vh" : "auto",
       }}
     >
       {lines.map((line, i) => {
@@ -82,6 +82,7 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && input.trim()) {
+                hasInteracted.current = true;
                 onCommand?.(input.trim());
                 setInput("");
               }
@@ -100,7 +101,6 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
           />
         </div>
       )}
-      <div ref={bottomRef} />
     </div>
   );
 }

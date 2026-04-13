@@ -14,6 +14,7 @@ interface Token {
 }
 
 interface Stablecoin {
+  address?: string;
   name: string;
   symbol: string;
   price_vs_pathusd: number;
@@ -47,6 +48,12 @@ export function HeroTerminal() {
         const tokens: Token[] = tokensRes.tokens ?? [];
         const stablecoins: Stablecoin[] = stablecoinsRes.stablecoins ?? [];
 
+        // Build name lookup from stablecoins
+        const nameMap: Record<string, string> = {};
+        for (const s of stablecoins) {
+          if (s.address) nameMap[s.address.toLowerCase()] = s.symbol || s.name;
+        }
+
         // Command 1: top 3 tokens
         result.push({ type: "prompt", command: "pellet tokens --top 3" });
         result.push({ type: "header", text: "Top tokens by 24h volume" });
@@ -56,7 +63,8 @@ export function HeroTerminal() {
           result.push({ type: "output", text: "No token data available", color: "muted" });
         } else {
           for (const t of top3) {
-            const label = (t.name || t.symbol || `${t.address.slice(0, 6)}…${t.address.slice(-4)}`).padEnd(14);
+            const name = t.name || t.symbol || nameMap[t.address.toLowerCase()] || `${t.address.slice(0, 6)}…${t.address.slice(-4)}`;
+            const label = name.padEnd(14);
             result.push({
               type: "output",
               text: `${label} ${fmt(t.price_usd).padEnd(12)} vol ${fmt(t.volume_24h)}`,

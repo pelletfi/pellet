@@ -1,5 +1,8 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { StablecoinData } from "@/lib/types";
+import { getTokenIconUrl } from "@/lib/token-icons";
 
 function formatSupply(raw: string, decimals = 6): string {
   const n = parseInt(raw, 10) / 10 ** decimals;
@@ -45,15 +48,26 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         gap: "8px",
       }}
     >
-      {/* Symbol */}
+      {/* Symbol + icon */}
       <span
         style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
           fontFamily: "var(--font-mono), monospace",
           fontSize: "14px",
           fontWeight: 500,
           color: "var(--color-text)",
         }}
       >
+        <img
+          src={getTokenIconUrl(token.address)}
+          alt=""
+          width={20}
+          height={20}
+          style={{ borderRadius: "50%", flexShrink: 0 }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
         {token.symbol}
       </span>
 

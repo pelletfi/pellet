@@ -52,8 +52,7 @@ export function Footer() {
               fontWeight: 700,
             }}
           >
-            <PixelIcon size={20} />
-            Pellet
+            <span style={{ fontFamily: "var(--font-geist-pixel-line)", fontSize: 13, fontWeight: 600, lineHeight: 1 }}>Pellet Finance</span>
           </div>
           <div
             style={{

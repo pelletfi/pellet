@@ -2,6 +2,7 @@ import { getPools, searchTokens } from "@/lib/gecko";
 import Search from "@/components/Search";
 import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
+import { getTokenIconUrl } from "@/lib/token-icons";
 
 interface PageProps {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -20,6 +21,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
   const tokens: {
     address: string;
     name: string;
+    imageUrl: string;
     priceUsd: number;
     priceChange24h: number;
     volume24h: number;
@@ -40,6 +42,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
     tokens.push({
       address: addr,
       name: tokenName,
+      imageUrl: getTokenIconUrl(addr),
       priceUsd: parseFloat(pool.attributes.base_token_price_usd ?? "0"),
       priceChange24h: parseFloat(pool.attributes.price_change_percentage?.h24 ?? "0"),
       volume24h: parseFloat(pool.attributes.volume_usd?.h24 ?? "0"),
@@ -126,6 +129,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
             key={t.address}
             address={t.address}
             name={t.name}
+            imageUrl={t.imageUrl}
             priceUsd={t.priceUsd}
             priceChange24h={t.priceChange24h}
             volume24h={t.volume24h}
