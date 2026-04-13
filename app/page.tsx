@@ -243,10 +243,10 @@ function ArchDiagram() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         {[
-          { label: "pelletfi.com", desc: "Web dashboard" },
-          { label: "REST API", desc: "GET /v1/tokens/*" },
+          { label: "pelletfi.com", desc: "Web explorer" },
+          { label: "REST API", desc: "GET /v1/stablecoins/*" },
           { label: "MCP Server", desc: "@pelletfi/mcp" },
-        ].map((box, i) => (
+        ].map((box) => (
           <motion.div key={box.label} variants={fadeUp} style={boxStyle}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>{box.label}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>{box.desc}</div>
@@ -258,15 +258,16 @@ function ArchDiagram() {
 
       <motion.div variants={fadeUp} style={{ ...boxStyle, marginBottom: 0 }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>Pellet Pipeline</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>Market → Safety → Compliance → Holders → Identity → Origin → AI</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>Peg → Supply → Policy → Flows → Backing → Risk → Report</div>
       </motion.div>
 
       <motion.div variants={fadeIn} style={{ display: "flex", justifyContent: "center", padding: "10px 0", color: "var(--color-text-quaternary)", fontSize: 16 }}>↑</motion.div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         {[
-          { label: "Tempo RPC", desc: "TIP-20 · TIP-403 · DEX" },
-          { label: "GeckoTerminal", desc: "Price · Volume · Pools" },
+          { label: "TIP-20 Precompile", desc: "Supply · Roles · Rewards" },
+          { label: "TIP-403 Registry", desc: "Policies · Admins" },
+          { label: "Enshrined DEX", desc: "Quote swaps · Orderbook" },
         ].map((box) => (
           <motion.div key={box.label} variants={fadeUp} style={boxStyle}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>{box.label}</div>
