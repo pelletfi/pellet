@@ -70,10 +70,19 @@ export default function TokenCard({
               width: 28,
               height: 28,
               borderRadius: "50%",
-              background: "var(--color-border)",
+              background: "var(--color-text)",
+              color: "var(--color-bg)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 600,
               flexShrink: 0,
+              fontFamily: "var(--font-mono)",
             }}
-          />
+          >
+            {name?.charAt(0)?.toUpperCase() || "?"}
+          </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
           <span

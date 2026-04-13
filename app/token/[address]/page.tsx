@@ -4,6 +4,7 @@ import { getMarketData } from "@/lib/pipeline/market";
 import { scanSafety } from "@/lib/pipeline/safety";
 import { getCompliance, isTip20 } from "@/lib/pipeline/compliance";
 import { getHolders } from "@/lib/pipeline/holders";
+import { getTokenIconUrl } from "@/lib/token-icons";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,9 +113,10 @@ export default async function TokenPage({
 
   const tip20 = compliance?.token_type === "tip20";
 
-  const [safety, holders] = await Promise.all([
+  const [safety, holders, iconUrl] = await Promise.all([
     scanSafety(addr, tip20, market.pools).catch(() => null),
     getHolders(addr).catch(() => null),
+    getTokenIconUrl(addr),
   ]);
 
   return (
@@ -122,14 +124,34 @@ export default async function TokenPage({
       {/* Header */}
       <div style={{ marginBottom: "28px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://tokenlist.tempo.xyz/icon/4217/${address.toLowerCase()}`}
-            alt=""
-            width={32}
-            height={32}
-            style={{ borderRadius: "50%" }}
-          />
+          {iconUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={iconUrl}
+              alt=""
+              width={32}
+              height={32}
+              style={{ borderRadius: "50%" }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "var(--color-text)",
+                color: "var(--color-bg)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {address.slice(2, 4).toUpperCase()}
+            </div>
+          )}
           {compliance && (
             <span
               style={{

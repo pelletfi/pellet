@@ -2,7 +2,7 @@ import { getPools, searchTokens } from "@/lib/gecko";
 import Search from "@/components/Search";
 import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
-import { getTokenIconUrl } from "@/lib/token-icons";
+import { getTokenIcons } from "@/lib/token-icons";
 
 interface PageProps {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -21,12 +21,14 @@ export default async function TokensPage({ searchParams }: PageProps) {
   const tokens: {
     address: string;
     name: string;
-    imageUrl: string;
+    imageUrl: string | null;
     priceUsd: number;
     priceChange24h: number;
     volume24h: number;
     liquidity: number;
   }[] = [];
+
+  const addresses: string[] = [];
 
   for (const pool of pools) {
     const baseId = pool.relationships?.base_token?.data?.id;
@@ -35,6 +37,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
     const addr = baseId.includes("_") ? baseId.split("_").pop()! : baseId;
     if (!addr || seen.has(addr.toLowerCase())) continue;
     seen.add(addr.toLowerCase());
+    addresses.push(addr);
 
     const poolName = pool.attributes.name ?? "";
     const tokenName = poolName.split(" / ")[0] ?? poolName;
@@ -42,12 +45,22 @@ export default async function TokensPage({ searchParams }: PageProps) {
     tokens.push({
       address: addr,
       name: tokenName,
-      imageUrl: getTokenIconUrl(addr),
+      imageUrl: null, // filled below
       priceUsd: parseFloat(pool.attributes.base_token_price_usd ?? "0"),
       priceChange24h: parseFloat(pool.attributes.price_change_percentage?.h24 ?? "0"),
       volume24h: parseFloat(pool.attributes.volume_usd?.h24 ?? "0"),
       liquidity: parseFloat(pool.attributes.reserve_in_usd ?? "0"),
     });
+  }
+
+  // Resolve icons from official Tempo token list
+  const icons = await getTokenIcons(addresses);
+  for (const t of tokens) {
+    const info = icons.get(t.address.toLowerCase());
+    if (info) {
+      t.imageUrl = info.iconUrl;
+      if (info.name && !t.name) t.name = info.name;
+    }
   }
 
   const hasNext = !query && (res.links?.next != null);

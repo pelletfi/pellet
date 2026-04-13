@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { StablecoinData } from "@/lib/types";
-import { getTokenIconUrl } from "@/lib/token-icons";
+import { getTokenIconUrlSync } from "@/lib/token-icons";
 
 function formatSupply(raw: string, decimals = 6): string {
   const n = parseInt(raw, 10) / 10 ** decimals;
@@ -61,7 +61,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         }}
       >
         <img
-          src={getTokenIconUrl(token.address)}
+          src={getTokenIconUrlSync(token.address)}
           alt=""
           width={20}
           height={20}
