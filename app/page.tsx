@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { StatsBar } from "@/components/StatsBar";
 import { HeroTerminal } from "./HeroTerminal";
 import { getPools } from "@/lib/gecko";
@@ -77,19 +76,9 @@ export default async function HomePage() {
             marginLeft: "auto",
           }}
         >
-          {/* Pixel strip */}
-          <div style={{ display: "flex", gap: "3px", marginBottom: "24px" }}>
-            {["#0a0a0a","#333","#555","#888","#aaa","#ccc","#aaa","#888","#555","#333","#0a0a0a"].map((c, i) => (
-              <div key={i} style={{ width: 6, height: 6, background: c, imageRendering: "pixelated" as const }} />
-            ))}
-          </div>
-
           {/* Overline */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
               marginBottom: "24px",
             }}
           >
@@ -99,35 +88,36 @@ export default async function HomePage() {
                 fontSize: "11px",
                 fontWeight: 500,
                 textTransform: "uppercase",
-                letterSpacing: "1.5px",
-                color: "var(--color-muted)",
+                letterSpacing: "0.06em",
+                color: "var(--color-text-tertiary)",
               }}
             >
-              Built on
+              Built on Tempo
             </span>
-            <Image
-              src="/tempo-logo.svg"
-              alt="Tempo"
-              width={72}
-              height={20}
-              style={{ opacity: 0.7 }}
-            />
           </div>
 
           {/* H1 */}
-          <h1 className="hero-h1">
-            We&apos;re building the intelligence Tempo needs.
+          <h1
+            className="hero-h1"
+            style={{
+              fontSize: "32px",
+              fontWeight: 600,
+              letterSpacing: "-0.025em",
+              lineHeight: 1.2,
+              color: "var(--color-text-primary)",
+            }}
+          >
+            MPP-Native Compute
           </h1>
 
           {/* Body */}
           <p
             style={{
-              fontFamily: "var(--font-inter)",
-              fontSize: "16px",
+              fontSize: "15px",
               lineHeight: 1.65,
-              color: "var(--color-secondary)",
+              color: "var(--color-text-secondary)",
               marginBottom: "36px",
-              maxWidth: "480px",
+              maxWidth: "460px",
             }}
           >
             The first payments chain deserves more than a block explorer. Pellet
@@ -142,11 +132,10 @@ export default async function HomePage() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                padding: "12px 28px",
-                background: "var(--color-text)",
-                color: "var(--color-bg)",
-                fontFamily: "var(--font-inter)",
-                fontSize: "14px",
+                padding: "8px 16px",
+                background: "var(--color-text-primary)",
+                color: "var(--color-bg-base)",
+                fontSize: "13px",
                 fontWeight: 500,
                 borderRadius: "6px",
                 textDecoration: "none",
@@ -160,14 +149,13 @@ export default async function HomePage() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                padding: "12px 28px",
+                padding: "8px 16px",
                 background: "transparent",
-                color: "var(--color-text)",
-                fontFamily: "var(--font-inter)",
-                fontSize: "14px",
+                color: "var(--color-text-secondary)",
+                fontSize: "13px",
                 fontWeight: 500,
                 borderRadius: "6px",
-                border: "1px solid var(--color-border)",
+                border: "1px solid var(--color-border-emphasis)",
                 textDecoration: "none",
                 transition: "border-color 0.15s",
               }}
@@ -191,7 +179,7 @@ export default async function HomePage() {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "var(--color-terminal-muted)",
+                  color: "var(--color-text-quaternary)",
                   position: "absolute",
                   left: "50%",
                   transform: "translateX(-50%)",
@@ -209,7 +197,7 @@ export default async function HomePage() {
               style={{
                 padding: "8px 16px",
                 textAlign: "right",
-                borderTop: "1px solid #222",
+                borderTop: "1px solid var(--color-border-subtle)",
               }}
             >
               <a
@@ -217,7 +205,7 @@ export default async function HomePage() {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "var(--color-terminal-muted)",
+                  color: "var(--color-text-quaternary)",
                   textDecoration: "none",
                 }}
               >
