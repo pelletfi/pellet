@@ -330,7 +330,7 @@ function ScanLine() {
         left: 0,
         right: 0,
         height: 1,
-        background: "linear-gradient(90deg, transparent, rgba(48,164,108,0.15), transparent)",
+        background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
         pointerEvents: "none",
       }}
       initial={{ top: 0, opacity: 0 }}
