@@ -1,13 +1,14 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { GeistPixelLine } from "geist/font/pixel";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Pellet — The Intelligence Layer for Tempo",
+  title: "Pellet — MPP-Native Compute on Tempo",
   description:
-    "Every token examined, every stablecoin tracked, every payment service mapped. Built natively for the first payments chain.",
+    "Every token examined. Every stablecoin tracked. Every payment service mapped. Paid per query on Tempo.",
 };
 
 export default function RootLayout({
@@ -16,19 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={GeistPixelLine.variable}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body>
         <Nav />
         <main>{children}</main>
