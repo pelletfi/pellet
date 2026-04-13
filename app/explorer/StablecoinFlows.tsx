@@ -7,7 +7,16 @@ import { motion, useInView } from "framer-motion";
 const KNOWN_STABLECOINS = [
   { address: "0x20c0000000000000000000000000000000000000", symbol: "pathUSD" },
   { address: "0x20c000000000000000000000b9537d11c60e8b50", symbol: "USDC.e" },
+  { address: "0x20c0000000000000000000001621e21f71cf12fb", symbol: "EURC.e" },
   { address: "0x20c00000000000000000000014f22ca97301eb73", symbol: "USDT0" },
+  { address: "0x20c0000000000000000000003554d28269e0f3c2", symbol: "frxUSD" },
+  { address: "0x20c0000000000000000000000520792dcccccccc", symbol: "cUSD" },
+  { address: "0x20c0000000000000000000008ee4fcff88888888", symbol: "stcUSD" },
+  { address: "0x20c0000000000000000000005c0bac7cef389a11", symbol: "GUSD" },
+  { address: "0x20c0000000000000000000007f7ba549dd0251b9", symbol: "rUSD" },
+  { address: "0x20c000000000000000000000aeed2ec36a54d0e5", symbol: "wsrUSD" },
+  { address: "0x20c0000000000000000000009a4a4b17e0dc6651", symbol: "EURAU" },
+  { address: "0x20c000000000000000000000383a23bacb546ab9", symbol: "reUSD" },
 ];
 
 interface FlowRecord {

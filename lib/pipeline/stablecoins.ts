@@ -9,9 +9,18 @@ import { readContract, getBlockNumber, getLogs } from "viem/actions";
 // ---------------------------------------------------------------------------
 
 export const KNOWN_STABLECOINS: { address: `0x${string}`; name: string; symbol: string }[] = [
-  { address: "0x20c0000000000000000000000000000000000000", name: "pathUSD", symbol: "pathUSD" },
-  { address: "0x20c000000000000000000000b9537d11c60e8b50", name: "USDC.e", symbol: "USDC.e" },
+  { address: "0x20c0000000000000000000000000000000000000", name: "PathUSD", symbol: "pathUSD" },
+  { address: "0x20c000000000000000000000b9537d11c60e8b50", name: "Bridged USDC (Stargate)", symbol: "USDC.e" },
+  { address: "0x20c0000000000000000000001621e21f71cf12fb", name: "Bridged EURC (Stargate)", symbol: "EURC.e" },
   { address: "0x20c00000000000000000000014f22ca97301eb73", name: "USDT0", symbol: "USDT0" },
+  { address: "0x20c0000000000000000000003554d28269e0f3c2", name: "Frax USD", symbol: "frxUSD" },
+  { address: "0x20c0000000000000000000000520792dcccccccc", name: "Cap USD", symbol: "cUSD" },
+  { address: "0x20c0000000000000000000008ee4fcff88888888", name: "Staked Cap USD", symbol: "stcUSD" },
+  { address: "0x20c0000000000000000000005c0bac7cef389a11", name: "Generic USD", symbol: "GUSD" },
+  { address: "0x20c0000000000000000000007f7ba549dd0251b9", name: "Reservoir Stablecoin", symbol: "rUSD" },
+  { address: "0x20c000000000000000000000aeed2ec36a54d0e5", name: "Wrapped Savings rUSD", symbol: "wsrUSD" },
+  { address: "0x20c0000000000000000000009a4a4b17e0dc6651", name: "AllUnity EUR", symbol: "EURAU" },
+  { address: "0x20c000000000000000000000383a23bacb546ab9", name: "Re Protocol reUSD", symbol: "reUSD" },
 ];
 
 // ---------------------------------------------------------------------------
