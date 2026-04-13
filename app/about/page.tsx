@@ -392,12 +392,12 @@ function NetworkViz() {
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
   const nodes = [
-    { x: 80, y: 70, label: "TIP-20", size: 7, color: "#30a46c" },
-    { x: 220, y: 35, label: "DEX", size: 6, color: "#30a46c" },
-    { x: 160, y: 120, label: "TIP-403", size: 6, color: "#f5a623" },
-    { x: 340, y: 80, label: "MPP", size: 7, color: "#30a46c" },
-    { x: 440, y: 45, label: "pathUSD", size: 6, color: "#30a46c" },
-    { x: 280, y: 130, label: "Pellet", size: 9, color: "#ffffff" },
+    { x: 80, y: 70, label: "TIP-20", size: 7, color: "rgba(255,255,255,0.5)" },
+    { x: 220, y: 35, label: "DEX", size: 6, color: "rgba(255,255,255,0.5)" },
+    { x: 160, y: 120, label: "TIP-403", size: 6, color: "rgba(255,255,255,0.4)" },
+    { x: 340, y: 80, label: "MPP", size: 7, color: "rgba(255,255,255,0.5)" },
+    { x: 440, y: 45, label: "pathUSD", size: 6, color: "rgba(255,255,255,0.6)" },
+    { x: 280, y: 130, label: "Pellet", size: 9, color: "rgba(255,255,255,0.93)" },
   ];
 
   const edges: [number, number][] = [
