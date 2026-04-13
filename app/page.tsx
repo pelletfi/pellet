@@ -269,54 +269,88 @@ function ArchDiagram() {
 // ── Floating particles behind hero ──────────────────────────────────────────
 
 function HeroParticles() {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [mouse, setMouse] = useState({ x: -1000, y: -1000 });
+
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handle = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      setMouse({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    };
+    const leave = () => setMouse({ x: -1000, y: -1000 });
+    el.addEventListener("mousemove", handle);
+    el.addEventListener("mouseleave", leave);
+    return () => { el.removeEventListener("mousemove", handle); el.removeEventListener("mouseleave", leave); };
+  }, [mounted]);
+
   if (!mounted) return null;
 
-  // Use deterministic seed-like values to avoid hydration issues
-  const particles = Array.from({ length: 30 }, (_, i) => {
+  const particles = Array.from({ length: 40 }, (_, i) => {
     const seed = (i * 2654435761 + 374761393) >>> 0;
     const s2 = (seed * 2246822519 + 3266489917) >>> 0;
     const s3 = (s2 * 668265263 + 374761393) >>> 0;
     return {
       id: i,
-      x: (seed % 10000) / 100,
-      y: (s2 % 10000) / 100,
+      xPct: (seed % 10000) / 100,
+      yPct: (s2 % 10000) / 100,
       size: (s3 % 200) / 100 + 1.5,
       duration: (seed % 1500) / 100 + 18,
       delay: (s2 % 500) / 100,
-      opacity: (s3 % 80) / 1000 + 0.06,
+      baseOpacity: (s3 % 80) / 1000 + 0.06,
     };
   });
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, p.opacity, p.opacity * 1.8, p.opacity, 0],
-            y: [0, -20, -40],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          style={{
-            position: "absolute",
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.7)",
-            boxShadow: `0 0 ${p.size * 3}px rgba(255,255,255,0.15)`,
-          }}
-        />
-      ))}
+    <div
+      ref={containerRef}
+      style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}
+    >
+      {particles.map((p) => {
+        // Calculate distance from mouse (in px) to determine brightness
+        const rect = containerRef.current?.getBoundingClientRect();
+        const w = rect?.width || 1;
+        const h = rect?.height || 1;
+        const px = (p.xPct / 100) * w;
+        const py = (p.yPct / 100) * h;
+        const dist = Math.sqrt((mouse.x - px) ** 2 + (mouse.y - py) ** 2);
+        const proximity = Math.max(0, 1 - dist / 150); // 0-1, 150px radius
+        const boost = proximity * 0.8;
+
+        return (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, p.baseOpacity + boost, (p.baseOpacity + boost) * 1.5, p.baseOpacity + boost, 0],
+              y: [0, -20, -40],
+            }}
+            transition={{
+              duration: p.duration,
+              delay: p.delay,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              position: "absolute",
+              left: `${p.xPct}%`,
+              top: `${p.yPct}%`,
+              width: p.size + proximity * 3,
+              height: p.size + proximity * 3,
+              borderRadius: "50%",
+              background: `rgba(255,255,255,${0.7 + boost})`,
+              boxShadow: proximity > 0.1
+                ? `0 0 ${p.size * 4 + proximity * 12}px rgba(255,255,255,${0.15 + proximity * 0.3})`
+                : `0 0 ${p.size * 3}px rgba(255,255,255,0.15)`,
+              transition: "width 0.3s, height 0.3s, box-shadow 0.3s, background 0.3s",
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
