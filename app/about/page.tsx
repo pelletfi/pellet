@@ -537,7 +537,7 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", letterSpacing: "-0.01em" }}>Pellet Finance</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)", letterSpacing: "-0.01em", textTransform: "none" as const }}>Pellet Finance</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span>MPP-Native Compute Layer</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
