@@ -139,18 +139,24 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
       {/* Search */}
       <ExplorerSearch />
 
-      {/* Stats row — 6 cells, shared-border grid */}
+      {/* Stats row — 6 outlined cells */}
       <div
-        className="stats-bar"
-        style={{ gridTemplateColumns: "repeat(6, 1fr)", marginBottom: 24 }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(6, 1fr)",
+          gap: 8,
+          marginBottom: 24,
+        }}
       >
         {stats.map((stat) => (
           <div
             key={stat.label}
             style={{
-              background: "var(--color-bg-subtle)",
+              border: "1px solid var(--color-border-subtle)",
+              borderRadius: 8,
               padding: 20,
               textAlign: "center",
+              background: "transparent",
             }}
           >
             <div
