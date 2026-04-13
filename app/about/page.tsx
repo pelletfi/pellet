@@ -597,7 +597,7 @@ export default function AboutPage() {
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
-            animation: "shimmer 3s ease-in-out infinite",
+            animation: "shimmer 6s ease-in-out infinite",
           }}>its own intelligence.</em>
         </motion.h1>
 
