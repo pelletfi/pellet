@@ -34,7 +34,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
   return (
     <Link
-      href={`/stablecoins/${token.address}`}
+      href={`/explorer/stablecoin/${token.address}`}
       className="stablecoin-table-row"
       style={{
         display: "grid",
