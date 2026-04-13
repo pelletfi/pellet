@@ -9,6 +9,7 @@
 
 const TOKENLIST_API = "https://tokenlist.tempo.xyz";
 const GECKO_API = "https://api.geckoterminal.com/api/v2";
+const ENSHRINED_API = "https://launch.enshrined.exchange/api";
 const CHAIN_ID = 4217;
 
 interface TokenListEntry {
@@ -39,6 +40,29 @@ async function getTokenList(): Promise<Map<string, TokenListEntry>> {
       }
     }
     cachedList = map;
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+/** Fetch token images from enshrined launchpad. */
+let cachedEnshrined: Map<string, string> | null = null;
+async function getEnshrinedImages(): Promise<Map<string, string>> {
+  if (cachedEnshrined) return cachedEnshrined;
+  try {
+    const res = await fetch(`${ENSHRINED_API}/tokens`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return new Map();
+    const tokens = await res.json();
+    const map = new Map<string, string>();
+    for (const t of tokens) {
+      if (t.address && t.image_uri) {
+        map.set(t.address.toLowerCase(), t.image_uri);
+      }
+    }
+    cachedEnshrined = map;
     return map;
   } catch {
     return new Map();
@@ -82,6 +106,11 @@ export async function getTokenIconUrl(
   const list = await getTokenList();
   const entry = list.get(address.toLowerCase());
   if (entry?.logoURI) return entry.logoURI;
+
+  // Try enshrined launchpad
+  const enshrined = await getEnshrinedImages();
+  const enshrinedUrl = enshrined.get(address.toLowerCase());
+  if (enshrinedUrl) return enshrinedUrl;
 
   // Try GeckoTerminal
   const gecko = await getGeckoImages([address]);
@@ -127,13 +156,20 @@ export async function getTokenIcons(
     }
   }
 
-  // Batch fetch from GeckoTerminal for tokens not in the official list
+  // Batch fetch from enshrined + GeckoTerminal for tokens not in the official list
   if (missingAddresses.length > 0) {
-    const geckoImages = await getGeckoImages(missingAddresses);
-    for (const [addr, url] of geckoImages) {
-      const existing = result.get(addr);
+    const [enshrinedImages, geckoImages] = await Promise.all([
+      getEnshrinedImages(),
+      getGeckoImages(missingAddresses),
+    ]);
+
+    for (const addr of missingAddresses) {
+      const existing = result.get(addr.toLowerCase());
       if (existing && !existing.iconUrl) {
-        existing.iconUrl = url;
+        existing.iconUrl =
+          enshrinedImages.get(addr.toLowerCase()) ??
+          geckoImages.get(addr.toLowerCase()) ??
+          null;
       }
     }
   }
