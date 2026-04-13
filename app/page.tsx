@@ -269,27 +269,42 @@ function ArchDiagram() {
 // ── Floating particles behind hero ──────────────────────────────────────────
 
 function HeroParticles() {
-  const [particles, setParticles] = useState<Array<{id:number;x:number;y:number;size:number;duration:number;delay:number;opacity:number}>>([]);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
 
-  useEffect(() => {
-    setParticles(Array.from({ length: 40 }, (_, i) => ({
+  // Use deterministic seed-like values to avoid hydration issues
+  const particles = Array.from({ length: 30 }, (_, i) => {
+    const seed = (i * 2654435761 + 374761393) >>> 0;
+    const s2 = (seed * 2246822519 + 3266489917) >>> 0;
+    const s3 = (s2 * 668265263 + 374761393) >>> 0;
+    return {
       id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 2 + 1,
-      duration: Math.random() * 20 + 15,
-      delay: Math.random() * 5,
-      opacity: Math.random() * 0.06 + 0.02,
-    })));
-  }, []);
-
-  if (particles.length === 0) return null;
+      x: (seed % 10000) / 100,
+      y: (s2 % 10000) / 100,
+      size: (s3 % 200) / 100 + 1.5,
+      duration: (seed % 1500) / 100 + 18,
+      delay: (s2 % 500) / 100,
+      opacity: (s3 % 80) / 1000 + 0.03,
+    };
+  });
 
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
       {particles.map((p) => (
         <motion.div
           key={p.id}
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, p.opacity, p.opacity * 1.8, p.opacity, 0],
+            y: [0, -20, -40],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: "linear",
+          }}
           style={{
             position: "absolute",
             left: `${p.x}%`,
@@ -297,18 +312,8 @@ function HeroParticles() {
             width: p.size,
             height: p.size,
             borderRadius: "50%",
-            background: `rgba(255,255,255,${p.opacity})`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, Math.random() * 20 - 10, 0],
-            opacity: [p.opacity, p.opacity * 2, p.opacity],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            ease: "linear",
+            background: "rgba(255,255,255,0.5)",
+            boxShadow: `0 0 ${p.size * 2}px rgba(255,255,255,0.1)`,
           }}
         />
       ))}
@@ -372,55 +377,150 @@ function AnimatedNumber({ value, prefix = "" }: { value: string; prefix?: string
 function NetworkViz() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
 
   const nodes = [
-    { x: 100, y: 60, label: "TIP-20", size: 8, color: "var(--color-success)" },
-    { x: 280, y: 40, label: "DEX", size: 6, color: "var(--color-success)" },
-    { x: 200, y: 120, label: "TIP-403", size: 7, color: "var(--color-warning)" },
-    { x: 380, y: 90, label: "MPP", size: 8, color: "var(--color-success)" },
-    { x: 460, y: 50, label: "pathUSD", size: 6, color: "var(--color-success)" },
-    { x: 160, y: 30, label: "Pellet", size: 10, color: "rgba(255,255,255,0.93)" },
+    { x: 80, y: 70, label: "TIP-20", size: 7, color: "#30a46c" },
+    { x: 220, y: 35, label: "DEX", size: 6, color: "#30a46c" },
+    { x: 160, y: 120, label: "TIP-403", size: 6, color: "#f5a623" },
+    { x: 340, y: 80, label: "MPP", size: 7, color: "#30a46c" },
+    { x: 440, y: 45, label: "pathUSD", size: 6, color: "#30a46c" },
+    { x: 280, y: 130, label: "Pellet", size: 9, color: "#ffffff" },
   ];
 
-  const edges = [
+  const edges: [number, number][] = [
     [0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4],
   ];
 
+  // Build path for the traveling orb — visits all nodes via edges
+  const orbPath = [5, 0, 1, 3, 4, 3, 2, 0, 5, 3, 2, 5];
+  const orbXValues = orbPath.map((idx) => nodes[idx].x);
+  const orbYValues = orbPath.map((idx) => nodes[idx].y);
+
   return (
-    <div ref={ref} style={{ position: "relative", height: 160, margin: "40px 0", overflow: "hidden" }}>
-      <svg width="100%" height="100%" viewBox="0 0 560 160" fill="none">
+    <div ref={ref} style={{ position: "relative", height: 180, margin: "40px 0", overflow: "visible" }}>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 520 180"
+        fill="none"
+        style={{ overflow: "visible" }}
+      >
+        {/* Edges */}
         {edges.map(([a, b], i) => (
           <motion.line
-            key={i}
+            key={`edge-${i}`}
             x1={nodes[a].x} y1={nodes[a].y}
             x2={nodes[b].x} y2={nodes[b].y}
-            stroke="rgba(255,255,255,0.04)"
+            stroke={
+              hoveredNode !== null && (hoveredNode === a || hoveredNode === b)
+                ? "rgba(255,255,255,0.12)"
+                : "rgba(255,255,255,0.05)"
+            }
             strokeWidth="1"
-            initial={{ pathLength: 0 }}
-            animate={inView ? { pathLength: 1 } : {}}
-            transition={{ duration: 1, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] as const }}
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={inView ? { pathLength: 1, opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] as const }}
+            style={{ transition: "stroke 0.3s ease" }}
           />
         ))}
+
+        {/* Traveling orb */}
+        {inView && (
+          <motion.circle
+            r={3}
+            fill="#30a46c"
+            opacity={0.9}
+            animate={{
+              cx: orbXValues,
+              cy: orbYValues,
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "linear",
+              delay: 1,
+            }}
+          >
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.5s" repeatCount="indefinite" />
+          </motion.circle>
+        )}
+
+        {/* Orb glow trail */}
+        {inView && (
+          <motion.circle
+            r={8}
+            fill="#30a46c"
+            opacity={0.08}
+            animate={{
+              cx: orbXValues,
+              cy: orbYValues,
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "linear",
+              delay: 1,
+            }}
+          />
+        )}
+
+        {/* Nodes */}
         {nodes.map((node, i) => (
-          <motion.g key={i}
+          <motion.g
+            key={`node-${i}`}
             initial={{ opacity: 0, scale: 0 }}
             animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.3 + i * 0.1, type: "spring", stiffness: 300, damping: 20 }}
+            transition={{ delay: 0.2 + i * 0.08, type: "spring", stiffness: 300, damping: 20 }}
+            onHoverStart={() => setHoveredNode(i)}
+            onHoverEnd={() => setHoveredNode(null)}
+            style={{ cursor: "pointer" }}
           >
+            {/* Pulse ring */}
             <motion.circle
-              cx={node.x} cy={node.y} r={node.size + 4}
-              fill={node.color}
-              opacity={0.08}
-              animate={{ r: [node.size + 4, node.size + 8, node.size + 4] }}
-              transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
+              cx={node.x} cy={node.y}
+              r={node.size + 6}
+              fill="none"
+              stroke={node.color}
+              strokeWidth={0.5}
+              opacity={hoveredNode === i ? 0.3 : 0.08}
+              animate={{
+                r: [node.size + 6, node.size + 12, node.size + 6],
+                opacity: hoveredNode === i ? [0.3, 0.1, 0.3] : [0.08, 0.02, 0.08],
+              }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 0.4 }}
             />
-            <circle cx={node.x} cy={node.y} r={node.size} fill={node.color} opacity={0.6} />
-            <circle cx={node.x} cy={node.y} r={node.size * 0.4} fill={node.color} />
-            <text x={node.x} y={node.y + node.size + 14}
+            {/* Glow */}
+            <circle
+              cx={node.x} cy={node.y}
+              r={node.size + 3}
+              fill={node.color}
+              opacity={hoveredNode === i ? 0.15 : 0.06}
+              style={{ transition: "opacity 0.3s ease" }}
+            />
+            {/* Core */}
+            <circle
+              cx={node.x} cy={node.y}
+              r={node.size}
+              fill={node.color}
+              opacity={hoveredNode === i ? 0.8 : 0.5}
+              style={{ transition: "opacity 0.3s ease" }}
+            />
+            {/* Center dot */}
+            <circle
+              cx={node.x} cy={node.y}
+              r={node.size * 0.35}
+              fill={node.color}
+              opacity={0.9}
+            />
+            {/* Label */}
+            <text
+              x={node.x} y={node.y + node.size + 16}
               textAnchor="middle"
-              fill="rgba(255,255,255,0.28)"
+              fill={hoveredNode === i ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
               fontSize="9"
               fontFamily="var(--font-mono)"
+              style={{ transition: "fill 0.3s ease" }}
             >
               {node.label}
             </text>
