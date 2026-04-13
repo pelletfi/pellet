@@ -7,6 +7,7 @@ import { StatsBar } from "@/components/StatsBar";
 import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
 import { ExplorerSearch } from "./ExplorerSearch";
+import { LiquidityTreemap } from "./LiquidityTreemap";
 
 export const metadata: Metadata = {
   title: "Explorer — Pellet",
@@ -179,8 +180,16 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
         ))}
       </div>
 
-      {/* Graphics row placeholder */}
-      <div>{/* Reserved for charts — Tasks 4-7 */}</div>
+      {/* Graphics row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <LiquidityTreemap
+          tokens={[...tokens]
+            .sort((a, b) => b.liquidity - a.liquidity)
+            .slice(0, 5)
+            .map((t) => ({ name: t.name, liquidity: t.liquidity }))}
+        />
+        <div>{/* Reserved for chart — Tasks 5-7 */}</div>
+      </div>
 
       {/* Main content: token table + sidebar */}
       <div
