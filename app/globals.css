@@ -123,12 +123,39 @@ body {
 
 /* ── Hero terminal panel ──────────────────────────────────────────── */
 
-.hero-terminal {
+.hero-terminal-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--color-surface);
+}
+
+.terminal-window {
   background: var(--color-terminal);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 520px;
+  height: 420px;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #222;
   position: relative;
-  min-height: 400px;
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
 /* ── Time selector (flows page) ───────────────────────────────────── */
@@ -290,8 +317,13 @@ body {
     padding: 48px 24px;
   }
 
-  .hero-terminal {
-    min-height: 300px;
+  .hero-terminal-area {
+    padding: 24px 16px;
+  }
+
+  .terminal-window {
+    height: 320px;
+    max-width: 100%;
   }
 
   .hero-h1 {

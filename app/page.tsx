@@ -177,29 +177,53 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Right — terminal */}
-        <div className="hero-terminal">
-          <div style={{ flex: 1 }}>
-            <HeroTerminal />
-          </div>
-          <div
-            style={{
-              padding: "16px 24px",
-              textAlign: "right",
-            }}
-          >
-            <a
-              href="/terminal"
+        {/* Right — terminal window */}
+        <div className="hero-terminal-area">
+          <div className="terminal-window">
+            {/* Title bar */}
+            <div className="terminal-titlebar">
+              <div style={{ display: "flex", gap: 6 }}>
+                <span className="terminal-dot" style={{ background: "#ff5f57" }} />
+                <span className="terminal-dot" style={{ background: "#febc2e" }} />
+                <span className="terminal-dot" style={{ background: "#28c840" }} />
+              </div>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--color-terminal-muted)",
+                  position: "absolute",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
+              >
+                pellet
+              </span>
+            </div>
+            {/* Terminal content */}
+            <div style={{ flex: 1, overflow: "auto" }}>
+              <HeroTerminal />
+            </div>
+            {/* Footer link */}
+            <div
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                color: "var(--color-terminal-muted)",
-                textDecoration: "none",
-                transition: "color 0.15s",
+                padding: "8px 16px",
+                textAlign: "right",
+                borderTop: "1px solid #222",
               }}
             >
-              Try the terminal &rarr;
-            </a>
+              <a
+                href="/terminal"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--color-terminal-muted)",
+                  textDecoration: "none",
+                }}
+              >
+                Try the terminal &rarr;
+              </a>
+            </div>
           </div>
         </div>
       </div>
