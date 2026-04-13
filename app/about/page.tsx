@@ -8,7 +8,7 @@ import Link from "next/link";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
 const stagger = {
@@ -116,7 +116,7 @@ function AnimatedPipeline() {
             key={step.num}
             initial={{ opacity: 0, x: -8 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.3, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] as const }}
             style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
             {i > 0 && (
