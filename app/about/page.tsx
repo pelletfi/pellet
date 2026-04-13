@@ -85,13 +85,13 @@ function ArcDivider() {
 // ── Animated pipeline ───────────────────────────────────────────────────────
 
 const pipelineSteps = [
-  { num: "1", label: "Market", desc: "GeckoTerminal DEX data" },
-  { num: "2", label: "Safety", desc: "Bytecode & honeypot scan" },
-  { num: "3", label: "Compliance", desc: "TIP-403 policy check" },
-  { num: "4", label: "Holders", desc: "Event log replay" },
-  { num: "5", label: "Identity", desc: "CoinGecko + DefiLlama" },
-  { num: "6", label: "Origin", desc: "Deployer trace" },
-  { num: "7", label: "Synthesis", desc: "Claude analysis" },
+  { num: "1", label: "Peg", desc: "Native DEX quote swap" },
+  { num: "2", label: "Supply", desc: "TIP-20 totalSupply / cap" },
+  { num: "3", label: "Policy", desc: "TIP-403 compliance state" },
+  { num: "4", label: "Flows", desc: "Cross-pair event replay" },
+  { num: "5", label: "Backing", desc: "Issuer + reserve context" },
+  { num: "6", label: "Risk", desc: "Peg, policy, role analysis" },
+  { num: "7", label: "Report", desc: "Editorial synthesis" },
 ];
 
 function AnimatedPipeline() {
@@ -680,7 +680,7 @@ export default function AboutPage() {
             Most chains optimize for speed or cost. Tempo optimizes for <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>payments</strong>. That means enshrined stablecoin standards, built-in compliance policies, and a micropayment protocol that lets machines pay machines at the HTTP layer.
           </p>
           <p style={{ marginBottom: 0 }}>
-            This isn&apos;t another EVM fork. Tempo&apos;s architecture creates data structures that don&apos;t exist anywhere else — TIP-403 compliance policies, enshrined DEX orderbooks, MPP payment graphs.
+            12 stablecoins already live — pathUSD at the root, USDC.e and EURC.e bridged through Stargate, USDT0 deployed natively, plus frxUSD, cUSD, rUSD, EURAU, reUSD and more. Each with TIP-20 compliance policies, supply caps, and native DEX routing. Data structures no other chain has.
           </p>
         </motion.div>
 
@@ -691,7 +691,7 @@ export default function AboutPage() {
         }}>
           <div style={{ background: "var(--color-bg-subtle)", padding: 24 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Other Chains</div>
-            {["Generic ERC-20 tokens", "External DEX contracts", "No native compliance", "Gas token for fees", "No payment protocol"].map((item) => (
+            {["Generic ERC-20 stablecoins", "External DEX routing", "No native compliance", "Gas token for fees", "Fragmented peg tracking"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-tertiary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-quaternary)", flexShrink: 0 }} />
                 {item}
@@ -700,7 +700,7 @@ export default function AboutPage() {
           </div>
           <div style={{ background: "var(--color-bg-subtle)", padding: 24, borderLeft: "2px solid rgba(48,164,108,0.3)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Tempo</div>
-            {["TIP-20 stablecoins (enshrined)", "Native DEX with orderbook", "TIP-403 compliance policies", "Fees in any stablecoin", "MPP — machine payments"].map((item) => (
+            {["TIP-20 stablecoins (enshrined)", "Native DEX with orderbook", "TIP-403 compliance policies", "Fees paid in any stablecoin", "Unified peg monitoring"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-primary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-success)", flexShrink: 0 }} />
                 {item}
@@ -729,7 +729,10 @@ export default function AboutPage() {
         }}>What Pellet does</motion.h2>
         <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
           <p style={{ marginBottom: 20 }}>
-            We examine every token on Tempo — safety, compliance, holder distribution, deployer origin. We track every TIP-20 stablecoin — peg stability, supply headroom, cross-pair flows. We map every MPP service as the machine economy takes shape.
+            We monitor every TIP-20 stablecoin on Tempo — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, backing structure. Every stablecoin gets its own editorial analysis: origin story, issuer context, risk assessment. Every flow between stablecoins is tracked natively.
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Not a generic analytics tool bolted onto another chain. Built specifically for Tempo&apos;s TIP-20 architecture — reading enshrined DEX quotes, TIP-403 policy state, and supply cap events directly from the protocol.
           </p>
         </motion.div>
 
@@ -764,10 +767,10 @@ export default function AboutPage() {
         }}>How it&apos;s built</motion.h2>
         <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
           <p style={{ marginBottom: 20 }}>
-            Everything runs natively on Tempo. No external indexers, no subgraphs. Direct RPC calls to TIP-20 precompiles, event log replay for holder analysis, bytecode inspection for safety scanning.
+            Everything runs natively on Tempo. No external indexers, no subgraphs. Direct RPC calls to TIP-20 precompiles for supply and policy data, DEX quote swaps for real-time peg pricing, event log replay for flow analysis.
           </p>
           <p style={{ marginBottom: 0 }}>
-            Deep briefings are paid via MPP — $0.05 in pathUSD, settled at the protocol layer. No accounts, no API keys. Just a payment and a report.
+            Deep stablecoin analysis is paid via MPP — $0.05 in pathUSD, settled at the protocol layer. No accounts, no API keys. Just a payment and a report. Available as an API, an MCP server for AI agents, and this site.
           </p>
         </motion.div>
 
@@ -803,14 +806,16 @@ export default function AboutPage() {
           </div>
           <div style={{ display: "table" }}>
             {[
-              <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a token via MPP</span></>,
-              <><span style={{ color: "var(--color-success)" }}>$</span> mppx GET https://pelletfi.com/api/v1/tokens/0x20c0...0000/briefing</>,
+              <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a stablecoin via MPP</span></>,
+              <><span style={{ color: "var(--color-success)" }}>$</span> mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000</>,
               <>&nbsp;</>,
               <><span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span></>,
               <><span style={{ color: "var(--color-success)" }}>{'{'}</span></>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;safety&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;verdict&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;LOW_RISK&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;compliance&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;TIP-20&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;analyst_note&quot;</span>: <span style={{ color: "rgba(255,255,255,0.5)" }}>&quot;pathUSD is Tempo&apos;s native...&quot;</span></>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;symbol&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;pathUSD&quot;</span>,</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;peg&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;price&quot;</span>: <span style={{ color: "var(--color-success)" }}>1.0000</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;spread_bps&quot;</span>: <span style={{ color: "var(--color-success)" }}>0</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;supply&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;current&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;1.09M&quot;</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;cap&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;uncapped&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;policy&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;blacklist&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;backing&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;protocol-native&quot;</span></>,
               <><span style={{ color: "var(--color-success)" }}>{'}'}</span></>,
             ].map((line, i) => (
               <div key={i} style={{ display: "table-row" }}>
@@ -844,10 +849,10 @@ export default function AboutPage() {
         }}>Built from day one</motion.h2>
         <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
           <p style={{ marginBottom: 20 }}>
-            We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 10 tokens, we examine all 10. When it has 10,000, we&apos;ll examine all 10,000.
+            We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 12 stablecoins, we analyze all 12. When it has 100, we&apos;ll analyze all 100.
           </p>
           <p style={{ margin: 0 }}>
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. MPP-native compute. Here to stay.</strong>
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. The stablecoin analytics layer for Tempo. Here to stay.</strong>
           </p>
         </motion.div>
       </Section>
@@ -869,14 +874,14 @@ export default function AboutPage() {
           fontSize: 15, color: "var(--color-text-secondary)", marginBottom: 32,
           maxWidth: 480, marginLeft: "auto", marginRight: "auto", lineHeight: 1.7,
         }}>
-          Every token on Tempo, examined. Every stablecoin, tracked. Every payment service, mapped.
+          Every stablecoin examined. Every peg tracked. Every flow mapped. Built natively for Tempo.
         </motion.p>
         <motion.div variants={fadeUp} style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-          <Link href="/tokens" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
-            Explore tokens
+          <Link href="/explorer" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
+            Open Explorer
           </Link>
-          <Link href="/terminal" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
-            Try the terminal
+          <Link href="/services" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
+            View API
           </Link>
         </motion.div>
       </Section>
