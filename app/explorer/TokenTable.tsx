@@ -40,7 +40,7 @@ const TAB_ACTIVE_STYLE: React.CSSProperties = {
 };
 
 export default function TokenTable({ tokens }: TokenTableProps) {
-  const [tab, setTab] = useState<Tab>("tokens");
+  const [tab, setTab] = useState<Tab>("stablecoins");
   const [stablecoins, setStablecoins] = useState<StablecoinData[]>([]);
   const [stableLoading, setStableLoading] = useState(false);
   const [stableFetched, setStableFetched] = useState(false);
@@ -71,8 +71,8 @@ export default function TokenTable({ tokens }: TokenTableProps) {
       >
         {(
           [
-            ["tokens", "Tokens"],
             ["stablecoins", "Stablecoins"],
+            ["tokens", "Tokens"],
             ["txns", "Recent Txns"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
