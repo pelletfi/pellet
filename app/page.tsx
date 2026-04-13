@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 
 // ── Animation variants ──────────────────────────────────────────────────────
@@ -100,8 +100,10 @@ function AnimatedPipeline() {
         padding: "32px 32px 28px",
         margin: "40px 0",
         overflow: "hidden",
+        position: "relative" as const,
       }}
     >
+      <ScanLine />
       <div style={{
         fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500,
         textTransform: "uppercase" as const, letterSpacing: "0.06em",
@@ -264,17 +266,180 @@ function ArchDiagram() {
   );
 }
 
+// ── Floating particles behind hero ──────────────────────────────────────────
+
+function HeroParticles() {
+  const [particles] = useState(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      duration: Math.random() * 20 + 15,
+      delay: Math.random() * 5,
+      opacity: Math.random() * 0.06 + 0.02,
+    }))
+  );
+
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          style={{
+            position: "absolute",
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            borderRadius: "50%",
+            background: `rgba(255,255,255,${p.opacity})`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            x: [0, Math.random() * 20 - 10, 0],
+            opacity: [p.opacity, p.opacity * 2, p.opacity],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Animated scan line effect for sections ──────────────────────────────────
+
+function ScanLine() {
+  return (
+    <motion.div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        height: 1,
+        background: "linear-gradient(90deg, transparent, rgba(48,164,108,0.15), transparent)",
+        pointerEvents: "none",
+      }}
+      initial={{ top: 0, opacity: 0 }}
+      animate={{ top: "100%", opacity: [0, 1, 1, 0] }}
+      transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: "linear" }}
+    />
+  );
+}
+
+// ── Animated counter ────────────────────────────────────────────────────────
+
+function AnimatedNumber({ value, prefix = "" }: { value: string; prefix?: string }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const [display, setDisplay] = useState(prefix + "0");
+
+  useEffect(() => {
+    if (!inView) return;
+    const numMatch = value.match(/[\d.]+/);
+    if (!numMatch) { setDisplay(value); return; }
+    const target = parseFloat(numMatch[0]);
+    const suffix = value.replace(numMatch[0], "").replace(prefix, "");
+    const duration = 800;
+    const start = Date.now();
+
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = target * eased;
+      const formatted = target >= 100 ? Math.round(current).toString() : current.toFixed(target < 10 ? 0 : 1);
+      setDisplay(prefix + formatted + suffix);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [inView, value, prefix]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+// ── Glowing network node visualization ──────────────────────────────────────
+
+function NetworkViz() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+
+  const nodes = [
+    { x: 100, y: 60, label: "TIP-20", size: 8, color: "var(--color-success)" },
+    { x: 280, y: 40, label: "DEX", size: 6, color: "var(--color-success)" },
+    { x: 200, y: 120, label: "TIP-403", size: 7, color: "var(--color-warning)" },
+    { x: 380, y: 90, label: "MPP", size: 8, color: "var(--color-success)" },
+    { x: 460, y: 50, label: "pathUSD", size: 6, color: "var(--color-success)" },
+    { x: 160, y: 30, label: "Pellet", size: 10, color: "rgba(255,255,255,0.93)" },
+  ];
+
+  const edges = [
+    [0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4],
+  ];
+
+  return (
+    <div ref={ref} style={{ position: "relative", height: 160, margin: "40px 0", overflow: "hidden" }}>
+      <svg width="100%" height="100%" viewBox="0 0 560 160" fill="none">
+        {edges.map(([a, b], i) => (
+          <motion.line
+            key={i}
+            x1={nodes[a].x} y1={nodes[a].y}
+            x2={nodes[b].x} y2={nodes[b].y}
+            stroke="rgba(255,255,255,0.04)"
+            strokeWidth="1"
+            initial={{ pathLength: 0 }}
+            animate={inView ? { pathLength: 1 } : {}}
+            transition={{ duration: 1, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] as const }}
+          />
+        ))}
+        {nodes.map((node, i) => (
+          <motion.g key={i}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: 0.3 + i * 0.1, type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <motion.circle
+              cx={node.x} cy={node.y} r={node.size + 4}
+              fill={node.color}
+              opacity={0.08}
+              animate={{ r: [node.size + 4, node.size + 8, node.size + 4] }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
+            />
+            <circle cx={node.x} cy={node.y} r={node.size} fill={node.color} opacity={0.6} />
+            <circle cx={node.x} cy={node.y} r={node.size * 0.4} fill={node.color} />
+            <text x={node.x} y={node.y + node.size + 14}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.28)"
+              fontSize="9"
+              fontFamily="var(--font-mono)"
+            >
+              {node.label}
+            </text>
+          </motion.g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export default function AboutPage() {
   return (
     <div>
       {/* ═══ HERO ═══ */}
+      <div style={{ position: "relative" }}>
+        <HeroParticles />
       <motion.div
         initial="hidden"
         animate="visible"
         variants={stagger}
-        style={{ maxWidth: 800, margin: "0 auto", padding: "120px 48px 60px" }}
+        style={{ maxWidth: 800, margin: "0 auto", padding: "120px 48px 60px", position: "relative" }}
       >
         <motion.div
           variants={fadeUp}
@@ -315,6 +480,7 @@ export default function AboutPage() {
           that makes it all legible — for humans and machines.
         </motion.p>
       </motion.div>
+      </div>
 
       {/* ═══ ARC DIVIDER ═══ */}
       <ArcDivider />
@@ -329,17 +495,17 @@ export default function AboutPage() {
           }}
         >
           {[
-            { value: "12", label: "Tokens Tracked" },
-            { value: "4", label: "Stablecoins" },
-            { value: "$172K", label: "24h Volume" },
-            { value: "8", label: "MPP Services" },
+            { value: "12", label: "Tokens Tracked", prefix: "" },
+            { value: "4", label: "Stablecoins", prefix: "" },
+            { value: "172K", label: "24h Volume", prefix: "$" },
+            { value: "8", label: "MPP Services", prefix: "" },
           ].map((stat) => (
             <div key={stat.label} style={{ background: "var(--color-bg-subtle)", padding: "28px 24px", textAlign: "center" }}>
               <div style={{
                 fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 600,
                 fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginBottom: 6,
               }}>
-                {stat.value}
+                <AnimatedNumber value={stat.value} prefix={stat.prefix} />
               </div>
               <div style={{
                 fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500,
@@ -352,6 +518,11 @@ export default function AboutPage() {
           ))}
         </motion.div>
       </Section>
+
+      {/* ═══ NETWORK VISUALIZATION ═══ */}
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px" }}>
+        <NetworkViz />
+      </div>
 
       {/* ═══ 01: WHY TEMPO ═══ */}
       <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
