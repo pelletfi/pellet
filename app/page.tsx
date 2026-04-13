@@ -127,39 +127,10 @@ export default async function HomePage() {
 
           {/* CTAs */}
           <div className="hero-ctas">
-            <a
-              href="/tokens"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "8px 16px",
-                background: "var(--color-text-primary)",
-                color: "var(--color-bg-base)",
-                fontSize: "13px",
-                fontWeight: 500,
-                borderRadius: "6px",
-                textDecoration: "none",
-                transition: "opacity 0.15s",
-              }}
-            >
+            <a href="/tokens" className="btn-primary">
               Explore tokens
             </a>
-            <a
-              href="/about"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "8px 16px",
-                background: "transparent",
-                color: "var(--color-text-secondary)",
-                fontSize: "13px",
-                fontWeight: 500,
-                borderRadius: "6px",
-                border: "1px solid var(--color-border-emphasis)",
-                textDecoration: "none",
-                transition: "border-color 0.15s",
-              }}
-            >
+            <a href="/about" className="btn-secondary">
               Read the thesis
             </a>
           </div>

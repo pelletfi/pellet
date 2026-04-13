@@ -255,11 +255,6 @@ body {
   gap: 12px;
 }
 
-/* ── Service card hover ── */
-.service-card:hover {
-  border-color: var(--color-border-default) !important;
-}
-
 /* ── Terminal page ── */
 .terminal-page {
   padding: 24px 48px;
@@ -420,4 +415,163 @@ body {
   .flow-table-row .hide-mobile {
     display: none;
   }
+}
+
+/* ── Subtle background texture ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Page load animation ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main {
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Button micro-interactions ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--color-text-primary);
+  color: var(--color-bg-base);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms ease, transform 100ms ease;
+}
+.btn-primary:hover {
+  background: rgba(255,255,255,0.85);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid var(--color-border-emphasis);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+.btn-secondary:hover {
+  border-color: rgba(255,255,255,0.30);
+  color: var(--color-text-primary);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── Terminal window glow ── */
+.terminal-window {
+  position: relative;
+}
+.terminal-window::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.terminal-window:hover::before {
+  opacity: 1;
+}
+
+/* ── Nav link active underline ── */
+.nav-link.active {
+  color: var(--color-text-primary);
+}
+
+/* ── Card hover lift ── */
+.service-card {
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.service-card:hover {
+  border-color: var(--color-border-default) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Staggered row animation ── */
+.table-data-row {
+  animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.table-data-row:nth-child(1) { animation-delay: 0ms; }
+.table-data-row:nth-child(2) { animation-delay: 30ms; }
+.table-data-row:nth-child(3) { animation-delay: 60ms; }
+.table-data-row:nth-child(4) { animation-delay: 90ms; }
+.table-data-row:nth-child(5) { animation-delay: 120ms; }
+.table-data-row:nth-child(6) { animation-delay: 150ms; }
+.table-data-row:nth-child(7) { animation-delay: 180ms; }
+.table-data-row:nth-child(8) { animation-delay: 210ms; }
+.table-data-row:nth-child(9) { animation-delay: 240ms; }
+.table-data-row:nth-child(10) { animation-delay: 270ms; }
+
+/* ── Hero stagger animation ── */
+.hero-left > * {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-left > *:nth-child(1) { animation-delay: 50ms; }
+.hero-left > *:nth-child(2) { animation-delay: 100ms; }
+.hero-left > *:nth-child(3) { animation-delay: 150ms; }
+.hero-left > *:nth-child(4) { animation-delay: 200ms; }
+.hero-left > *:nth-child(5) { animation-delay: 250ms; }
+
+/* ── Hero terminal entrance ── */
+.hero-terminal-area {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+}
+
+/* ── Metric card number hover ── */
+.metrics-grid > div {
+  transition: background 150ms ease;
+}
+.metrics-grid > div:hover {
+  background: var(--color-bg-muted);
+}
+
+/* ── Section card subtle hover ── */
+.section-card {
+  transition: border-color 150ms ease;
+}
+.section-card:hover {
+  border-color: var(--color-border-default);
+}
+
+/* ── Smooth selection color ── */
+::selection {
+  background: rgba(48, 164, 108, 0.30);
+  color: var(--color-text-primary);
+}
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid rgba(48, 164, 108, 0.50);
+  outline-offset: 2px;
 }
