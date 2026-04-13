@@ -5,10 +5,8 @@ import Link from "next/link";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Tokens", href: "/tokens" },
-  { label: "Stablecoins", href: "/stablecoins" },
+  { label: "Explorer", href: "/explorer" },
   { label: "Services", href: "/services" },
-  { label: "Terminal", href: "/terminal" },
 ];
 
 export function Nav() {
