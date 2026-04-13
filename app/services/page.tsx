@@ -33,13 +33,14 @@ export default async function ServicesPage() {
   const services = await fetchServices();
 
   return (
-    <main className="services-container">
+    <main className="page-container">
       <h1
         style={{
-          fontSize: 28,
-          fontWeight: 700,
-          color: "var(--color-text)",
+          fontSize: 20,
+          fontWeight: 600,
+          color: "var(--color-text-primary)",
           margin: 0,
+          letterSpacing: "-0.02em",
         }}
       >
         MPP Services
@@ -47,8 +48,8 @@ export default async function ServicesPage() {
 
       <p
         style={{
-          fontSize: 15,
-          color: "var(--color-secondary)",
+          fontSize: 14,
+          color: "var(--color-text-tertiary)",
           maxWidth: 560,
           margin: "12px 0 32px",
           lineHeight: 1.5,
@@ -67,18 +68,27 @@ export default async function ServicesPage() {
             rel="noopener noreferrer"
             style={{
               padding: 24,
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
+              background: "var(--color-bg-subtle)",
+              border: "1px solid var(--color-border-subtle)",
               borderRadius: 8,
               textDecoration: "none",
               display: "block",
+              transition: "border-color 0.2s ease",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.borderColor =
+                "var(--color-border-default)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.borderColor =
+                "var(--color-border-subtle)")
+            }
           >
             <div
               style={{
                 fontSize: 16,
                 fontWeight: 600,
-                color: "var(--color-text)",
+                color: "var(--color-text-primary)",
                 marginBottom: 8,
               }}
             >
@@ -88,7 +98,7 @@ export default async function ServicesPage() {
             <div
               style={{
                 fontSize: 14,
-                color: "var(--color-secondary)",
+                color: "var(--color-text-secondary)",
                 lineHeight: 1.6,
                 marginBottom: 12,
               }}
@@ -104,10 +114,10 @@ export default async function ServicesPage() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     padding: "2px 8px",
-                    background: "var(--color-bg)",
-                    border: "1px solid var(--color-border)",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid var(--color-border-default)",
                     borderRadius: 4,
-                    color: "var(--color-muted)",
+                    color: "var(--color-text-tertiary)",
                   }}
                 >
                   {currency}
@@ -122,7 +132,7 @@ export default async function ServicesPage() {
         <p
           style={{
             textAlign: "center",
-            color: "var(--color-muted)",
+            color: "var(--color-text-quaternary)",
             fontSize: 14,
             marginTop: 32,
           }}

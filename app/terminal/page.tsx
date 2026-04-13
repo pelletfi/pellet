@@ -252,10 +252,10 @@ export default function TerminalPage() {
   }, []);
 
   return (
-    <div className="terminal-page">
+    <div className="terminal-page" style={{ background: "var(--color-bg-base)" }}>
       <div
         style={{
-          background: "var(--color-terminal)",
+          background: "var(--color-bg-subtle)",
           borderRadius: "8px",
           height: "calc(100vh - 120px)",
           overflow: "hidden",

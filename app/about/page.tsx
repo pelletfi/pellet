@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 // ---------------------------------------------------------------------------
 // Pixel strip helper
 // ---------------------------------------------------------------------------
@@ -27,30 +25,30 @@ function PixelStrip({ colors }: { colors: string[] }) {
 // ---------------------------------------------------------------------------
 
 const topPixels = [
-  "#0a0a0a", "#333", "#555", "#888", "#aaa",
-  "#ccc",
-  "#aaa", "#888", "#555", "#333", "#0a0a0a",
+  "#ccc", "#aaa", "#888", "#555", "#333",
+  "#111",
+  "#333", "#555", "#888", "#aaa", "#ccc",
 ];
 
 const bottomPixels = [
   "#ccc", "#aaa", "#888", "#555", "#333",
-  "#0a0a0a",
+  "#111",
   "#333", "#555", "#888", "#aaa", "#ccc",
 ];
 
 const h2Style: React.CSSProperties = {
-  fontSize: 24,
+  fontSize: 20,
   fontWeight: 600,
-  color: "var(--color-text)",
+  color: "var(--color-text-primary)",
   marginTop: 40,
   marginBottom: 16,
   letterSpacing: "-0.3px",
 };
 
 const pStyle: React.CSSProperties = {
-  fontSize: 17,
-  color: "#555",
-  lineHeight: 1.8,
+  fontSize: 16,
+  color: "var(--color-text-secondary)",
+  lineHeight: 1.75,
   margin: "0 0 20px",
 };
 
@@ -75,23 +73,25 @@ export default function AboutPage() {
           fontFamily: "var(--font-mono)",
           fontSize: 11,
           textTransform: "uppercase" as const,
-          letterSpacing: 2,
-          color: "var(--color-muted)",
+          letterSpacing: "0.06em",
+          color: "var(--color-text-tertiary)",
           marginBottom: 24,
         }}
       >
-        <span>About Pellet &mdash; Built on</span>
-        <Image
-          src="/tempo-logo.svg"
-          alt="Tempo"
-          width={56}
-          height={14}
-          style={{ opacity: 0.5 }}
-        />
+        <span>About Pellet &mdash; Built on Tempo</span>
       </div>
 
       {/* H1 */}
-      <h1 className="about-h1">
+      <h1
+        style={{
+          fontSize: 32,
+          fontWeight: 600,
+          color: "var(--color-text-primary)",
+          letterSpacing: "-0.025em",
+          margin: "0 0 32px",
+          lineHeight: 1.2,
+        }}
+      >
         The intelligence layer for the payments chain.
       </h1>
 
@@ -113,7 +113,7 @@ export default function AboutPage() {
         <p
           style={{
             ...pStyle,
-            color: "var(--color-text)",
+            color: "var(--color-text-primary)",
             fontWeight: 500,
           }}
         >
