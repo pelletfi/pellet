@@ -537,9 +537,9 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span>The Pellet Thesis</span>
+          <span>Pellet</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
-          <span>April 2026</span>
+          <span>MPP-Native Compute Layer</span>
         </motion.div>
 
         <motion.h1
