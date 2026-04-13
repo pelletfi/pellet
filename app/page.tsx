@@ -269,8 +269,10 @@ function ArchDiagram() {
 // ── Floating particles behind hero ──────────────────────────────────────────
 
 function HeroParticles() {
-  const [particles] = useState(() =>
-    Array.from({ length: 40 }, (_, i) => ({
+  const [particles, setParticles] = useState<Array<{id:number;x:number;y:number;size:number;duration:number;delay:number;opacity:number}>>([]);
+
+  useEffect(() => {
+    setParticles(Array.from({ length: 40 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -278,8 +280,10 @@ function HeroParticles() {
       duration: Math.random() * 20 + 15,
       delay: Math.random() * 5,
       opacity: Math.random() * 0.06 + 0.02,
-    }))
-  );
+    })));
+  }, []);
+
+  if (particles.length === 0) return null;
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
