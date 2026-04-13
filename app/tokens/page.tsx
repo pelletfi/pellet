@@ -71,10 +71,11 @@ export default async function TokensPage({ searchParams }: PageProps) {
       {/* Header */}
       <h1
         style={{
-          fontFamily: "var(--font-inter), system-ui, sans-serif",
-          fontSize: "28px",
-          fontWeight: 700,
-          color: "var(--color-text)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "20px",
+          fontWeight: 600,
+          color: "var(--color-text-primary)",
+          letterSpacing: "-0.02em",
           marginBottom: "6px",
         }}
       >
@@ -82,9 +83,9 @@ export default async function TokensPage({ searchParams }: PageProps) {
       </h1>
       <p
         style={{
-          fontFamily: "var(--font-inter), system-ui, sans-serif",
-          fontSize: "15px",
-          color: "var(--color-secondary)",
+          fontFamily: "var(--font-sans)",
+          fontSize: "13px",
+          color: "var(--color-text-tertiary)",
           marginBottom: "28px",
         }}
       >
@@ -96,60 +97,62 @@ export default async function TokensPage({ searchParams }: PageProps) {
         <Search defaultValue={query} />
       </div>
 
-      {/* Table header */}
-      <div
-        className="token-table-header"
-        style={{
-          padding: "8px 16px",
-          borderBottom: "1px solid var(--color-border)",
-        }}
-      >
-        {["Token", "Price", "Volume 24H", "Liquidity"].map((label) => (
-          <span
-            key={label}
-            className={label === "Volume 24H" || label === "Liquidity" ? "hide-mobile" : undefined}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              fontWeight: 500,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              color: "var(--color-muted)",
-              textAlign: label === "Token" ? "left" : "right",
-            }}
-          >
-            {label}
-          </span>
-        ))}
-      </div>
-
-      {/* Token rows */}
-      {tokens.length === 0 ? (
+      {/* Table */}
+      <div className="data-table">
+        {/* Table header */}
         <div
+          className="table-header-row"
           style={{
-            padding: "48px 16px",
-            textAlign: "center",
-            fontFamily: "var(--font-inter), system-ui, sans-serif",
-            fontSize: "14px",
-            color: "var(--color-muted)",
+            gridTemplateColumns: "2.5fr 1fr 1fr 1fr",
           }}
         >
-          {query ? `No tokens found for "${query}".` : "No tokens available."}
+          {["Token", "Price", "Volume 24H", "Liquidity"].map((label) => (
+            <span
+              key={label}
+              className={label === "Volume 24H" || label === "Liquidity" ? "hide-mobile" : undefined}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                color: "var(--color-text-quaternary)",
+                textAlign: label === "Token" ? "left" : "right",
+              }}
+            >
+              {label}
+            </span>
+          ))}
         </div>
-      ) : (
-        tokens.map((t) => (
-          <TokenCard
-            key={t.address}
-            address={t.address}
-            name={t.name}
-            imageUrl={t.imageUrl}
-            priceUsd={t.priceUsd}
-            priceChange24h={t.priceChange24h}
-            volume24h={t.volume24h}
-            liquidity={t.liquidity}
-          />
-        ))
-      )}
+
+        {/* Token rows */}
+        {tokens.length === 0 ? (
+          <div
+            style={{
+              padding: "48px 16px",
+              textAlign: "center",
+              fontFamily: "var(--font-sans)",
+              fontSize: "14px",
+              color: "var(--color-text-tertiary)",
+            }}
+          >
+            {query ? `No tokens found for "${query}".` : "No tokens available."}
+          </div>
+        ) : (
+          tokens.map((t) => (
+            <TokenCard
+              key={t.address}
+              address={t.address}
+              name={t.name}
+              imageUrl={t.imageUrl}
+              priceUsd={t.priceUsd}
+              priceChange24h={t.priceChange24h}
+              volume24h={t.volume24h}
+              liquidity={t.liquidity}
+            />
+          ))
+        )}
+      </div>
 
       {/* Pagination */}
       {!query && (
@@ -164,13 +167,14 @@ export default async function TokensPage({ searchParams }: PageProps) {
             <Link
               href={`/tokens?page=${page - 1}`}
               style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
+                fontFamily: "var(--font-sans)",
                 fontSize: "13px",
                 fontWeight: 500,
-                color: "var(--color-text)",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
                 padding: "8px 16px",
-                border: "1px solid var(--color-border)",
+                background: "var(--color-bg-subtle)",
+                border: "1px solid var(--color-border-default)",
                 borderRadius: "6px",
                 transition: "background 0.15s",
               }}
@@ -184,13 +188,14 @@ export default async function TokensPage({ searchParams }: PageProps) {
             <Link
               href={`/tokens?page=${page + 1}`}
               style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
+                fontFamily: "var(--font-sans)",
                 fontSize: "13px",
                 fontWeight: 500,
-                color: "var(--color-text)",
+                color: "var(--color-text-secondary)",
                 textDecoration: "none",
                 padding: "8px 16px",
-                border: "1px solid var(--color-border)",
+                background: "var(--color-bg-subtle)",
+                border: "1px solid var(--color-border-default)",
                 borderRadius: "6px",
                 transition: "background 0.15s",
               }}

@@ -22,8 +22,8 @@ export default async function BriefingPage({
             gap: "6px",
             marginBottom: "16px",
             padding: "3px 10px",
-            background: "#f0fdf4",
-            border: "1px solid #bbf7d0",
+            background: "rgba(48,164,108,0.12)",
+            border: "1px solid rgba(48,164,108,0.25)",
             borderRadius: "5px",
           }}
         >
@@ -31,7 +31,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-positive)",
+              color: "var(--color-success)",
               letterSpacing: "0.04em",
             }}
           >
@@ -41,10 +41,10 @@ export default async function BriefingPage({
 
         <h1
           style={{
-            fontFamily: "var(--font-inter), system-ui, sans-serif",
+            fontFamily: "var(--font-sans)",
             fontSize: "28px",
             fontWeight: 700,
-            color: "var(--color-text)",
+            color: "var(--color-text-primary)",
             letterSpacing: "-0.025em",
             marginBottom: "10px",
           }}
@@ -54,9 +54,9 @@ export default async function BriefingPage({
 
         <p
           style={{
-            fontFamily: "var(--font-inter), system-ui, sans-serif",
+            fontFamily: "var(--font-sans)",
             fontSize: "17px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-secondary)",
             lineHeight: 1.7,
             marginBottom: "6px",
           }}
@@ -70,7 +70,7 @@ export default async function BriefingPage({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "12px",
-            color: "var(--color-muted)",
+            color: "var(--color-text-tertiary)",
           }}
         >
           {address}
@@ -80,8 +80,8 @@ export default async function BriefingPage({
       {/* What's included */}
       <section
         style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
+          background: "var(--color-bg-subtle)",
+          border: "1px solid var(--color-border-subtle)",
           borderRadius: "8px",
           padding: "24px",
           marginBottom: "28px",
@@ -92,7 +92,7 @@ export default async function BriefingPage({
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
             fontWeight: 600,
-            color: "var(--color-muted)",
+            color: "var(--color-text-tertiary)",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             marginBottom: "16px",
@@ -115,7 +115,7 @@ export default async function BriefingPage({
               display: "flex",
               gap: "14px",
               padding: "10px 0",
-              borderBottom: "1px solid #f5f5f5",
+              borderBottom: "1px solid var(--color-border-subtle)",
               alignItems: "flex-start",
             }}
           >
@@ -123,7 +123,7 @@ export default async function BriefingPage({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "var(--color-muted)",
+                color: "var(--color-text-tertiary)",
                 paddingTop: "1px",
                 flexShrink: 0,
                 minWidth: "22px",
@@ -134,10 +134,10 @@ export default async function BriefingPage({
             <div>
               <div
                 style={{
-                  fontFamily: "var(--font-inter)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   fontWeight: 600,
-                  color: "var(--color-text)",
+                  color: "var(--color-text-primary)",
                   marginBottom: "2px",
                 }}
               >
@@ -145,9 +145,9 @@ export default async function BriefingPage({
               </div>
               <div
                 style={{
-                  fontFamily: "var(--font-inter)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: "12px",
-                  color: "var(--color-secondary)",
+                  color: "var(--color-text-secondary)",
                 }}
               >
                 {detail}
@@ -165,10 +165,10 @@ export default async function BriefingPage({
       >
         <h2
           style={{
-            fontFamily: "var(--font-inter)",
+            fontFamily: "var(--font-sans)",
             fontSize: "14px",
             fontWeight: 600,
-            color: "var(--color-text)",
+            color: "var(--color-text-primary)",
             marginBottom: "12px",
           }}
         >
@@ -176,9 +176,9 @@ export default async function BriefingPage({
         </h2>
         <p
           style={{
-            fontFamily: "var(--font-inter)",
+            fontFamily: "var(--font-sans)",
             fontSize: "13px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-secondary)",
             lineHeight: 1.65,
             marginBottom: "16px",
           }}
@@ -188,9 +188,9 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "12px",
-              color: "var(--color-text)",
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
+              color: "var(--color-text-primary)",
+              background: "var(--color-bg-muted)",
+              border: "1px solid var(--color-border-subtle)",
               borderRadius: "3px",
               padding: "1px 5px",
             }}
@@ -203,7 +203,7 @@ export default async function BriefingPage({
         {/* mppx command */}
         <div
           style={{
-            background: "var(--color-terminal)",
+            background: "var(--color-bg-muted)",
             borderRadius: "8px",
             padding: "16px 18px",
             marginBottom: "12px",
@@ -213,7 +213,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "10px",
-              color: "#888",
+              color: "var(--color-text-quaternary)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               marginBottom: "8px",
@@ -225,7 +225,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "13px",
-              color: "var(--color-terminal-text)",
+              color: "var(--color-text-primary)",
               display: "block",
               whiteSpace: "pre-wrap",
               wordBreak: "break-all",
@@ -237,7 +237,7 @@ export default async function BriefingPage({
 
         <div
           style={{
-            background: "var(--color-terminal)",
+            background: "var(--color-bg-muted)",
             borderRadius: "8px",
             padding: "16px 18px",
           }}
@@ -246,7 +246,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "10px",
-              color: "#888",
+              color: "var(--color-text-quaternary)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               marginBottom: "8px",
@@ -258,7 +258,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "12px",
-              color: "#aaa",
+              color: "var(--color-text-secondary)",
               display: "block",
               whiteSpace: "pre-wrap",
               wordBreak: "break-all",
@@ -273,9 +273,9 @@ export default async function BriefingPage({
       <a
         href={`/token/${address}`}
         style={{
-          fontFamily: "var(--font-inter)",
+          fontFamily: "var(--font-sans)",
           fontSize: "13px",
-          color: "var(--color-secondary)",
+          color: "var(--color-text-secondary)",
           textDecoration: "none",
         }}
       >

@@ -6,33 +6,33 @@ const VERDICT_CONFIG: Record<
 > = {
   LOW_RISK: {
     label: "Low Risk",
-    color: "var(--color-positive)",
-    bg: "#f0fdf4",
-    border: "#bbf7d0",
+    color: "var(--color-success)",
+    bg: "rgba(48,164,108,0.12)",
+    border: "rgba(48,164,108,0.25)",
   },
   CAUTION: {
     label: "Caution",
-    color: "#d97706",
-    bg: "#fffbeb",
-    border: "#fde68a",
+    color: "var(--color-warning)",
+    bg: "rgba(245,166,35,0.10)",
+    border: "rgba(245,166,35,0.25)",
   },
   MEDIUM_RISK: {
     label: "Medium Risk",
-    color: "#d97706",
-    bg: "#fffbeb",
-    border: "#fde68a",
+    color: "var(--color-warning)",
+    bg: "rgba(245,166,35,0.10)",
+    border: "rgba(245,166,35,0.25)",
   },
   HIGH_RISK: {
     label: "High Risk",
-    color: "var(--color-negative)",
-    bg: "#fef2f2",
-    border: "#fecaca",
+    color: "var(--color-error)",
+    bg: "rgba(229,72,77,0.12)",
+    border: "rgba(229,72,77,0.25)",
   },
   CRITICAL: {
     label: "Critical",
-    color: "var(--color-negative)",
-    bg: "#fef2f2",
-    border: "#fecaca",
+    color: "var(--color-error)",
+    bg: "rgba(229,72,77,0.12)",
+    border: "rgba(229,72,77,0.25)",
   },
 };
 
@@ -85,7 +85,7 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "12px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-secondary)",
           }}
         >
           score {safety.score}/100
@@ -101,9 +101,9 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "var(--color-negative)",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
+                color: "var(--color-error)",
+                background: "rgba(229,72,77,0.12)",
+                border: "1px solid rgba(229,72,77,0.25)",
                 borderRadius: "4px",
                 padding: "2px 7px",
               }}
@@ -117,9 +117,9 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#d97706",
-                background: "#fffbeb",
-                border: "1px solid #fde68a",
+                color: "var(--color-warning)",
+                background: "rgba(245,166,35,0.10)",
+                border: "1px solid rgba(245,166,35,0.25)",
                 borderRadius: "4px",
                 padding: "2px 7px",
               }}
@@ -138,14 +138,14 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               width: "5px",
               height: "5px",
               borderRadius: "50%",
-              background: safety.can_buy ? "var(--color-positive)" : "var(--color-negative)",
+              background: safety.can_buy ? "var(--color-success)" : "var(--color-error)",
             }}
           />
           <span
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-secondary)",
+              color: "var(--color-text-secondary)",
             }}
           >
             {safety.can_buy ? "buyable" : "not buyable"}
@@ -157,14 +157,14 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               width: "5px",
               height: "5px",
               borderRadius: "50%",
-              background: safety.can_sell ? "var(--color-positive)" : "var(--color-negative)",
+              background: safety.can_sell ? "var(--color-success)" : "var(--color-error)",
             }}
           />
           <span
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-secondary)",
+              color: "var(--color-text-secondary)",
             }}
           >
             {safety.can_sell ? "sellable" : "not sellable"}

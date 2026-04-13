@@ -35,7 +35,7 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
         justifyContent: "space-between",
         marginBottom: "14px",
         paddingBottom: "8px",
-        borderBottom: "1px solid var(--color-border)",
+        borderBottom: "1px solid var(--color-border-subtle)",
       }}
     >
       <div style={{ display: "flex", gap: "10px", alignItems: "baseline" }}>
@@ -43,7 +43,7 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            color: "var(--color-muted)",
+            color: "var(--color-text-tertiary)",
             letterSpacing: "0.04em",
           }}
         >
@@ -51,10 +51,10 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
         </span>
         <span
           style={{
-            fontFamily: "var(--font-inter), system-ui, sans-serif",
-            fontSize: "16px",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
             fontWeight: 600,
-            color: "var(--color-text)",
+            color: "var(--color-text-tertiary)",
             letterSpacing: "0.01em",
             textTransform: "uppercase",
           }}
@@ -67,7 +67,7 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "var(--color-muted)",
+            color: "var(--color-text-tertiary)",
           }}
         >
           {source}
@@ -85,14 +85,14 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         justifyContent: "space-between",
         alignItems: "baseline",
         padding: "5px 0",
-        borderBottom: "1px solid #f5f5f5",
+        borderBottom: "1px solid var(--color-border-subtle)",
       }}
     >
       <span
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "12px",
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
           textTransform: "uppercase",
         }}
       >
@@ -100,9 +100,9 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-inter), system-ui, sans-serif",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
           fontSize: "14px",
-          color: "var(--color-text)",
+          color: "var(--color-text-primary)",
           textAlign: "right",
         }}
       >
@@ -120,13 +120,13 @@ function PendingRow({ label }: { label: string }) {
         justifyContent: "space-between",
         alignItems: "baseline",
         padding: "5px 0",
-        borderBottom: "1px solid #f5f5f5",
+        borderBottom: "1px solid var(--color-border-subtle)",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-muted)", textTransform: "uppercase" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-text-tertiary)", textTransform: "uppercase" }}>
         {label}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "14px", color: "var(--color-muted)" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "14px", color: "var(--color-text-tertiary)" }}>
         —
       </span>
     </div>
@@ -155,10 +155,10 @@ function MarketSection({ market }: { market: TokenMarketData }) {
 function SafetySection({ safety }: { safety: SafetyResult }) {
   const verdictColor =
     safety.verdict === "LOW_RISK"
-      ? "var(--color-positive)"
+      ? "var(--color-success)"
       : safety.verdict === "CAUTION" || safety.verdict === "MEDIUM_RISK"
-      ? "#d97706"
-      : "var(--color-negative)";
+      ? "var(--color-warning)"
+      : "var(--color-error)";
 
   return (
     <section style={{ marginBottom: "28px" }}>
@@ -184,9 +184,9 @@ function SafetySection({ safety }: { safety: SafetyResult }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "var(--color-negative)",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
+                  color: "var(--color-error)",
+                  background: "rgba(229,72,77,0.12)",
+                  border: "1px solid rgba(229,72,77,0.25)",
                   borderRadius: "3px",
                   padding: "1px 5px",
                 }}
@@ -200,9 +200,9 @@ function SafetySection({ safety }: { safety: SafetyResult }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "#d97706",
-                  background: "#fffbeb",
-                  border: "1px solid #fde68a",
+                  color: "var(--color-warning)",
+                  background: "rgba(245,166,35,0.10)",
+                  border: "1px solid rgba(245,166,35,0.25)",
                   borderRadius: "3px",
                   padding: "1px 5px",
                 }}
@@ -268,9 +268,9 @@ function DistributionSection({ holders }: { holders: HolderData }) {
               display: "grid",
               gridTemplateColumns: "1fr 80px 60px",
               padding: "6px 0",
-              borderBottom: "1px solid var(--color-border)",
+              borderBottom: "1px solid var(--color-border-subtle)",
               marginBottom: "4px",
-              background: "var(--color-surface)",
+              background: "var(--color-bg-subtle)",
             }}
           >
             {["Address", "Balance", "%"].map((h) => (
@@ -279,7 +279,7 @@ function DistributionSection({ holders }: { holders: HolderData }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "var(--color-muted)",
+                  color: "var(--color-text-quaternary)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
                   textAlign: h === "%" || h === "Balance" ? "right" : "left",
@@ -296,22 +296,22 @@ function DistributionSection({ holders }: { holders: HolderData }) {
                 display: "grid",
                 gridTemplateColumns: "1fr 80px 60px",
                 padding: "4px 0",
-                borderBottom: "1px solid #f5f5f5",
+                borderBottom: "1px solid var(--color-border-subtle)",
               }}
             >
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "var(--color-secondary)",
+                  color: "var(--color-text-secondary)",
                   display: "flex",
                   gap: "6px",
                   alignItems: "center",
                 }}
               >
-                <span style={{ color: "var(--color-muted)", minWidth: "14px" }}>{i + 1}</span>
+                <span style={{ color: "var(--color-text-tertiary)", minWidth: "14px" }}>{i + 1}</span>
                 {h.label ? (
-                  <span style={{ color: "var(--color-text)" }}>{h.label}</span>
+                  <span style={{ color: "var(--color-text-primary)" }}>{h.label}</span>
                 ) : (
                   truncate(h.address, 6, 4)
                 )}
@@ -320,7 +320,7 @@ function DistributionSection({ holders }: { holders: HolderData }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "var(--color-secondary)",
+                  color: "var(--color-text-secondary)",
                   textAlign: "right",
                 }}
               >
@@ -330,7 +330,7 @@ function DistributionSection({ holders }: { holders: HolderData }) {
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "var(--color-secondary)",
+                  color: "var(--color-text-secondary)",
                   textAlign: "right",
                 }}
               >
@@ -375,12 +375,12 @@ function AnalystSection({ text }: { text: string }) {
       <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
       <p
         style={{
-          fontFamily: "var(--font-inter), system-ui, sans-serif",
+          fontFamily: "var(--font-sans)",
           fontSize: "14px",
           lineHeight: 1.7,
-          color: "var(--color-secondary)",
+          color: "var(--color-text-secondary)",
           margin: 0,
-          borderLeft: "2px solid var(--color-border)",
+          borderLeft: "2px solid var(--color-border-default)",
           paddingLeft: "16px",
           fontStyle: "italic",
         }}
@@ -422,7 +422,7 @@ export default function BriefingDocument({
         maxWidth: "720px",
         margin: "0 auto",
         padding: "40px 24px",
-        fontFamily: "var(--font-inter), system-ui, sans-serif",
+        fontFamily: "var(--font-sans)",
       }}
     >
       {/* Document header */}
@@ -430,10 +430,10 @@ export default function BriefingDocument({
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           <h1
             style={{
-              fontFamily: "var(--font-inter), system-ui, sans-serif",
+              fontFamily: "var(--font-sans)",
               fontSize: "22px",
               fontWeight: 600,
-              color: "var(--color-text)",
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.02em",
               margin: 0,
             }}
@@ -445,7 +445,7 @@ export default function BriefingDocument({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "13px",
-                color: "var(--color-secondary)",
+                color: "var(--color-text-secondary)",
               }}
             >
               {identity.symbol}
@@ -455,9 +455,9 @@ export default function BriefingDocument({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-positive)",
-              background: "#f0fdf4",
-              border: "1px solid #bbf7d0",
+              color: "var(--color-success)",
+              background: "rgba(48,164,108,0.12)",
+              border: "1px solid rgba(48,164,108,0.25)",
               borderRadius: "4px",
               padding: "1px 6px",
             }}
@@ -470,7 +470,7 @@ export default function BriefingDocument({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "12px",
-            color: "var(--color-muted)",
+            color: "var(--color-text-tertiary)",
             marginBottom: "6px",
           }}
         >
@@ -482,7 +482,7 @@ export default function BriefingDocument({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-muted)",
+              color: "var(--color-text-tertiary)",
             }}
           >
             {new Date(createdAt).toISOString().replace("T", " ").slice(0, 19)} UTC
@@ -509,9 +509,9 @@ export default function BriefingDocument({
           <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
           <p
             style={{
-              fontFamily: "var(--font-inter)",
+              fontFamily: "var(--font-sans)",
               fontSize: "13px",
-              color: "var(--color-muted)",
+              color: "var(--color-text-tertiary)",
               fontStyle: "italic",
             }}
           >

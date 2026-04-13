@@ -29,31 +29,31 @@ export default function Search({ defaultValue = "" }: { defaultValue?: string })
         style={{
           flex: 1,
           padding: "9px 14px",
-          background: "#fff",
-          border: "1px solid var(--color-border)",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid var(--color-border-default)",
           borderRadius: "6px",
-          color: "var(--color-text)",
-          fontFamily: "var(--font-inter), system-ui, sans-serif",
+          color: "var(--color-text-primary)",
+          fontFamily: "var(--font-sans)",
           fontSize: "14px",
           outline: "none",
           transition: "border-color 0.15s",
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = "var(--color-muted)";
+          e.currentTarget.style.borderColor = "var(--color-border-emphasis)";
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = "var(--color-border)";
+          e.currentTarget.style.borderColor = "var(--color-border-default)";
         }}
       />
       <button
         type="submit"
         style={{
           padding: "9px 18px",
-          background: "var(--color-text)",
+          background: "var(--color-text-primary)",
           border: "none",
           borderRadius: "6px",
-          color: "#fff",
-          fontFamily: "var(--font-inter), system-ui, sans-serif",
+          color: "var(--color-bg-base)",
+          fontFamily: "var(--font-sans)",
           fontSize: "13px",
           fontWeight: 600,
           cursor: "pointer",

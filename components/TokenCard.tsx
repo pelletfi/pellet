@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 
 function formatUsd(value: number): string {
@@ -38,20 +36,13 @@ export default function TokenCard({
   return (
     <Link
       href={`/token/${address}`}
-      className="token-table-row"
+      className="table-data-row"
       style={{
+        gridTemplateColumns: "2.5fr 1fr 1fr 1fr",
         alignItems: "center",
         padding: "12px 16px",
-        borderBottom: "1px solid #f5f5f5",
         textDecoration: "none",
         color: "inherit",
-        transition: "background 0.1s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--color-surface)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
       }}
     >
       {/* Token: icon + name + address */}
@@ -70,8 +61,8 @@ export default function TokenCard({
               width: 28,
               height: 28,
               borderRadius: "50%",
-              background: "var(--color-text)",
-              color: "var(--color-bg)",
+              background: "var(--color-bg-emphasis)",
+              color: "var(--color-text-tertiary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -87,10 +78,10 @@ export default function TokenCard({
         <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
           <span
             style={{
-              fontFamily: "var(--font-inter), system-ui, sans-serif",
-              fontSize: "14px",
+              fontFamily: "var(--font-sans)",
+              fontSize: "13px",
               fontWeight: 500,
-              color: "var(--color-text)",
+              color: "var(--color-text-primary)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -103,7 +94,7 @@ export default function TokenCard({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "var(--color-muted)",
+                color: "var(--color-text-quaternary)",
               }}
             >
               {truncateAddress(address)}
@@ -118,7 +109,8 @@ export default function TokenCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "var(--color-text)",
+            fontVariantNumeric: "tabular-nums",
+            color: "var(--color-text-primary)",
           }}
         >
           {priceUsd > 0 ? formatUsd(priceUsd) : "—"}
@@ -128,7 +120,7 @@ export default function TokenCard({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: priceChange24h >= 0 ? "var(--color-positive)" : "var(--color-negative)",
+              color: priceChange24h >= 0 ? "var(--color-success)" : "var(--color-error)",
             }}
           >
             {priceChange24h >= 0 ? "+" : ""}
@@ -143,7 +135,7 @@ export default function TokenCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-tertiary)",
           }}
         >
           {volume24h > 0 ? formatUsd(volume24h) : "—"}
@@ -156,7 +148,7 @@ export default function TokenCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "13px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-tertiary)",
           }}
         >
           {liquidity > 0 ? formatUsd(liquidity) : "—"}

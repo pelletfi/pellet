@@ -26,8 +26,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section
       style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
+        background: "var(--color-bg-subtle)",
+        border: "1px solid var(--color-border-subtle)",
         borderRadius: "8px",
         padding: "24px",
         marginBottom: "16px",
@@ -36,14 +36,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: "10px",
+          fontSize: "12px",
           fontWeight: 600,
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginBottom: "14px",
           paddingBottom: "10px",
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {title}
@@ -61,14 +61,14 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         justifyContent: "space-between",
         alignItems: "center",
         padding: "6px 0",
-        borderBottom: "1px solid #f5f5f5",
+        borderBottom: "1px solid var(--color-border-subtle)",
       }}
     >
       <span
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "12px",
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
           textTransform: "uppercase",
         }}
       >
@@ -76,9 +76,9 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-inter)",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
           fontSize: "14px",
-          color: "var(--color-text)",
+          color: "var(--color-text-primary)",
         }}
       >
         {value}
@@ -139,8 +139,8 @@ export default async function TokenPage({
                 width: 32,
                 height: 32,
                 borderRadius: "50%",
-                background: "var(--color-text)",
-                color: "var(--color-bg)",
+                background: "var(--color-bg-emphasis)",
+                color: "var(--color-text-tertiary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -157,9 +157,9 @@ export default async function TokenPage({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "var(--color-positive)",
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
+                color: "var(--color-success)",
+                background: "rgba(48,164,108,0.12)",
+                border: "1px solid rgba(48,164,108,0.25)",
                 borderRadius: "4px",
                 padding: "2px 7px",
               }}
@@ -169,8 +169,19 @@ export default async function TokenPage({
           )}
         </div>
 
-        <div className="address-text">
-          {address}
+        <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "4px" }}>
+          <div className="address-text">
+            {address}
+          </div>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: "var(--color-text-quaternary)",
+            }}
+          >
+            GET /v1/tokens/{address}
+          </span>
         </div>
 
         {/* Key metrics row */}
@@ -183,8 +194,8 @@ export default async function TokenPage({
             <div
               key={label}
               style={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
+                background: "var(--color-bg-subtle)",
+                border: "1px solid var(--color-border-subtle)",
                 borderRadius: "8px",
                 padding: "20px",
               }}
@@ -192,8 +203,8 @@ export default async function TokenPage({
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: "10px",
-                  color: "var(--color-muted)",
+                  fontSize: "11px",
+                  color: "var(--color-text-quaternary)",
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
                   marginBottom: "6px",
@@ -204,9 +215,10 @@ export default async function TokenPage({
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: 600,
-                  color: "var(--color-text)",
+                  fontVariantNumeric: "tabular-nums",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 {value}
@@ -224,13 +236,13 @@ export default async function TokenPage({
               alignItems: "center",
               gap: "8px",
               padding: "10px 18px",
-              background: "var(--color-text)",
+              background: "var(--color-text-primary)",
               borderRadius: "8px",
               textDecoration: "none",
-              fontFamily: "var(--font-inter)",
+              fontFamily: "var(--font-sans)",
               fontSize: "14px",
               fontWeight: 600,
-              color: "var(--color-bg)",
+              color: "var(--color-bg-base)",
               transition: "opacity 0.15s",
             }}
           >
@@ -252,7 +264,7 @@ export default async function TokenPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "var(--color-muted)",
+              color: "var(--color-text-quaternary)",
               marginTop: "8px",
             }}
           >
@@ -268,7 +280,7 @@ export default async function TokenPage({
             {safety ? (
               <SafetyBadge safety={safety} />
             ) : (
-              <p style={{ fontFamily: "var(--font-inter)", fontSize: "13px", color: "var(--color-muted)" }}>
+              <p style={{ fontFamily: "var(--font-sans)", fontSize: "13px", color: "var(--color-text-tertiary)" }}>
                 Safety analysis unavailable.
               </p>
             )}
@@ -311,7 +323,7 @@ export default async function TokenPage({
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: "10px",
-                      color: "var(--color-muted)",
+                      color: "var(--color-text-quaternary)",
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
                       marginBottom: "8px",
@@ -326,21 +338,21 @@ export default async function TokenPage({
                         display: "flex",
                         justifyContent: "space-between",
                         padding: "4px 0",
-                        borderBottom: "1px solid #f5f5f5",
+                        borderBottom: "1px solid var(--color-border-subtle)",
                       }}
                     >
                       <span
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: "11px",
-                          color: "var(--color-secondary)",
+                          color: "var(--color-text-secondary)",
                           display: "flex",
                           gap: "6px",
                         }}
                       >
-                        <span style={{ color: "var(--color-muted)", minWidth: "14px" }}>{i + 1}</span>
+                        <span style={{ color: "var(--color-text-tertiary)", minWidth: "14px" }}>{i + 1}</span>
                         {h.label ? (
-                          <span style={{ color: "var(--color-text)" }}>{h.label}</span>
+                          <span style={{ color: "var(--color-text-primary)" }}>{h.label}</span>
                         ) : (
                           truncate(h.address)
                         )}
@@ -349,7 +361,7 @@ export default async function TokenPage({
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: "11px",
-                          color: "var(--color-secondary)",
+                          color: "var(--color-text-secondary)",
                         }}
                       >
                         {h.pct.toFixed(2)}%
@@ -372,15 +384,15 @@ export default async function TokenPage({
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "6px 0",
-                    borderBottom: "1px solid #f5f5f5",
+                    borderBottom: "1px solid var(--color-border-subtle)",
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                     <span
                       style={{
-                        fontFamily: "var(--font-inter)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: "12px",
-                        color: "var(--color-secondary)",
+                        color: "var(--color-text-secondary)",
                         textTransform: "capitalize",
                       }}
                     >
@@ -390,7 +402,7 @@ export default async function TokenPage({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: "11px",
-                        color: "var(--color-muted)",
+                        color: "var(--color-text-tertiary)",
                       }}
                     >
                       {truncate(pool.address)}
@@ -400,7 +412,7 @@ export default async function TokenPage({
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: "12px",
-                      color: "var(--color-text)",
+                      color: "var(--color-text-primary)",
                     }}
                   >
                     {formatUsd(pool.reserve_usd)}
