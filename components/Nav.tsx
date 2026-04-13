@@ -13,20 +13,8 @@ const navLinks = [
 
 export function Nav() {
   return (
-    <header
-      className="nav-header"
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        backgroundColor: "var(--color-bg)",
-        borderBottom: "1px solid var(--color-border)",
-        padding: "16px 48px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
+    <header className="nav-header">
+
       <Link
         href="/"
         style={{
@@ -49,7 +37,7 @@ export function Nav() {
         </span>
       </Link>
 
-      <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 28 }}>
+      <nav className="nav-links">
         {navLinks.map((link) => (
           <Link
             key={link.href}
