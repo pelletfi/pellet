@@ -6,33 +6,33 @@ const VERDICT_CONFIG: Record<
 > = {
   LOW_RISK: {
     label: "Low Risk",
-    color: "#4ade80",
-    bg: "rgba(74, 222, 128, 0.08)",
-    border: "rgba(74, 222, 128, 0.25)",
+    color: "var(--color-positive)",
+    bg: "#f0fdf4",
+    border: "#bbf7d0",
   },
   CAUTION: {
     label: "Caution",
-    color: "#fbbf24",
-    bg: "rgba(251, 191, 36, 0.08)",
-    border: "rgba(251, 191, 36, 0.25)",
+    color: "#d97706",
+    bg: "#fffbeb",
+    border: "#fde68a",
   },
   MEDIUM_RISK: {
     label: "Medium Risk",
-    color: "#fbbf24",
-    bg: "rgba(251, 191, 36, 0.08)",
-    border: "rgba(251, 191, 36, 0.25)",
+    color: "#d97706",
+    bg: "#fffbeb",
+    border: "#fde68a",
   },
   HIGH_RISK: {
     label: "High Risk",
-    color: "#f87171",
-    bg: "rgba(248, 113, 113, 0.08)",
-    border: "rgba(248, 113, 113, 0.25)",
+    color: "var(--color-negative)",
+    bg: "#fef2f2",
+    border: "#fecaca",
   },
   CRITICAL: {
     label: "Critical",
-    color: "#f87171",
-    bg: "rgba(248, 113, 113, 0.12)",
-    border: "rgba(248, 113, 113, 0.4)",
+    color: "var(--color-negative)",
+    bg: "#fef2f2",
+    border: "#fecaca",
   },
 };
 
@@ -69,7 +69,7 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
           />
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "12px",
               fontWeight: 600,
               color: cfg.color,
@@ -83,9 +83,9 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
         {/* Score */}
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "12px",
-            color: "#555",
+            color: "var(--color-secondary)",
           }}
         >
           score {safety.score}/100
@@ -99,11 +99,11 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
             <span
               key={flag}
               style={{
-                fontFamily: "var(--font-geist-mono), monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#f87171",
-                background: "rgba(248, 113, 113, 0.08)",
-                border: "1px solid rgba(248, 113, 113, 0.2)",
+                color: "var(--color-negative)",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
                 borderRadius: "4px",
                 padding: "2px 7px",
               }}
@@ -115,11 +115,11 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
             <span
               key={warn}
               style={{
-                fontFamily: "var(--font-geist-mono), monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#fbbf24",
-                background: "rgba(251, 191, 36, 0.08)",
-                border: "1px solid rgba(251, 191, 36, 0.2)",
+                color: "#d97706",
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
                 borderRadius: "4px",
                 padding: "2px 7px",
               }}
@@ -138,14 +138,14 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               width: "5px",
               height: "5px",
               borderRadius: "50%",
-              background: safety.can_buy ? "#4ade80" : "#f87171",
+              background: safety.can_buy ? "var(--color-positive)" : "var(--color-negative)",
             }}
           />
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "#888",
+              color: "var(--color-secondary)",
             }}
           >
             {safety.can_buy ? "buyable" : "not buyable"}
@@ -157,14 +157,14 @@ export default function SafetyBadge({ safety }: SafetyBadgeProps) {
               width: "5px",
               height: "5px",
               borderRadius: "50%",
-              background: safety.can_sell ? "#4ade80" : "#f87171",
+              background: safety.can_sell ? "var(--color-positive)" : "var(--color-negative)",
             }}
           />
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "#888",
+              color: "var(--color-secondary)",
             }}
           >
             {safety.can_sell ? "sellable" : "not sellable"}

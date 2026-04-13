@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Nav from "@/components/Nav";
 import SafetyBadge from "@/components/SafetyBadge";
 import { getMarketData } from "@/lib/pipeline/market";
 import { scanSafety } from "@/lib/pipeline/safety";
@@ -26,24 +25,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section
       style={{
-        background: "#13131a",
-        border: "1px solid #1a1a1f",
-        borderRadius: "10px",
-        padding: "20px",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "8px",
+        padding: "24px",
         marginBottom: "16px",
       }}
     >
       <h2
         style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-          fontSize: "11px",
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
           fontWeight: 600,
-          color: "#555",
+          color: "var(--color-muted)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginBottom: "14px",
           paddingBottom: "10px",
-          borderBottom: "1px solid #1a1a1f",
+          borderBottom: "1px solid var(--color-border)",
         }}
       >
         {title}
@@ -61,23 +60,24 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         justifyContent: "space-between",
         alignItems: "center",
         padding: "6px 0",
-        borderBottom: "1px solid #0f0f11",
+        borderBottom: "1px solid #f5f5f5",
       }}
     >
       <span
         style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+          fontFamily: "var(--font-mono)",
           fontSize: "12px",
-          color: "#555",
+          color: "var(--color-muted)",
+          textTransform: "uppercase",
         }}
       >
         {label}
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-geist-mono), monospace" : "var(--font-geist-sans)",
-          fontSize: "13px",
-          color: "#c4c4c4",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-geist-sans)",
+          fontSize: "14px",
+          color: "var(--color-text)",
         }}
       >
         {value}
@@ -118,97 +118,95 @@ export default async function TokenPage({
   ]);
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Nav />
+    <main
+      style={{
+        maxWidth: "1000px",
+        margin: "0 auto",
+        padding: "48px 24px",
+      }}
+    >
+      {/* Header */}
+      <div style={{ marginBottom: "28px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+          {compliance && (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                color: "var(--color-positive)",
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "4px",
+                padding: "2px 7px",
+              }}
+            >
+              {compliance.token_type.toUpperCase()}
+            </span>
+          )}
+        </div>
 
-      <main
-        style={{
-          maxWidth: "1000px",
-          margin: "0 auto",
-          padding: "32px 24px",
-        }}
-      >
-        {/* Header */}
-        <div style={{ marginBottom: "28px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-            {compliance && (
-              <span
-                style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
-                  fontSize: "11px",
-                  color: "#4ade80",
-                  background: "rgba(74,222,128,0.08)",
-                  border: "1px solid rgba(74,222,128,0.2)",
-                  borderRadius: "4px",
-                  padding: "2px 7px",
-                }}
-              >
-                {compliance.token_type.toUpperCase()}
-              </span>
-            )}
-          </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "13px",
+            color: "var(--color-secondary)",
+            marginBottom: "20px",
+          }}
+        >
+          {address}
+        </div>
 
-          <div
-            style={{
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "13px",
-              color: "#555",
-              marginBottom: "20px",
-            }}
-          >
-            {address}
-          </div>
-
-          {/* Key metrics row */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "12px",
-              marginBottom: "20px",
-            }}
-          >
-            {[
-              { label: "Price", value: formatUsd(market.price_usd) },
-              { label: "Volume 24h", value: formatUsd(market.volume_24h) },
-              { label: "Liquidity", value: formatUsd(market.liquidity_usd) },
-            ].map(({ label, value }) => (
+        {/* Key metrics row */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "12px",
+            marginBottom: "20px",
+          }}
+        >
+          {[
+            { label: "Price", value: formatUsd(market.price_usd) },
+            { label: "Volume 24h", value: formatUsd(market.volume_24h) },
+            { label: "Liquidity", value: formatUsd(market.liquidity_usd) },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "8px",
+                padding: "20px",
+              }}
+            >
               <div
-                key={label}
                 style={{
-                  background: "#13131a",
-                  border: "1px solid #1a1a1f",
-                  borderRadius: "8px",
-                  padding: "14px 16px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  color: "var(--color-muted)",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
                 }}
               >
-                <div
-                  style={{
-                    fontFamily: "var(--font-geist-sans)",
-                    fontSize: "11px",
-                    color: "#555",
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    marginBottom: "6px",
-                  }}
-                >
-                  {label}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-geist-mono), monospace",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#f5f5f5",
-                  }}
-                >
-                  {value}
-                </div>
+                {label}
               </div>
-            ))}
-          </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "24px",
+                  fontWeight: 600,
+                  color: "var(--color-text)",
+                }}
+              >
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Deep briefing CTA */}
+        {/* Deep briefing CTA */}
+        <div style={{ textAlign: "center" }}>
           <a
             href={`/token/${address}/briefing`}
             style={{
@@ -216,23 +214,23 @@ export default async function TokenPage({
               alignItems: "center",
               gap: "8px",
               padding: "10px 18px",
-              background: "#4ade80",
+              background: "var(--color-text)",
               borderRadius: "8px",
               textDecoration: "none",
               fontFamily: "var(--font-geist-sans)",
               fontSize: "14px",
               fontWeight: 600,
-              color: "#0f0f11",
+              color: "var(--color-bg)",
               transition: "opacity 0.15s",
             }}
           >
             Deep Briefing
             <span
               style={{
-                fontFamily: "DM Mono, monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 fontWeight: 400,
-                background: "rgba(0,0,0,0.15)",
+                background: "rgba(255,255,255,0.15)",
                 borderRadius: "3px",
                 padding: "1px 5px",
               }}
@@ -240,159 +238,169 @@ export default async function TokenPage({
               $0.05
             </span>
           </a>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: "var(--color-muted)",
+              marginTop: "8px",
+            }}
+          >
+            Paid via Tempo MPP
+          </div>
         </div>
+      </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          {/* Safety */}
-          <div>
-            <Section title="Safety">
-              {safety ? (
-                <SafetyBadge safety={safety} />
-              ) : (
-                <p style={{ fontFamily: "var(--font-geist-sans)", fontSize: "13px", color: "#444" }}>
-                  Safety analysis unavailable.
-                </p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        {/* Safety */}
+        <div>
+          <Section title="Safety">
+            {safety ? (
+              <SafetyBadge safety={safety} />
+            ) : (
+              <p style={{ fontFamily: "var(--font-geist-sans)", fontSize: "13px", color: "var(--color-muted)" }}>
+                Safety analysis unavailable.
+              </p>
+            )}
+          </Section>
+
+          {/* Compliance */}
+          {compliance && (
+            <Section title="Compliance">
+              <DataRow label="Token type" value={compliance.token_type.toUpperCase()} />
+              <DataRow label="Paused" value={compliance.paused ? "YES" : "no"} />
+              <DataRow label="Policy type" value={compliance.policy_type ?? "—"} />
+              {compliance.policy_admin && (
+                <DataRow label="Policy admin" value={truncate(compliance.policy_admin)} />
+              )}
+              {compliance.supply_cap && (
+                <DataRow label="Supply cap" value={compliance.supply_cap} />
+              )}
+              {compliance.headroom_pct !== null && (
+                <DataRow
+                  label="Headroom"
+                  value={`${compliance.headroom_pct.toFixed(1)}%`}
+                />
               )}
             </Section>
+          )}
+        </div>
 
-            {/* Compliance */}
-            {compliance && (
-              <Section title="Compliance">
-                <DataRow label="Token type" value={compliance.token_type.toUpperCase()} />
-                <DataRow label="Paused" value={compliance.paused ? "YES" : "no"} />
-                <DataRow label="Policy type" value={compliance.policy_type ?? "—"} />
-                {compliance.policy_admin && (
-                  <DataRow label="Policy admin" value={truncate(compliance.policy_admin)} />
-                )}
-                {compliance.supply_cap && (
-                  <DataRow label="Supply cap" value={compliance.supply_cap} />
-                )}
-                {compliance.headroom_pct !== null && (
-                  <DataRow
-                    label="Headroom"
-                    value={`${compliance.headroom_pct.toFixed(1)}%`}
-                  />
-                )}
-              </Section>
-            )}
-          </div>
+        <div>
+          {/* Distribution */}
+          {holders && (
+            <Section title="Distribution">
+              <DataRow label="Total holders" value={holders.total_holders.toLocaleString()} />
+              <DataRow label="Top 5%" value={`${holders.top5_pct.toFixed(2)}%`} />
+              <DataRow label="Top 10%" value={`${holders.top10_pct.toFixed(2)}%`} />
+              <DataRow label="Top 20%" value={`${holders.top20_pct.toFixed(2)}%`} />
 
-          <div>
-            {/* Distribution */}
-            {holders && (
-              <Section title="Distribution">
-                <DataRow label="Total holders" value={holders.total_holders.toLocaleString()} />
-                <DataRow label="Top 5%" value={`${holders.top5_pct.toFixed(2)}%`} />
-                <DataRow label="Top 10%" value={`${holders.top10_pct.toFixed(2)}%`} />
-                <DataRow label="Top 20%" value={`${holders.top20_pct.toFixed(2)}%`} />
-
-                {holders.top_holders.length > 0 && (
-                  <div style={{ marginTop: "14px" }}>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-geist-sans)",
-                        fontSize: "11px",
-                        color: "#444",
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      Top 10 holders
-                    </div>
-                    {holders.top_holders.slice(0, 10).map((h, i) => (
-                      <div
-                        key={h.address}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "4px 0",
-                          borderBottom: "1px solid #111115",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: "var(--font-geist-mono), monospace",
-                            fontSize: "11px",
-                            color: "#666",
-                            display: "flex",
-                            gap: "6px",
-                          }}
-                        >
-                          <span style={{ color: "#333", minWidth: "14px" }}>{i + 1}</span>
-                          {h.label ? (
-                            <span style={{ color: "#c4c4c4" }}>{h.label}</span>
-                          ) : (
-                            truncate(h.address)
-                          )}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "var(--font-geist-mono), monospace",
-                            fontSize: "11px",
-                            color: "#888",
-                          }}
-                        >
-                          {h.pct.toFixed(2)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Section>
-            )}
-
-            {/* Pools */}
-            {market.pools.length > 0 && (
-              <Section title="Pools">
-                {market.pools.slice(0, 5).map((pool) => (
+              {holders.top_holders.length > 0 && (
+                <div style={{ marginTop: "14px" }}>
                   <div
-                    key={pool.address}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "6px 0",
-                      borderBottom: "1px solid #0f0f11",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                      color: "var(--color-muted)",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      marginBottom: "8px",
                     }}
                   >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-geist-sans)",
-                          fontSize: "12px",
-                          color: "#888",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {pool.dex}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-geist-mono), monospace",
-                          fontSize: "11px",
-                          color: "#444",
-                        }}
-                      >
-                        {truncate(pool.address)}
-                      </span>
-                    </div>
-                    <span
+                    Top 10 holders
+                  </div>
+                  {holders.top_holders.slice(0, 10).map((h, i) => (
+                    <div
+                      key={h.address}
                       style={{
-                        fontFamily: "var(--font-geist-mono), monospace",
-                        fontSize: "12px",
-                        color: "#c4c4c4",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "4px 0",
+                        borderBottom: "1px solid #f5f5f5",
                       }}
                     >
-                      {formatUsd(pool.reserve_usd)}
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "11px",
+                          color: "var(--color-secondary)",
+                          display: "flex",
+                          gap: "6px",
+                        }}
+                      >
+                        <span style={{ color: "var(--color-muted)", minWidth: "14px" }}>{i + 1}</span>
+                        {h.label ? (
+                          <span style={{ color: "var(--color-text)" }}>{h.label}</span>
+                        ) : (
+                          truncate(h.address)
+                        )}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "11px",
+                          color: "var(--color-secondary)",
+                        }}
+                      >
+                        {h.pct.toFixed(2)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* Pools */}
+          {market.pools.length > 0 && (
+            <Section title="Pools">
+              {market.pools.slice(0, 5).map((pool) => (
+                <div
+                  key={pool.address}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "6px 0",
+                    borderBottom: "1px solid #f5f5f5",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-geist-sans)",
+                        fontSize: "12px",
+                        color: "var(--color-secondary)",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {pool.dex}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "11px",
+                        color: "var(--color-muted)",
+                      }}
+                    >
+                      {truncate(pool.address)}
                     </span>
                   </div>
-                ))}
-              </Section>
-            )}
-          </div>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "12px",
+                      color: "var(--color-text)",
+                    }}
+                  >
+                    {formatUsd(pool.reserve_usd)}
+                  </span>
+                </div>
+              ))}
+            </Section>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

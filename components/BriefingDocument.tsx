@@ -35,15 +35,15 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
         justifyContent: "space-between",
         marginBottom: "14px",
         paddingBottom: "8px",
-        borderBottom: "1px solid #1a1a1f",
+        borderBottom: "1px solid var(--color-border)",
       }}
     >
       <div style={{ display: "flex", gap: "10px", alignItems: "baseline" }}>
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            color: "#555",
+            color: "var(--color-muted)",
             letterSpacing: "0.04em",
           }}
         >
@@ -52,9 +52,9 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
         <span
           style={{
             fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-            fontSize: "13px",
+            fontSize: "16px",
             fontWeight: 600,
-            color: "#f5f5f5",
+            color: "var(--color-text)",
             letterSpacing: "0.01em",
             textTransform: "uppercase",
           }}
@@ -65,9 +65,9 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
       {source && (
         <span
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#444",
+            color: "var(--color-muted)",
           }}
         >
           {source}
@@ -85,23 +85,24 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         justifyContent: "space-between",
         alignItems: "baseline",
         padding: "5px 0",
-        borderBottom: "1px solid #13131a",
+        borderBottom: "1px solid #f5f5f5",
       }}
     >
       <span
         style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+          fontFamily: "var(--font-mono)",
           fontSize: "12px",
-          color: "#555",
+          color: "var(--color-muted)",
+          textTransform: "uppercase",
         }}
       >
         {label}
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-geist-mono), monospace" : "var(--font-geist-sans), system-ui, sans-serif",
-          fontSize: "12px",
-          color: "#c4c4c4",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-geist-sans), system-ui, sans-serif",
+          fontSize: "14px",
+          color: "var(--color-text)",
           textAlign: "right",
         }}
       >
@@ -119,13 +120,13 @@ function PendingRow({ label }: { label: string }) {
         justifyContent: "space-between",
         alignItems: "baseline",
         padding: "5px 0",
-        borderBottom: "1px solid #13131a",
+        borderBottom: "1px solid #f5f5f5",
       }}
     >
-      <span style={{ fontFamily: "var(--font-geist-sans)", fontSize: "12px", color: "#555" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-muted)", textTransform: "uppercase" }}>
         {label}
       </span>
-      <span style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "12px", color: "#333" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "14px", color: "var(--color-muted)" }}>
         —
       </span>
     </div>
@@ -154,10 +155,10 @@ function MarketSection({ market }: { market: TokenMarketData }) {
 function SafetySection({ safety }: { safety: SafetyResult }) {
   const verdictColor =
     safety.verdict === "LOW_RISK"
-      ? "#4ade80"
+      ? "var(--color-positive)"
       : safety.verdict === "CAUTION" || safety.verdict === "MEDIUM_RISK"
-      ? "#fbbf24"
-      : "#f87171";
+      ? "#d97706"
+      : "var(--color-negative)";
 
   return (
     <section style={{ marginBottom: "28px" }}>
@@ -181,11 +182,11 @@ function SafetySection({ safety }: { safety: SafetyResult }) {
               <span
                 key={f}
                 style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "#f87171",
-                  background: "rgba(248,113,113,0.07)",
-                  border: "1px solid rgba(248,113,113,0.18)",
+                  color: "var(--color-negative)",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
                   borderRadius: "3px",
                   padding: "1px 5px",
                 }}
@@ -197,11 +198,11 @@ function SafetySection({ safety }: { safety: SafetyResult }) {
               <span
                 key={w}
                 style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "#fbbf24",
-                  background: "rgba(251,191,36,0.07)",
-                  border: "1px solid rgba(251,191,36,0.18)",
+                  color: "#d97706",
+                  background: "#fffbeb",
+                  border: "1px solid #fde68a",
                   borderRadius: "3px",
                   padding: "1px 5px",
                 }}
@@ -266,18 +267,19 @@ function DistributionSection({ holders }: { holders: HolderData }) {
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 80px 60px",
-              padding: "4px 0",
-              borderBottom: "1px solid #1a1a1f",
+              padding: "6px 0",
+              borderBottom: "1px solid var(--color-border)",
               marginBottom: "4px",
+              background: "var(--color-surface)",
             }}
           >
             {["Address", "Balance", "%"].map((h) => (
               <span
                 key={h}
                 style={{
-                  fontFamily: "var(--font-geist-sans)",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "10px",
-                  color: "#444",
+                  color: "var(--color-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
                   textAlign: h === "%" || h === "Balance" ? "right" : "left",
@@ -294,31 +296,31 @@ function DistributionSection({ holders }: { holders: HolderData }) {
                 display: "grid",
                 gridTemplateColumns: "1fr 80px 60px",
                 padding: "4px 0",
-                borderBottom: "1px solid #111115",
+                borderBottom: "1px solid #f5f5f5",
               }}
             >
               <span
                 style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "#888",
+                  color: "var(--color-secondary)",
                   display: "flex",
                   gap: "6px",
                   alignItems: "center",
                 }}
               >
-                <span style={{ color: "#444", minWidth: "14px" }}>{i + 1}</span>
+                <span style={{ color: "var(--color-muted)", minWidth: "14px" }}>{i + 1}</span>
                 {h.label ? (
-                  <span style={{ color: "#c4c4c4" }}>{h.label}</span>
+                  <span style={{ color: "var(--color-text)" }}>{h.label}</span>
                 ) : (
                   truncate(h.address, 6, 4)
                 )}
               </span>
               <span
                 style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "#555",
+                  color: "var(--color-secondary)",
                   textAlign: "right",
                 }}
               >
@@ -326,9 +328,9 @@ function DistributionSection({ holders }: { holders: HolderData }) {
               </span>
               <span
                 style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "#888",
+                  color: "var(--color-secondary)",
                   textAlign: "right",
                 }}
               >
@@ -374,10 +376,13 @@ function AnalystSection({ text }: { text: string }) {
       <p
         style={{
           fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-          fontSize: "13px",
-          lineHeight: 1.65,
-          color: "#888",
+          fontSize: "14px",
+          lineHeight: 1.7,
+          color: "var(--color-secondary)",
           margin: 0,
+          borderLeft: "2px solid var(--color-border)",
+          paddingLeft: "16px",
+          fontStyle: "italic",
         }}
       >
         {text}
@@ -428,7 +433,7 @@ export default function BriefingDocument({
               fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
               fontSize: "22px",
               fontWeight: 600,
-              color: "#f5f5f5",
+              color: "var(--color-text)",
               letterSpacing: "-0.02em",
               margin: 0,
             }}
@@ -438,9 +443,9 @@ export default function BriefingDocument({
           {identity?.symbol && (
             <span
               style={{
-                fontFamily: "var(--font-geist-mono), monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "13px",
-                color: "#555",
+                color: "var(--color-secondary)",
               }}
             >
               {identity.symbol}
@@ -448,11 +453,11 @@ export default function BriefingDocument({
           )}
           <span
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "#4ade80",
-              background: "rgba(74,222,128,0.08)",
-              border: "1px solid rgba(74,222,128,0.2)",
+              color: "var(--color-positive)",
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
               borderRadius: "4px",
               padding: "1px 6px",
             }}
@@ -463,9 +468,9 @@ export default function BriefingDocument({
 
         <div
           style={{
-            fontFamily: "var(--font-geist-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "12px",
-            color: "#444",
+            color: "var(--color-muted)",
             marginBottom: "6px",
           }}
         >
@@ -475,9 +480,9 @@ export default function BriefingDocument({
         {createdAt && (
           <div
             style={{
-              fontFamily: "var(--font-geist-mono), monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              color: "#333",
+              color: "var(--color-muted)",
             }}
           >
             {new Date(createdAt).toISOString().replace("T", " ").slice(0, 19)} UTC
@@ -506,7 +511,7 @@ export default function BriefingDocument({
             style={{
               fontFamily: "var(--font-geist-sans)",
               fontSize: "13px",
-              color: "#333",
+              color: "var(--color-muted)",
               fontStyle: "italic",
             }}
           >
