@@ -6,9 +6,9 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "Pellet — MPP-Native Compute on Tempo",
+  title: "Pellet — Stablecoin Analytics on Tempo",
   description:
-    "Every token examined. Every stablecoin tracked. Every payment service mapped. Paid per query on Tempo.",
+    "The first payments chain deserves its own stablecoin analytics. Every peg, every policy, every flow — tracked natively on Tempo.",
 };
 
 export default function RootLayout({

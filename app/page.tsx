@@ -571,7 +571,7 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span>MPP-Native Compute Layer</span>
+          <span>Stablecoin Analytics</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             Built on
@@ -591,14 +591,14 @@ export default function AboutPage() {
         >
           The first payments chain{" "}
           <br />
-          deserves <em style={{
+          deserves its own <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             animation: "shimmer 10s ease-in-out infinite",
-          }}>its own intelligence.</em>
+          }}>stablecoin analytics.</em>
         </motion.h1>
 
         <motion.p
@@ -608,9 +608,10 @@ export default function AboutPage() {
             maxWidth: 600, marginBottom: 0,
           }}
         >
-          Tempo introduced stablecoins with enshrined compliance, a native DEX,
-          and the Micropayment Protocol. Pellet is building the analytical layer
-          that makes it all legible — for humans and machines.
+          Tempo introduced TIP-20 stablecoins with enshrined compliance, native
+          DEX routing, and the Micropayment Protocol. Pellet tracks every peg,
+          every policy, every flow — the intelligence layer Tempo's stablecoins
+          deserve.
         </motion.p>
       </motion.div>
       </div>
