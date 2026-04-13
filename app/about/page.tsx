@@ -593,7 +593,7 @@ export default function AboutPage() {
           <br />
           deserves <em style={{
             color: "var(--color-text-secondary)",
-            backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 35%, rgba(255,255,255,1) 48%, rgba(255,255,255,1) 52%, rgba(255,255,255,0.5) 65%, rgba(255,255,255,0.5) 100%)",
+            backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
