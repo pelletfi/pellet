@@ -71,13 +71,14 @@ export function StablecoinFlows() {
         const raw: FlowRecord[] = json.flows ?? [];
 
         // Aggregate hourly records into unique from->to pairs
-        // Treat "unknown" as "DEX" (most unknown flows are DEX swap legs)
+        // All DEX swaps route through pathUSD, so replace "unknown" with pathUSD
+        const PATHUSD = "0x20c0000000000000000000000000000000000000";
         const map = new Map<string, AggregatedFlow>();
         for (const r of raw) {
-          const fromAddr = r.from_token === "unknown" ? "dex" : r.from_token;
-          const toAddr = r.to_token === "unknown" ? "dex" : r.to_token;
-          // Skip if both sides are unknown
-          if (fromAddr === "dex" && toAddr === "dex") continue;
+          const fromAddr = r.from_token === "unknown" ? PATHUSD : r.from_token;
+          const toAddr = r.to_token === "unknown" ? PATHUSD : r.to_token;
+          // Skip self-flows
+          if (fromAddr.toLowerCase() === toAddr.toLowerCase()) continue;
           const key = `${fromAddr.toLowerCase()}:${toAddr.toLowerCase()}`;
           const existing = map.get(key);
           if (existing) {
@@ -87,8 +88,8 @@ export function StablecoinFlows() {
             map.set(key, {
               from: fromAddr,
               to: toAddr,
-              fromSymbol: fromAddr === "dex" ? "DEX" : (r.from_symbol ?? symbolFor(fromAddr)),
-              toSymbol: toAddr === "dex" ? "DEX" : (r.to_symbol ?? symbolFor(toAddr)),
+              fromSymbol: r.from_symbol ?? symbolFor(fromAddr),
+              toSymbol: r.to_symbol ?? symbolFor(toAddr),
               usd: r.net_flow_usd,
               txCount: r.tx_count,
             });
