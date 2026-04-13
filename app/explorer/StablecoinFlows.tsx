@@ -112,31 +112,34 @@ export function StablecoinFlows() {
     };
   }, []);
 
-  // Collect unique source and destination symbols for layout
-  const sourceSymbols = [...new Set(flows.map((f) => f.fromSymbol))];
-  const destSymbols = [...new Set(flows.map((f) => f.toSymbol))];
+  // Build unified node list — all unique stablecoins, pathUSD first
+  const allSymbols = new Map<string, string>(); // address → symbol
+  for (const f of flows) {
+    allSymbols.set(f.from.toLowerCase(), f.fromSymbol);
+    allSymbols.set(f.to.toLowerCase(), f.toSymbol);
+  }
+  // Ensure pathUSD is first
+  const PATHUSD_LC = "0x20c0000000000000000000000000000000000000";
+  const nodeList: { addr: string; symbol: string }[] = [];
+  if (allSymbols.has(PATHUSD_LC)) {
+    nodeList.push({ addr: PATHUSD_LC, symbol: allSymbols.get(PATHUSD_LC)! });
+  }
+  for (const [addr, sym] of allSymbols) {
+    if (addr !== PATHUSD_LC) nodeList.push({ addr, symbol: sym });
+  }
 
-  // Compute vertical positions for nodes
-  const sourceY = (i: number) => {
-    const spacing =
-      sourceSymbols.length > 1
-        ? (SVG_H - TOP_Y - NODE_H - 20) / (sourceSymbols.length - 1)
-        : 0;
-    return TOP_Y + i * spacing;
-  };
-  const destY = (i: number) => {
-    const spacing =
-      destSymbols.length > 1
-        ? (SVG_H - TOP_Y - NODE_H - 20) / (destSymbols.length - 1)
-        : 0;
-    return TOP_Y + i * spacing;
-  };
+  // Layout: nodes stacked vertically on left, same nodes on right
+  const nodeSpacing = nodeList.length > 1 ? (SVG_H - TOP_Y - NODE_H - 30) / (nodeList.length - 1) : 0;
+  const nodeY = (i: number) => TOP_Y + i * nodeSpacing;
 
   // Max flow for strokeWidth scaling
   const maxUsd = Math.max(...flows.map((f) => f.usd), 1);
 
   // Net flow calculation
   const netFlow = flows.reduce((sum, f) => sum + f.usd, 0);
+
+  // Helper: find node index by address
+  const nodeIndex = (addr: string) => nodeList.findIndex((n) => n.addr === addr.toLowerCase());
 
   const hasData = flows.length > 0;
 
@@ -198,175 +201,70 @@ export function StablecoinFlows() {
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           style={{ width: "100%", height: "auto", display: "block" }}
         >
-          {/* Curves — ghost layer (wider, more transparent) */}
+          {/* Curves — ghost + bright layers */}
           {flows.map((flow, i) => {
-            const si = sourceSymbols.indexOf(flow.fromSymbol);
-            const di = destSymbols.indexOf(flow.toSymbol);
+            const si = nodeIndex(flow.from);
+            const di = nodeIndex(flow.to);
             if (si < 0 || di < 0) return null;
 
             const x1 = LEFT_X + NODE_W;
-            const y1 = sourceY(si) + NODE_H / 2;
+            const y1 = nodeY(si) + NODE_H / 2;
             const x2 = RIGHT_X;
-            const y2 = destY(di) + NODE_H / 2;
+            const y2 = nodeY(di) + NODE_H / 2;
             const cx1 = x1 + (x2 - x1) * 0.4;
             const cx2 = x2 - (x2 - x1) * 0.4;
             const d = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
 
             const ratio = flow.usd / maxUsd;
-            const sw = 2 + ratio * 8; // min 2, max 10
-            const ghostOpacity = 0.03 + ratio * 0.04;
+            const sw = 2 + ratio * 6;
+            const ghostOpacity = 0.02 + ratio * 0.03;
+            const lineOpacity = 0.06 + ratio * 0.06;
 
-            return (
-              <motion.path
-                key={`ghost-${i}`}
-                d={d}
-                fill="none"
-                stroke={`rgba(255,255,255,${ghostOpacity})`}
-                strokeWidth={sw + 4}
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
-                transition={{
-                  duration: 0.8,
-                  delay: 0.1 + i * 0.08,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              />
-            );
-          })}
-
-          {/* Curves — bright layer */}
-          {flows.map((flow, i) => {
-            const si = sourceSymbols.indexOf(flow.fromSymbol);
-            const di = destSymbols.indexOf(flow.toSymbol);
-            if (si < 0 || di < 0) return null;
-
-            const x1 = LEFT_X + NODE_W;
-            const y1 = sourceY(si) + NODE_H / 2;
-            const x2 = RIGHT_X;
-            const y2 = destY(di) + NODE_H / 2;
-            const cx1 = x1 + (x2 - x1) * 0.4;
-            const cx2 = x2 - (x2 - x1) * 0.4;
-            const d = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
-
-            const ratio = flow.usd / maxUsd;
-            const sw = 2 + ratio * 8;
-            const lineOpacity = 0.07 + ratio * 0.05;
-
-            return (
-              <motion.path
-                key={`line-${i}`}
-                d={d}
-                fill="none"
-                stroke={`rgba(255,255,255,${lineOpacity})`}
-                strokeWidth={sw}
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
-                transition={{
-                  duration: 0.8,
-                  delay: 0.1 + i * 0.08,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-              />
-            );
-          })}
-
-          {/* Flow value labels on curves */}
-          {flows.map((flow, i) => {
-            const si = sourceSymbols.indexOf(flow.fromSymbol);
-            const di = destSymbols.indexOf(flow.toSymbol);
-            if (si < 0 || di < 0) return null;
-
-            const y1 = sourceY(si) + NODE_H / 2;
-            const y2 = destY(di) + NODE_H / 2;
-            const midX = SVG_W / 2;
             const midY = (y1 + y2) / 2;
 
             return (
-              <motion.text
-                key={`label-${i}`}
-                x={midX}
-                y={midY - 4}
-                textAnchor="middle"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fill: "rgba(255,255,255,0.28)",
-                }}
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity: 1 } : { opacity: 0 }}
-                transition={{
-                  duration: 0.4,
-                  delay: 0.5 + i * 0.08,
-                }}
-              >
-                {formatUsd(flow.usd)}
-              </motion.text>
+              <g key={`flow-${i}`}>
+                <motion.path d={d} fill="none" stroke={`rgba(255,255,255,${ghostOpacity})`} strokeWidth={sw + 4} strokeLinecap="round"
+                  initial={{ pathLength: 0 }} animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
+                  transition={{ duration: 0.8, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }} />
+                <motion.path d={d} fill="none" stroke={`rgba(255,255,255,${lineOpacity})`} strokeWidth={sw} strokeLinecap="round"
+                  initial={{ pathLength: 0 }} animate={inView ? { pathLength: 1 } : { pathLength: 0 }}
+                  transition={{ duration: 0.8, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }} />
+                <motion.text x={SVG_W / 2} y={midY - 4} textAnchor="middle"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "rgba(255,255,255,0.25)" }}
+                  initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : { opacity: 0 }}
+                  transition={{ duration: 0.4, delay: 0.5 + i * 0.08 }}>
+                  {formatUsd(flow.usd)}
+                </motion.text>
+              </g>
             );
           })}
 
-          {/* Source nodes (left) */}
-          {sourceSymbols.map((sym, i) => {
-            const y = sourceY(i);
+          {/* Left nodes (sources) */}
+          {nodeList.map((node, i) => {
+            const y = nodeY(i);
             return (
-              <g key={`src-${sym}`}>
-                <rect
-                  x={LEFT_X}
-                  y={y}
-                  width={NODE_W}
-                  height={NODE_H}
-                  rx={NODE_R}
-                  ry={NODE_R}
-                  fill="rgba(255,255,255,0.06)"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1}
-                />
-                <text
-                  x={LEFT_X + NODE_W / 2}
-                  y={y + NODE_H / 2 + 1}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    fill: "rgba(255,255,255,0.63)",
-                  }}
-                >
-                  {sym}
+              <g key={`src-${node.addr}`}>
+                <rect x={LEFT_X} y={y} width={NODE_W} height={NODE_H} rx={NODE_R} ry={NODE_R}
+                  fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+                <text x={LEFT_X + NODE_W / 2} y={y + NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "rgba(255,255,255,0.63)" }}>
+                  {node.symbol}
                 </text>
               </g>
             );
           })}
 
-          {/* Destination nodes (right) */}
-          {destSymbols.map((sym, i) => {
-            const y = destY(i);
+          {/* Right nodes (destinations) — same list */}
+          {nodeList.map((node, i) => {
+            const y = nodeY(i);
             return (
-              <g key={`dst-${sym}`}>
-                <rect
-                  x={RIGHT_X}
-                  y={y}
-                  width={NODE_W}
-                  height={NODE_H}
-                  rx={NODE_R}
-                  ry={NODE_R}
-                  fill="rgba(255,255,255,0.06)"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1}
-                />
-                <text
-                  x={RIGHT_X + NODE_W / 2}
-                  y={y + NODE_H / 2 + 1}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    fill: "rgba(255,255,255,0.63)",
-                  }}
-                >
-                  {sym}
+              <g key={`dst-${node.addr}`}>
+                <rect x={RIGHT_X} y={y} width={NODE_W} height={NODE_H} rx={NODE_R} ry={NODE_R}
+                  fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+                <text x={RIGHT_X + NODE_W / 2} y={y + NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "rgba(255,255,255,0.63)" }}>
+                  {node.symbol}
                 </text>
               </g>
             );
