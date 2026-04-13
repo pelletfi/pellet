@@ -128,7 +128,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: var(--color-surface);
+  background: var(--color-bg);
 }
 
 .terminal-window {
@@ -140,7 +140,7 @@ body {
   height: 420px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .terminal-titlebar {
