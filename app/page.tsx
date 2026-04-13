@@ -624,17 +624,22 @@ export default function AboutPage() {
         <motion.div
           variants={fadeUp}
           style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1,
-            background: "var(--color-border-subtle)", borderRadius: 8, overflow: "hidden",
+            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
           }}
         >
           {[
-            { value: "12", label: "Tokens Tracked", prefix: "" },
-            { value: "4", label: "Stablecoins", prefix: "" },
+            { value: "12", label: "Stablecoins", prefix: "" },
             { value: "172K", label: "24h Volume", prefix: "$" },
-            { value: "8", label: "MPP Services", prefix: "" },
+            { value: "2.8M", label: "Total Supply", prefix: "$" },
+            { value: "1.85M", label: "Block Height", prefix: "" },
           ].map((stat) => (
-            <div key={stat.label} style={{ background: "var(--color-bg-subtle)", padding: "28px 24px", textAlign: "center" }}>
+            <div key={stat.label} style={{
+              border: "1px solid var(--color-border-subtle)",
+              borderRadius: 8,
+              padding: "28px 24px",
+              textAlign: "center",
+              background: "transparent",
+            }}>
               <div style={{
                 fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 600,
                 fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginBottom: 6,
