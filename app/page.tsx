@@ -425,43 +425,50 @@ function NetworkViz() {
           />
         ))}
 
-        {/* Traveling orb */}
+        {/* Blur filter for orb */}
+        <defs>
+          <filter id="orb-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
+          </filter>
+          <filter id="orb-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+          </filter>
+        </defs>
+
+        {/* Outer glow */}
         {inView && (
           <motion.circle
-            r={3}
-            fill="#30a46c"
-            opacity={0.9}
-            animate={{
-              cx: orbXValues,
-              cy: orbYValues,
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "linear",
-              delay: 1,
-            }}
+            r={16}
+            fill="#ffffff"
+            opacity={0.06}
+            filter="url(#orb-glow)"
+            animate={{ cx: orbXValues, cy: orbYValues }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
+          />
+        )}
+
+        {/* Blurred orb */}
+        {inView && (
+          <motion.circle
+            r={5}
+            fill="#ffffff"
+            opacity={0.5}
+            filter="url(#orb-blur)"
+            animate={{ cx: orbXValues, cy: orbYValues }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
           >
-            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite" />
           </motion.circle>
         )}
 
-        {/* Orb glow trail */}
+        {/* Core dot */}
         {inView && (
           <motion.circle
-            r={8}
-            fill="#30a46c"
-            opacity={0.08}
-            animate={{
-              cx: orbXValues,
-              cy: orbYValues,
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "linear",
-              delay: 1,
-            }}
+            r={2}
+            fill="#ffffff"
+            opacity={0.9}
+            animate={{ cx: orbXValues, cy: orbYValues }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
           />
         )}
 
