@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const navLinks = [
+  { label: "Home", href: "/" },
   { label: "Tokens", href: "/tokens" },
   { label: "Stablecoins", href: "/stablecoins" },
   { label: "Services", href: "/services" },
   { label: "Terminal", href: "/terminal" },
-  { label: "About", href: "/about" },
 ];
 
 export function Nav() {
