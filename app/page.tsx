@@ -80,6 +80,8 @@ export default async function HomePage() {
           <div
             style={{
               marginBottom: "24px",
+              display: "flex",
+              alignItems: "center",
             }}
           >
             <span
@@ -95,7 +97,7 @@ export default async function HomePage() {
               Built on
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tempo-logo-white.svg" alt="Tempo" height={12} style={{ opacity: 0.5, marginLeft: 6 }} />
+            <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 12, width: "auto", opacity: 0.5, marginLeft: 6 }} />
           </div>
 
           {/* H1 */}
