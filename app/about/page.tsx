@@ -427,49 +427,26 @@ function NetworkViz() {
 
         {/* Blur filter for orb */}
         <defs>
-          <filter id="orb-blur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
-          </filter>
-          <filter id="orb-glow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+          <filter id="orb-blur" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
           </filter>
         </defs>
 
-        {/* Outer glow */}
+        {/* Traveling orb — single group so all layers move together */}
         {inView && (
-          <motion.circle
-            r={16}
-            fill="#ffffff"
-            opacity={0.06}
-            filter="url(#orb-glow)"
-            animate={{ cx: orbXValues, cy: orbYValues }}
-            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
-          />
-        )}
-
-        {/* Blurred orb */}
-        {inView && (
-          <motion.circle
-            r={5}
-            fill="#ffffff"
-            opacity={0.5}
-            filter="url(#orb-blur)"
-            animate={{ cx: orbXValues, cy: orbYValues }}
+          <motion.g
+            animate={{ x: orbXValues, y: orbYValues }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
           >
-            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite" />
-          </motion.circle>
-        )}
-
-        {/* Core dot */}
-        {inView && (
-          <motion.circle
-            r={2}
-            fill="#ffffff"
-            opacity={0.9}
-            animate={{ cx: orbXValues, cy: orbYValues }}
-            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
-          />
+            {/* Soft glow */}
+            <circle r={14} fill="#ffffff" opacity={0.04} filter="url(#orb-blur)" />
+            {/* Blurred body */}
+            <circle r={5} fill="#ffffff" opacity={0.35} filter="url(#orb-blur)">
+              <animate attributeName="opacity" values="0.2;0.4;0.2" dur="2s" repeatCount="indefinite" />
+            </circle>
+            {/* Core */}
+            <circle r={1.5} fill="#ffffff" opacity={0.8} />
+          </motion.g>
         )}
 
         {/* Nodes */}
