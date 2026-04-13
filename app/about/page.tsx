@@ -42,34 +42,42 @@ function Section({ children, className, style }: { children: React.ReactNode; cl
 // ── Animated arc lines ──────────────────────────────────────────────────────
 
 function ArcDivider() {
+  const arcs = [
+    { o: 0.07, speed: 8, offset: 0 },
+    { o: 0.04, speed: 10, offset: 2 },
+    { o: 0.09, speed: 12, offset: 4 },
+  ];
+
   return (
     <div style={{ width: "100%", height: 120, overflow: "hidden", position: "relative" }}>
-      <motion.svg
+      <svg
         viewBox="0 0 1200 120"
         preserveAspectRatio="none"
         fill="none"
         style={{ width: "100%", height: "100%" }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.5, delay: 0.5 }}
       >
-        {[
-          { d: "M0 80 Q300 20 600 60 Q900 100 1200 40", o: 0.06, delay: 0.5 },
-          { d: "M0 90 Q400 30 600 70 Q800 110 1200 50", o: 0.04, delay: 0.8 },
-          { d: "M0 70 Q200 10 600 50 Q1000 90 1200 30", o: 0.08, delay: 0.3 },
-        ].map((arc, i) => (
-          <motion.path
+        {arcs.map((arc, i) => (
+          <path
             key={i}
-            d={arc.d}
             stroke={`rgba(255,255,255,${arc.o})`}
             strokeWidth="1"
             fill="none"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2, delay: arc.delay, ease: "easeInOut" }}
-          />
+          >
+            <animate
+              attributeName="d"
+              dur={`${arc.speed}s`}
+              repeatCount="indefinite"
+              begin={`${arc.offset}s`}
+              values={[
+                "M0 80 Q300 20 600 60 Q900 100 1200 40",
+                "M0 60 Q300 90 600 40 Q900 20 1200 70",
+                "M0 50 Q300 30 600 80 Q900 50 1200 30",
+                "M0 80 Q300 20 600 60 Q900 100 1200 40",
+              ].join(";")}
+            />
+          </path>
         ))}
-      </motion.svg>
+      </svg>
     </div>
   );
 }
