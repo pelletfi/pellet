@@ -402,6 +402,14 @@ body {
   margin-bottom: 20px;
 }
 
+/* ── Explorer graphics ── */
+.explorer-graphics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .hero-grid {
@@ -525,6 +533,10 @@ body {
 
   .explorer-main-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .explorer-graphics {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -3,14 +3,13 @@ import { getPools, searchTokens } from "@/lib/gecko";
 import { getAllStablecoins } from "@/lib/pipeline/stablecoins";
 import { getLatestBlockNumber } from "@/lib/explorer";
 import { getTokenIcons } from "@/lib/token-icons";
-import { StatsBar } from "@/components/StatsBar";
-import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
 import { ExplorerSearch } from "./ExplorerSearch";
 import { LiquidityTreemap } from "./LiquidityTreemap";
 import { StablecoinFlows } from "./StablecoinFlows";
 import { Sidebar } from "./Sidebar";
 import { QuoteTokenTree } from "./QuoteTokenTree";
+import TokenTable from "./TokenTable";
 
 export const metadata: Metadata = {
   title: "Explorer — Pellet",
@@ -199,66 +198,9 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
         className="explorer-main-grid"
         style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20 }}
       >
-        {/* Token table */}
+        {/* Token table with tabs */}
         <div>
-          <div className="data-table">
-            {/* Table header */}
-            <div
-              className="table-header-row"
-              style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr" }}
-            >
-              {["Token", "Price", "Volume 24H", "Liquidity"].map((label) => (
-                <span
-                  key={label}
-                  className={
-                    label === "Volume 24H" || label === "Liquidity"
-                      ? "hide-mobile"
-                      : undefined
-                  }
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    fontWeight: 500,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                    color: "var(--color-text-quaternary)",
-                    textAlign: label === "Token" ? "left" : "right",
-                  }}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-
-            {/* Token rows */}
-            {tokens.length === 0 ? (
-              <div
-                style={{
-                  padding: "48px 16px",
-                  textAlign: "center",
-                  fontSize: 14,
-                  color: "var(--color-text-tertiary)",
-                }}
-              >
-                {query
-                  ? `No tokens found for "${query}".`
-                  : "No tokens available."}
-              </div>
-            ) : (
-              tokens.map((t) => (
-                <TokenCard
-                  key={t.address}
-                  address={t.address}
-                  name={t.name}
-                  imageUrl={t.imageUrl}
-                  priceUsd={t.priceUsd}
-                  priceChange24h={t.priceChange24h}
-                  volume24h={t.volume24h}
-                  liquidity={t.liquidity}
-                />
-              ))
-            )}
-          </div>
+          <TokenTable tokens={tokens} />
 
           {/* Pagination */}
           {!query && (
