@@ -19,9 +19,9 @@ function formatHeadroom(pct: number): string {
 
 function pegDeviationColor(price: number): string {
   const dev = Math.abs(price - 1);
-  if (dev < 0.001) return "var(--color-positive)"; // <0.1% — tight peg
-  if (dev < 0.005) return "#d97706";               // <0.5% — mild deviation
-  return "var(--color-negative)";                    // ≥0.5% — notable deviation
+  if (dev < 0.001) return "var(--color-success)";  // <0.1% — tight peg
+  if (dev < 0.005) return "var(--color-warning)";   // <0.5% — mild deviation
+  return "var(--color-error)";                       // ≥0.5% — notable deviation
 }
 
 interface StablecoinRowProps {
@@ -35,18 +35,20 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
   return (
     <Link
       href={`/stablecoins/${token.address}`}
-      className="stablecoin-table-row hover:bg-[var(--color-surface)]"
+      className="stablecoin-table-row"
       style={{
         display: "grid",
         gridTemplateColumns: "160px 90px 70px 110px 130px 90px 70px 80px",
         alignItems: "center",
         padding: "12px 16px",
-        borderBottom: "1px solid var(--color-border)",
+        borderBottom: "1px solid var(--color-border-subtle)",
         textDecoration: "none",
         color: "inherit",
         transition: "background 0.1s",
         gap: "8px",
       }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
     >
       {/* Symbol + icon */}
       <span
@@ -57,7 +59,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
           fontFamily: "var(--font-mono), monospace",
           fontSize: "14px",
           fontWeight: 500,
-          color: "var(--color-text)",
+          color: "var(--color-text-primary)",
         }}
       >
         <img
@@ -87,7 +89,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
         }}
       >
         {token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
@@ -99,7 +101,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-secondary)",
+          color: "var(--color-text-secondary)",
         }}
       >
         {token.policy_type || "none"}
@@ -111,7 +113,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-secondary)",
+          color: "var(--color-text-secondary)",
           textAlign: "right",
         }}
       >
@@ -124,7 +126,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.headroom_pct === -1 ? "var(--color-muted)" : "var(--color-secondary)",
+          color: token.headroom_pct === -1 ? "var(--color-text-tertiary)" : "var(--color-text-secondary)",
         }}
       >
         {formatHeadroom(token.headroom_pct)}
@@ -136,7 +138,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
         }}
       >
         {token.currency}
@@ -148,7 +150,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.yield_rate > 0 ? "var(--color-positive)" : "var(--color-muted)",
+          color: token.yield_rate > 0 ? "var(--color-success)" : "var(--color-text-tertiary)",
           textAlign: "right",
         }}
       >

@@ -7,9 +7,9 @@ function ColHeader({ label, right }: { label: string; right?: boolean }) {
     <span
       style={{
         fontFamily: "var(--font-mono), monospace",
-        fontSize: "10px",
+        fontSize: "11px",
         fontWeight: 500,
-        color: "var(--color-muted)",
+        color: "var(--color-text-quaternary)",
         textTransform: "uppercase",
         letterSpacing: "1.5px",
         textAlign: right ? "right" : "left",
@@ -30,9 +30,9 @@ export default async function StablecoinsPage() {
         <div>
           <h1
             style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              color: "var(--color-text)",
+              fontSize: "20px",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.02em",
               marginBottom: "4px",
             }}
@@ -41,8 +41,8 @@ export default async function StablecoinsPage() {
           </h1>
           <p
             style={{
-              fontSize: "15px",
-              color: "var(--color-secondary)",
+              fontSize: "13px",
+              color: "var(--color-text-tertiary)",
             }}
           >
             TIP-20 stablecoins on Tempo — peg status, policy, supply
@@ -54,11 +54,11 @@ export default async function StablecoinsPage() {
           style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: "13px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-secondary)",
             textDecoration: "none",
             padding: "7px 12px",
-            border: "1px solid var(--color-border)",
-            background: "#fff",
+            border: "1px solid var(--color-border-default)",
+            background: "var(--color-bg-subtle)",
             borderRadius: "6px",
             transition: "border-color 0.15s",
           }}
@@ -70,7 +70,7 @@ export default async function StablecoinsPage() {
       {/* Table */}
       <div
         style={{
-          border: "1px solid var(--color-border)",
+          border: "1px solid var(--color-border-subtle)",
           borderRadius: "10px",
           overflow: "hidden",
         }}
@@ -82,8 +82,8 @@ export default async function StablecoinsPage() {
             display: "grid",
             gridTemplateColumns: "160px 90px 70px 110px 130px 90px 70px 80px",
             padding: "10px 16px",
-            background: "var(--color-surface)",
-            borderBottom: "1px solid var(--color-border)",
+            background: "var(--color-bg-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
             gap: "8px",
           }}
         >
@@ -104,7 +104,7 @@ export default async function StablecoinsPage() {
               padding: "40px 16px",
               textAlign: "center",
               fontSize: "14px",
-              color: "var(--color-secondary)",
+              color: "var(--color-text-secondary)",
             }}
           >
             No stablecoins available.
@@ -119,13 +119,13 @@ export default async function StablecoinsPage() {
       {/* Legend */}
       <div className="stablecoins-legend">
         {[
-          { color: "var(--color-positive)", label: "tight peg (<0.1%)" },
-          { color: "#d97706", label: "mild deviation (<0.5%)" },
-          { color: "var(--color-negative)", label: "notable deviation (≥0.5%)" },
+          { color: "var(--color-success)", label: "tight peg (<0.1%)" },
+          { color: "var(--color-warning)", label: "mild deviation (<0.5%)" },
+          { color: "var(--color-error)", label: "notable deviation (≥0.5%)" },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: "11px", color: "var(--color-muted)" }}>
+            <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: "11px", color: "var(--color-text-quaternary)" }}>
               {label}
             </span>
           </div>

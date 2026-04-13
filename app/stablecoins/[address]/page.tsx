@@ -23,7 +23,7 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         justifyContent: "space-between",
         alignItems: "flex-start",
         padding: "8px 0",
-        borderBottom: "1px solid var(--color-border)",
+        borderBottom: "1px solid var(--color-border-subtle)",
         gap: "12px",
       }}
     >
@@ -31,7 +31,7 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-muted)",
+          color: "var(--color-text-tertiary)",
           textTransform: "uppercase",
           flexShrink: 0,
         }}
@@ -42,7 +42,7 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
         style={{
           fontFamily: mono ? "var(--font-mono), monospace" : "inherit",
           fontSize: "14px",
-          color: "var(--color-text)",
+          color: "var(--color-text-primary)",
           textAlign: "right",
           wordBreak: "break-all",
         }}
@@ -57,8 +57,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   return (
     <div
       style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
+        background: "var(--color-bg-subtle)",
+        border: "1px solid var(--color-border-subtle)",
         borderRadius: "8px",
         padding: "24px",
       }}
@@ -68,12 +68,12 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
           fontFamily: "var(--font-mono), monospace",
           fontSize: "11px",
           fontWeight: 600,
-          color: "var(--color-muted)",
+          color: "var(--color-text-quaternary)",
           letterSpacing: "1.5px",
           textTransform: "uppercase",
           marginBottom: "14px",
           paddingBottom: "10px",
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
         {title}
@@ -111,10 +111,10 @@ export default async function StablecoinDetailPage({
 
   const pegColor =
     Math.abs(data.price_vs_pathusd - 1) < 0.001
-      ? "var(--color-positive)"
+      ? "var(--color-success)"
       : Math.abs(data.price_vs_pathusd - 1) < 0.005
-      ? "#d97706"
-      : "var(--color-negative)";
+      ? "var(--color-warning)"
+      : "var(--color-error)";
 
   return (
     <main className="page-container-narrow">
@@ -124,7 +124,7 @@ export default async function StablecoinDetailPage({
           href="/stablecoins"
           style={{
             fontSize: "12px",
-            color: "var(--color-secondary)",
+            color: "var(--color-text-tertiary)",
             textDecoration: "none",
             display: "inline-block",
             marginBottom: "12px",
@@ -136,9 +136,9 @@ export default async function StablecoinDetailPage({
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
           <h1
             style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              color: "var(--color-text)",
+              fontSize: "20px",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.02em",
             }}
           >
@@ -146,15 +146,15 @@ export default async function StablecoinDetailPage({
           </h1>
           <span
             style={{
-              fontSize: "15px",
-              color: "var(--color-secondary)",
+              fontSize: "13px",
+              color: "var(--color-text-tertiary)",
             }}
           >
             {data.name}
           </span>
         </div>
 
-        <div className="address-text" style={{ color: "var(--color-muted)" }}>
+        <div className="address-text" style={{ color: "var(--color-text-tertiary)" }}>
           {address}
         </div>
 
@@ -165,8 +165,8 @@ export default async function StablecoinDetailPage({
             flexDirection: "column",
             gap: "4px",
             padding: "14px 20px",
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
+            background: "var(--color-bg-subtle)",
+            border: "1px solid var(--color-border-subtle)",
             borderRadius: "8px",
           }}
         >
@@ -174,7 +174,7 @@ export default async function StablecoinDetailPage({
             style={{
               fontFamily: "var(--font-mono), monospace",
               fontSize: "10px",
-              color: "var(--color-muted)",
+              color: "var(--color-text-quaternary)",
               textTransform: "uppercase",
               letterSpacing: "1.5px",
             }}
@@ -195,7 +195,7 @@ export default async function StablecoinDetailPage({
             style={{
               fontFamily: "var(--font-mono), monospace",
               fontSize: "11px",
-              color: "var(--color-muted)",
+              color: "var(--color-text-tertiary)",
             }}
           >
             spread: {data.spread_bps > 0 ? `${data.spread_bps} bps` : "—"}
@@ -263,11 +263,11 @@ export default async function StablecoinDetailPage({
             label="Yield rate"
             value={
               data.yield_rate > 0 ? (
-                <span style={{ color: "var(--color-positive)" }}>
+                <span style={{ color: "var(--color-success)" }}>
                   {(data.yield_rate * 100).toFixed(2)}%
                 </span>
               ) : (
-                <span style={{ color: "var(--color-muted)" }}>—</span>
+                <span style={{ color: "var(--color-text-tertiary)" }}>—</span>
               )
             }
           />

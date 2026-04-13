@@ -64,7 +64,7 @@ export default async function StablecoinFlowsPage({
               href="/stablecoins"
               style={{
                 fontSize: "12px",
-                color: "var(--color-secondary)",
+                color: "var(--color-text-tertiary)",
                 textDecoration: "none",
               }}
             >
@@ -73,9 +73,9 @@ export default async function StablecoinFlowsPage({
           </div>
           <h1
             style={{
-              fontSize: "28px",
-              fontWeight: 700,
-              color: "var(--color-text)",
+              fontSize: "20px",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
               letterSpacing: "-0.02em",
               marginBottom: "4px",
             }}
@@ -84,8 +84,8 @@ export default async function StablecoinFlowsPage({
           </h1>
           <p
             style={{
-              fontSize: "15px",
-              color: "var(--color-secondary)",
+              fontSize: "13px",
+              color: "var(--color-text-tertiary)",
             }}
           >
             DEX flows between stablecoins — last {hours}h
@@ -101,11 +101,11 @@ export default async function StablecoinFlowsPage({
               style={{
                 fontFamily: "var(--font-mono), monospace",
                 fontSize: "12px",
-                color: h === hours ? "#fff" : "var(--color-secondary)",
+                color: h === hours ? "var(--color-bg-base)" : "var(--color-text-secondary)",
                 textDecoration: "none",
                 padding: "5px 10px",
-                border: `1px solid ${h === hours ? "var(--color-text)" : "var(--color-border)"}`,
-                background: h === hours ? "var(--color-text)" : "var(--color-surface)",
+                border: `1px solid ${h === hours ? "var(--color-text-primary)" : "var(--color-border-default)"}`,
+                background: h === hours ? "var(--color-text-primary)" : "var(--color-bg-subtle)",
                 borderRadius: "5px",
                 transition: "border-color 0.15s",
               }}
@@ -119,7 +119,7 @@ export default async function StablecoinFlowsPage({
       {/* Flow table */}
       <div
         style={{
-          border: "1px solid var(--color-border)",
+          border: "1px solid var(--color-border-subtle)",
           borderRadius: "10px",
           overflow: "hidden",
         }}
@@ -128,8 +128,8 @@ export default async function StablecoinFlowsPage({
         <div
           className="flow-table-header"
           style={{
-            background: "var(--color-surface)",
-            borderBottom: "1px solid var(--color-border)",
+            background: "var(--color-bg-subtle)",
+            borderBottom: "1px solid var(--color-border-subtle)",
           }}
         >
           {["From", "To", "Net Flow USD", "Tx Count"].map((h, i) => (
@@ -138,9 +138,9 @@ export default async function StablecoinFlowsPage({
               className={h === "Tx Count" ? "hide-mobile-flow" : undefined}
               style={{
                 fontFamily: "var(--font-mono), monospace",
-                fontSize: "10px",
+                fontSize: "11px",
                 fontWeight: 500,
-                color: "var(--color-muted)",
+                color: "var(--color-text-quaternary)",
                 textTransform: "uppercase",
                 letterSpacing: "1.5px",
                 textAlign: i >= 2 ? "right" : "left",
@@ -158,7 +158,7 @@ export default async function StablecoinFlowsPage({
               padding: "40px 16px",
               textAlign: "center",
               fontSize: "14px",
-              color: "var(--color-secondary)",
+              color: "var(--color-text-secondary)",
             }}
           >
             No flow data for this period.
@@ -169,7 +169,7 @@ export default async function StablecoinFlowsPage({
               key={`${row.from}:${row.to}`}
               className="flow-table-row"
               style={{
-                borderBottom: "1px solid var(--color-border)",
+                borderBottom: "1px solid var(--color-border-subtle)",
                 alignItems: "center",
               }}
             >
@@ -177,7 +177,7 @@ export default async function StablecoinFlowsPage({
                 style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: "13px",
-                  color: "var(--color-text)",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 {labelForAddress(row.from)}
@@ -186,7 +186,7 @@ export default async function StablecoinFlowsPage({
                 style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: "13px",
-                  color: "var(--color-text)",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 {labelForAddress(row.to)}
@@ -195,7 +195,7 @@ export default async function StablecoinFlowsPage({
                 style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: "13px",
-                  color: row.usd >= 0 ? "var(--color-positive)" : "var(--color-negative)",
+                  color: row.usd >= 0 ? "var(--color-success)" : "var(--color-error)",
                   textAlign: "right",
                 }}
               >
@@ -206,7 +206,7 @@ export default async function StablecoinFlowsPage({
                 style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: "12px",
-                  color: "var(--color-muted)",
+                  color: "var(--color-text-tertiary)",
                   textAlign: "right",
                 }}
               >
