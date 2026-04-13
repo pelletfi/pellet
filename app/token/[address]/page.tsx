@@ -1,10 +1,25 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import SafetyBadge from "@/components/SafetyBadge";
 import { getMarketData } from "@/lib/pipeline/market";
 import { scanSafety } from "@/lib/pipeline/safety";
 import { getCompliance, isTip20 } from "@/lib/pipeline/compliance";
 import { getHolders } from "@/lib/pipeline/holders";
 import { getTokenIconUrl } from "@/lib/token-icons";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ address: string }>;
+}): Promise<Metadata> {
+  const { address } = await params;
+  const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return {
+    title: `Token ${truncated} — Pellet`,
+    description: `Market data, safety analysis, and compliance for ${address} on Tempo.`,
+  };
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,20 +118,21 @@ export default async function TokenPage({
 
   const addr = address as `0x${string}`;
 
-  // Run pipeline in parallel
-  const [market, compliance] = await Promise.all([
+  // Run pipeline in parallel — iconUrl doesn't depend on market/compliance,
+  // so kick it off alongside the first batch to avoid a waterfall.
+  const [market, compliance, iconUrl] = await Promise.all([
     getMarketData(addr).catch(() => null),
     getCompliance(addr).catch(() => null),
+    getTokenIconUrl(addr),
   ]);
 
   if (!market) notFound();
 
   const tip20 = compliance?.token_type === "tip20";
 
-  const [safety, holders, iconUrl] = await Promise.all([
+  const [safety, holders] = await Promise.all([
     scanSafety(addr, tip20, market.pools).catch(() => null),
     getHolders(addr).catch(() => null),
-    getTokenIconUrl(addr),
   ]);
 
   return (
@@ -125,13 +141,13 @@ export default async function TokenPage({
       <div style={{ marginBottom: "28px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
           {iconUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+            <Image
               src={iconUrl}
               alt=""
               width={32}
               height={32}
               style={{ borderRadius: "50%" }}
+              unoptimized
             />
           ) : (
             <div

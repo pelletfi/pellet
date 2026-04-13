@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { getPools, searchTokens } from "@/lib/gecko";
 import Search from "@/components/Search";
 import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
 import { getTokenIcons } from "@/lib/token-icons";
+
+export const metadata: Metadata = {
+  title: "Tokens — Pellet",
+  description: "Every token on Tempo, tracked and examined. Price, volume, liquidity.",
+};
 
 interface PageProps {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -71,11 +77,11 @@ export default async function TokensPage({ searchParams }: PageProps) {
       {/* Header */}
       <h1
         style={{
-          fontFamily: "var(--font-sans)",
           fontSize: "20px",
           fontWeight: 600,
           color: "var(--color-text-primary)",
           letterSpacing: "-0.02em",
+          lineHeight: 1.2,
           marginBottom: "6px",
         }}
       >
@@ -83,7 +89,6 @@ export default async function TokensPage({ searchParams }: PageProps) {
       </h1>
       <p
         style={{
-          fontFamily: "var(--font-sans)",
           fontSize: "13px",
           color: "var(--color-text-tertiary)",
           marginBottom: "28px",
@@ -131,7 +136,6 @@ export default async function TokensPage({ searchParams }: PageProps) {
             style={{
               padding: "48px 16px",
               textAlign: "center",
-              fontFamily: "var(--font-sans)",
               fontSize: "14px",
               color: "var(--color-text-tertiary)",
             }}
@@ -167,7 +171,6 @@ export default async function TokensPage({ searchParams }: PageProps) {
             <Link
               href={`/tokens?page=${page - 1}`}
               style={{
-                fontFamily: "var(--font-sans)",
                 fontSize: "13px",
                 fontWeight: 500,
                 color: "var(--color-text-secondary)",
@@ -176,7 +179,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
                 background: "var(--color-bg-subtle)",
                 border: "1px solid var(--color-border-default)",
                 borderRadius: "6px",
-                transition: "background 0.15s",
+                transition: "background 150ms ease, border-color 150ms ease",
               }}
             >
               &larr; Previous
@@ -188,7 +191,6 @@ export default async function TokensPage({ searchParams }: PageProps) {
             <Link
               href={`/tokens?page=${page + 1}`}
               style={{
-                fontFamily: "var(--font-sans)",
                 fontSize: "13px",
                 fontWeight: 500,
                 color: "var(--color-text-secondary)",
@@ -197,7 +199,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
                 background: "var(--color-bg-subtle)",
                 border: "1px solid var(--color-border-default)",
                 borderRadius: "6px",
-                transition: "background 0.15s",
+                transition: "background 150ms ease, border-color 150ms ease",
               }}
             >
               Next &rarr;
