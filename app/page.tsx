@@ -285,7 +285,7 @@ function HeroParticles() {
       size: (s3 % 200) / 100 + 1.5,
       duration: (seed % 1500) / 100 + 18,
       delay: (s2 % 500) / 100,
-      opacity: (s3 % 80) / 1000 + 0.03,
+      opacity: (s3 % 80) / 1000 + 0.06,
     };
   });
 
@@ -312,8 +312,8 @@ function HeroParticles() {
             width: p.size,
             height: p.size,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.5)",
-            boxShadow: `0 0 ${p.size * 2}px rgba(255,255,255,0.1)`,
+            background: "rgba(255,255,255,0.7)",
+            boxShadow: `0 0 ${p.size * 3}px rgba(255,255,255,0.15)`,
           }}
         />
       ))}
