@@ -1,10 +1,14 @@
 /**
  * Token icon resolver for Tempo.
- * Fetches the official token list and only serves icons for registered tokens.
- * Falls back to null for unknown tokens (UI shows a letter placeholder).
+ *
+ * Resolution order:
+ * 1. Official Tempo token list (tokenlist.tempo.xyz)
+ * 2. GeckoTerminal token images (CoinGecko-sourced)
+ * 3. null → UI shows a letter placeholder
  */
 
 const TOKENLIST_API = "https://tokenlist.tempo.xyz";
+const GECKO_API = "https://api.geckoterminal.com/api/v2";
 const CHAIN_ID = 4217;
 
 interface TokenListEntry {
@@ -41,34 +45,97 @@ async function getTokenList(): Promise<Map<string, TokenListEntry>> {
   }
 }
 
-/** Get the icon URL for a token. Returns null if not in the official list. */
-export async function getTokenIconUrl(address: string): Promise<string | null> {
+/** Fetch token images from GeckoTerminal for a batch of addresses. */
+async function getGeckoImages(
+  addresses: string[]
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (addresses.length === 0) return result;
+
+  // GeckoTerminal multi endpoint accepts up to 30 addresses
+  const batch = addresses.slice(0, 30).join(",");
+  try {
+    const res = await fetch(
+      `${GECKO_API}/networks/tempo/tokens/multi/${batch}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return result;
+    const data = await res.json();
+
+    for (const token of data.data ?? []) {
+      const addr = token.attributes?.address;
+      const img = token.attributes?.image_url;
+      if (addr && img) {
+        result.set(addr.toLowerCase(), img);
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return result;
+}
+
+/** Get the icon URL for a single token. Returns null if no icon found. */
+export async function getTokenIconUrl(
+  address: string
+): Promise<string | null> {
   const list = await getTokenList();
   const entry = list.get(address.toLowerCase());
   if (entry?.logoURI) return entry.logoURI;
-  return null;
+
+  // Try GeckoTerminal
+  const gecko = await getGeckoImages([address]);
+  return gecko.get(address.toLowerCase()) ?? null;
 }
 
 /** Synchronous version — uses the tokenlist icon endpoint directly.
- *  Use this in client components where you can't await. */
+ *  Only use for tokens known to be in the official list (stablecoins). */
 export function getTokenIconUrlSync(address: string): string {
   return `${TOKENLIST_API}/icon/${CHAIN_ID}/${address.toLowerCase()}`;
 }
 
-/** Get icon + name info for a batch of addresses (server-side). */
+/** Get icon URLs for a batch of addresses (server-side).
+ *  Checks Tempo token list first, then GeckoTerminal for the rest. */
 export async function getTokenIcons(
   addresses: string[]
-): Promise<Map<string, { iconUrl: string | null; name: string; symbol: string }>> {
+): Promise<
+  Map<string, { iconUrl: string | null; name: string; symbol: string }>
+> {
   const list = await getTokenList();
-  const result = new Map<string, { iconUrl: string | null; name: string; symbol: string }>();
+  const result = new Map<
+    string,
+    { iconUrl: string | null; name: string; symbol: string }
+  >();
+
+  const missingAddresses: string[] = [];
 
   for (const addr of addresses) {
     const entry = list.get(addr.toLowerCase());
-    result.set(addr.toLowerCase(), {
-      iconUrl: entry?.logoURI ?? null,
-      name: entry?.name ?? "",
-      symbol: entry?.symbol ?? "",
-    });
+    if (entry?.logoURI) {
+      result.set(addr.toLowerCase(), {
+        iconUrl: entry.logoURI,
+        name: entry.name,
+        symbol: entry.symbol,
+      });
+    } else {
+      missingAddresses.push(addr);
+      result.set(addr.toLowerCase(), {
+        iconUrl: null,
+        name: "",
+        symbol: "",
+      });
+    }
+  }
+
+  // Batch fetch from GeckoTerminal for tokens not in the official list
+  if (missingAddresses.length > 0) {
+    const geckoImages = await getGeckoImages(missingAddresses);
+    for (const [addr, url] of geckoImages) {
+      const existing = result.get(addr);
+      if (existing && !existing.iconUrl) {
+        existing.iconUrl = url;
+      }
+    }
   }
 
   return result;
