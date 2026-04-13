@@ -22,8 +22,10 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [lines]);
+    if (interactive) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [lines, interactive]);
 
   const colorMap: Record<string, string> = {
     green: "var(--color-terminal-green)",

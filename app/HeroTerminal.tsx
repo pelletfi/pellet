@@ -56,11 +56,10 @@ export function HeroTerminal() {
           result.push({ type: "output", text: "No token data available", color: "muted" });
         } else {
           for (const t of top3) {
-            const label = t.address.slice(0, 10) + "...";
+            const label = (t.name || t.symbol || `${t.address.slice(0, 6)}…${t.address.slice(-4)}`).padEnd(14);
             result.push({
               type: "output",
-              text: `${label}  price ${fmt(t.price_usd)}  vol ${fmt(t.volume_24h)}`,
-              color: "green",
+              text: `${label} ${fmt(t.price_usd).padEnd(12)} vol ${fmt(t.volume_24h)}`,
             });
           }
         }
@@ -79,8 +78,8 @@ export function HeroTerminal() {
         for (const s of top2) {
           result.push({
             type: "output",
-            text: `${s.symbol}  peg $${s.price_vs_pathusd.toFixed(4)}`,
-            color: "yellow",
+            text: `${(s.symbol || "???").padEnd(14)} peg $${(s.price_vs_pathusd ?? 1).toFixed(4)}`,
+            color: "green",
           });
         }
 
