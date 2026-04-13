@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const navLinks = [
@@ -13,87 +13,83 @@ const navLinks = [
 
 export function Nav() {
   const [open, setOpen] = useState(false);
+  const [block, setBlock] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/health")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.block) setBlock(Number(d.block).toLocaleString());
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header className="nav-header">
-      <Link
-        href="/"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          textDecoration: "none",
-          color: "var(--color-text)",
-        }}
-      >
-        <span
+      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <Link
+          href="/"
           style={{
-            fontFamily: "var(--font-geist-pixel-line)",
             fontSize: 13,
             fontWeight: 600,
-            lineHeight: 1,
+            color: "var(--color-text-primary)",
+            textDecoration: "none",
+            letterSpacing: "-0.01em",
           }}
         >
           Pellet Finance
+        </Link>
+        <nav className="nav-links">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="nav-link">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)" }}>
+          <span className="status-dot" />
+          <span>operational</span>
+        </div>
+        {block && (
+          <>
+            <span style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+              blk {block}
+            </span>
+          </>
+        )}
+        <span style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          minWidth: 20, height: 20, padding: "0 5px",
+          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+          color: "var(--color-text-quaternary)",
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid var(--color-border-default)",
+          borderRadius: 4,
+        }}>
+          ⌘K
         </span>
-      </Link>
+      </div>
 
-      {/* Desktop nav */}
-      <nav className="nav-links">
-        {navLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            style={{
-              fontSize: 14,
-              color: "var(--color-secondary)",
-              textDecoration: "none",
-            }}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Mobile hamburger */}
-      <button
-        className="nav-mobile-toggle"
-        onClick={() => setOpen(!open)}
-        aria-label="Toggle menu"
-      >
+      <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Toggle menu">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
           {open ? (
-            <>
-              <line x1="4" y1="4" x2="16" y2="16" />
-              <line x1="16" y1="4" x2="4" y2="16" />
-            </>
+            <><line x1="4" y1="4" x2="16" y2="16" /><line x1="16" y1="4" x2="4" y2="16" /></>
           ) : (
-            <>
-              <line x1="3" y1="5" x2="17" y2="5" />
-              <line x1="3" y1="10" x2="17" y2="10" />
-              <line x1="3" y1="15" x2="17" y2="15" />
-            </>
+            <><line x1="3" y1="5" x2="17" y2="5" /><line x1="3" y1="10" x2="17" y2="10" /><line x1="3" y1="15" x2="17" y2="15" /></>
           )}
         </svg>
       </button>
 
-      {/* Mobile dropdown */}
       {open && (
         <nav className="nav-mobile-menu">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              style={{
-                display: "block",
-                padding: "12px 0",
-                fontSize: 15,
-                color: "var(--color-text)",
-                textDecoration: "none",
-                borderBottom: "1px solid var(--color-border)",
-              }}
-            >
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)}
+              style={{ display: "block", padding: "12px 0", fontSize: 15, color: "var(--color-text-primary)", textDecoration: "none", borderBottom: "1px solid var(--color-border-subtle)" }}>
               {link.label}
             </Link>
           ))}
