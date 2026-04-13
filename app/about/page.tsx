@@ -78,7 +78,11 @@ export default function AboutPage() {
           marginBottom: 24,
         }}
       >
-        <span>About Pellet &mdash; Built on Tempo</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          About Pellet &mdash; Built on
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tempo-logo-white.svg" alt="Tempo" height={11} style={{ opacity: 0.5 }} />
+        </span>
       </div>
 
       {/* H1 */}

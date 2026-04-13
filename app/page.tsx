@@ -92,8 +92,10 @@ export default async function HomePage() {
                 color: "var(--color-text-tertiary)",
               }}
             >
-              Built on Tempo
+              Built on
             </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/tempo-logo-white.svg" alt="Tempo" height={12} style={{ opacity: 0.5, marginLeft: 6 }} />
           </div>
 
           {/* H1 */}

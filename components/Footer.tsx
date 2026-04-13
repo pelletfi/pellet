@@ -49,7 +49,11 @@ export function Footer() {
               gap: 4,
             }}
           >
-            <span>Built on Tempo</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              Built on
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/tempo-logo-white.svg" alt="Tempo" height={10} style={{ opacity: 0.4 }} />
+            </span>
             <span>API v1 · 12 endpoints</span>
           </div>
         </div>
