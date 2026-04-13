@@ -1,227 +1,222 @@
-import Nav from "@/components/Nav";
-import Search from "@/components/Search";
-import TokenCard from "@/components/TokenCard";
-import { getPools, searchTokens } from "@/lib/gecko";
-import type { GeckoPool } from "@/lib/gecko";
+import Image from "next/image";
+import { StatsBar } from "@/components/StatsBar";
+import { HeroTerminal } from "./HeroTerminal";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Data fetching
+// ---------------------------------------------------------------------------
 
-function ColHeader({ label, right }: { label: string; right?: boolean }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-        fontSize: "11px",
-        fontWeight: 500,
-        color: "#444",
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        textAlign: right ? "right" : "left",
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-// ── Page ─────────────────────────────────────────────────────────────────────
-
-interface SearchParams {
-  q?: string;
-  page?: string;
-}
-
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const query = params.q?.trim() ?? "";
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
-
-  let pools: GeckoPool[] = [];
-  let hasNext = false;
-  let error: string | null = null;
+async function getStats() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   try {
-    if (query) {
-      const res = await searchTokens(query);
-      pools = res.data ?? [];
-    } else {
-      const res = await getPools(page);
-      pools = res.data ?? [];
-      hasNext = !!res.links?.next;
-    }
-  } catch (err) {
-    error = err instanceof Error ? err.message : "Failed to fetch pools";
+    const [tokensRes, stablecoinsRes] = await Promise.all([
+      fetch(`${base}/api/v1/tokens`, { next: { revalidate: 120 } }),
+      fetch(`${base}/api/v1/stablecoins`, { next: { revalidate: 120 } }),
+    ]);
+
+    const tokensData = tokensRes.ok ? await tokensRes.json() : { tokens: [] };
+    const stablecoinsData = stablecoinsRes.ok ? await stablecoinsRes.json() : { stablecoins: [] };
+
+    const tokens: { price_usd: number; liquidity_usd: number; volume_24h: number }[] =
+      tokensData.tokens ?? [];
+    const stablecoins: unknown[] = stablecoinsData.stablecoins ?? [];
+
+    const totalVolume = tokens.reduce((sum, t) => sum + (t.volume_24h || 0), 0);
+    const totalLiquidity = tokens.reduce((sum, t) => sum + (t.liquidity_usd || 0), 0);
+
+    return {
+      tokenCount: tokens.length,
+      stablecoinCount: stablecoins.length,
+      volume24h: totalVolume,
+      totalLiquidity,
+    };
+  } catch {
+    return { tokenCount: 0, stablecoinCount: 0, volume24h: 0, totalLiquidity: 0 };
   }
+}
+
+function fmtLarge(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  if (n === 0) return "$0";
+  return `$${n.toFixed(0)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default async function HomePage() {
+  const stats = await getStats();
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Nav />
-
-      <main
+    <>
+      {/* Hero — split layout */}
+      <div
         style={{
-          flex: 1,
-          maxWidth: "1200px",
-          margin: "0 auto",
-          width: "100%",
-          padding: "32px 24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          minHeight: "80vh",
         }}
       >
-        {/* Page header */}
-        <div style={{ marginBottom: "28px" }}>
-          <h1
-            style={{
-              fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-              fontSize: "20px",
-              fontWeight: 600,
-              color: "#f5f5f5",
-              letterSpacing: "-0.02em",
-              marginBottom: "4px",
-            }}
-          >
-            {query ? `Results for "${query}"` : "Tokens"}
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-              fontSize: "13px",
-              color: "#555",
-              marginBottom: "20px",
-            }}
-          >
-            {query ? "Pools matching your search on Tempo" : "Top pools by 24h volume on Tempo"}
-          </p>
-          <Search defaultValue={query} />
-        </div>
-
-        {/* Error state */}
-        {error && (
-          <div
-            style={{
-              padding: "16px",
-              background: "rgba(248,113,113,0.06)",
-              border: "1px solid rgba(248,113,113,0.2)",
-              borderRadius: "8px",
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "13px",
-              color: "#f87171",
-              marginBottom: "20px",
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Table */}
-        {!error && (
-          <div
-            style={{
-              border: "1px solid #1a1a1f",
-              borderRadius: "10px",
-              overflow: "hidden",
-            }}
-          >
-            {/* Column headers */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 140px 120px 120px",
-                padding: "10px 16px",
-                background: "#0d0d10",
-                borderBottom: "1px solid #1a1a1f",
-              }}
-            >
-              <ColHeader label="Token" />
-              <ColHeader label="Price" right />
-              <ColHeader label="Volume 24h" right />
-              <ColHeader label="Liquidity" right />
-            </div>
-
-            {/* Rows */}
-            {pools.length === 0 ? (
-              <div
-                style={{
-                  padding: "40px 16px",
-                  textAlign: "center",
-                  fontFamily: "var(--font-geist-sans)",
-                  fontSize: "14px",
-                  color: "#555",
-                }}
-              >
-                {query ? "No pools found for that query." : "No pools available."}
-              </div>
-            ) : (
-              pools.map((pool) => (
-                <TokenCard key={pool.id} pool={pool} />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Pagination — only for non-search browse */}
-        {!query && !error && (
+        {/* Left — thesis */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "80px 64px",
+            maxWidth: "640px",
+            marginLeft: "auto",
+          }}
+        >
+          {/* Overline */}
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              marginTop: "20px",
-              padding: "0 4px",
+              gap: "8px",
+              marginBottom: "24px",
             }}
           >
-            {page > 1 ? (
-              <a
-                href={`/?page=${page - 1}`}
-                style={{
-                  fontFamily: "var(--font-geist-sans)",
-                  fontSize: "13px",
-                  color: "#888",
-                  textDecoration: "none",
-                  padding: "6px 12px",
-                  border: "1px solid #1a1a1f",
-                  borderRadius: "6px",
-                  transition: "border-color 0.15s, color 0.15s",
-                }}
-              >
-                ← Previous
-              </a>
-            ) : (
-              <span />
-            )}
-
             <span
               style={{
-                fontFamily: "var(--font-geist-mono), monospace",
-                fontSize: "12px",
-                color: "#444",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                fontWeight: 500,
+                textTransform: "uppercase",
+                letterSpacing: "1.5px",
+                color: "var(--color-muted)",
               }}
             >
-              page {page}
+              Built on
             </span>
-
-            {hasNext && (
-              <a
-                href={`/?page=${page + 1}`}
-                style={{
-                  fontFamily: "var(--font-geist-sans)",
-                  fontSize: "13px",
-                  color: "#888",
-                  textDecoration: "none",
-                  padding: "6px 12px",
-                  border: "1px solid #1a1a1f",
-                  borderRadius: "6px",
-                  transition: "border-color 0.15s, color 0.15s",
-                }}
-              >
-                Next →
-              </a>
-            )}
+            <Image
+              src="/tempo-logo.svg"
+              alt="Tempo"
+              width={72}
+              height={20}
+              style={{ opacity: 0.7 }}
+            />
           </div>
-        )}
-      </main>
-    </div>
+
+          {/* H1 */}
+          <h1
+            style={{
+              fontFamily: "var(--font-inter)",
+              fontSize: "40px",
+              fontWeight: 700,
+              lineHeight: 1.15,
+              letterSpacing: "-0.025em",
+              color: "var(--color-text)",
+              marginBottom: "20px",
+            }}
+          >
+            We&apos;re building the intelligence Tempo needs.
+          </h1>
+
+          {/* Body */}
+          <p
+            style={{
+              fontFamily: "var(--font-inter)",
+              fontSize: "16px",
+              lineHeight: 1.65,
+              color: "var(--color-secondary)",
+              marginBottom: "36px",
+              maxWidth: "480px",
+            }}
+          >
+            The first payments chain deserves more than a block explorer. Pellet
+            examines every token, tracks every stablecoin, and maps every payment
+            service — natively, from day one.
+          </p>
+
+          {/* CTAs */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            <a
+              href="/tokens"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "12px 28px",
+                background: "var(--color-text)",
+                color: "var(--color-bg)",
+                fontFamily: "var(--font-inter)",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderRadius: "6px",
+                textDecoration: "none",
+                transition: "opacity 0.15s",
+              }}
+            >
+              Explore tokens
+            </a>
+            <a
+              href="/about"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "12px 28px",
+                background: "transparent",
+                color: "var(--color-text)",
+                fontFamily: "var(--font-inter)",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderRadius: "6px",
+                border: "1px solid var(--color-border)",
+                textDecoration: "none",
+                transition: "border-color 0.15s",
+              }}
+            >
+              Read the thesis
+            </a>
+          </div>
+        </div>
+
+        {/* Right — terminal */}
+        <div
+          style={{
+            background: "var(--color-terminal)",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <HeroTerminal />
+          </div>
+          <div
+            style={{
+              padding: "16px 24px",
+              textAlign: "right",
+            }}
+          >
+            <a
+              href="/terminal"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+                color: "var(--color-terminal-muted)",
+                textDecoration: "none",
+                transition: "color 0.15s",
+              }}
+            >
+              Try the terminal &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <StatsBar
+        stats={[
+          { label: "Tokens Tracked", value: String(stats.tokenCount) },
+          { label: "Stablecoins", value: String(stats.stablecoinCount) },
+          { label: "24h Volume", value: fmtLarge(stats.volume24h) },
+          { label: "Total Liquidity", value: fmtLarge(stats.totalLiquidity) },
+        ]}
+      />
+    </>
   );
 }
