@@ -29,17 +29,7 @@ export function Footer() {
         marginTop: 96,
       }}
     >
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: 48,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 48,
-        }}
-      >
+      <div className="footer-inner">
         {/* Left: brand + built on */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div
@@ -75,7 +65,7 @@ export function Footer() {
         </div>
 
         {/* Right: three columns */}
-        <div style={{ display: "flex", gap: 64 }}>
+        <div className="footer-columns">
           <FooterColumn title="Product" links={productLinks} internal />
           <FooterColumn title="Resources" links={resourceLinks} />
           <FooterColumn title="Social" links={socialLinks} />

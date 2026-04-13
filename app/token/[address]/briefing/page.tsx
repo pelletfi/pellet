@@ -12,13 +12,7 @@ export default async function BriefingPage({
   }
 
   return (
-    <main
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <main className="page-container-about" style={{ maxWidth: "720px" }}>
       {/* Header */}
       <div style={{ marginBottom: "40px" }}>
         <div

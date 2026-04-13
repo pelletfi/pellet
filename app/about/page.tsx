@@ -91,16 +91,7 @@ export default function AboutPage() {
       </div>
 
       {/* H1 */}
-      <h1
-        style={{
-          fontSize: 44,
-          fontWeight: 700,
-          letterSpacing: "-1px",
-          lineHeight: 1.1,
-          color: "var(--color-text)",
-          margin: "0 0 40px",
-        }}
-      >
+      <h1 className="about-h1">
         The intelligence layer for the payments chain.
       </h1>
 

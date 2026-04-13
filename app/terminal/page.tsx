@@ -252,7 +252,7 @@ export default function TerminalPage() {
   }, []);
 
   return (
-    <div style={{ padding: "24px 48px", background: "var(--color-bg)" }}>
+    <div className="terminal-page">
       <div
         style={{
           background: "var(--color-terminal)",

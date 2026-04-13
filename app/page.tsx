@@ -115,17 +115,7 @@ export default async function HomePage() {
           </div>
 
           {/* H1 */}
-          <h1
-            style={{
-              fontFamily: "var(--font-inter)",
-              fontSize: "40px",
-              fontWeight: 700,
-              lineHeight: 1.15,
-              letterSpacing: "-0.025em",
-              color: "var(--color-text)",
-              marginBottom: "20px",
-            }}
-          >
+          <h1 className="hero-h1">
             We&apos;re building the intelligence Tempo needs.
           </h1>
 
@@ -146,7 +136,7 @@ export default async function HomePage() {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div className="hero-ctas">
             <a
               href="/tokens"
               style={{
@@ -188,14 +178,7 @@ export default async function HomePage() {
         </div>
 
         {/* Right — terminal */}
-        <div
-          style={{
-            background: "var(--color-terminal)",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-          }}
-        >
+        <div className="hero-terminal">
           <div style={{ flex: 1 }}>
             <HeroTerminal />
           </div>

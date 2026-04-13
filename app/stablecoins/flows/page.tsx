@@ -55,15 +55,9 @@ export default async function StablecoinFlowsPage({
   const HOUR_OPTIONS = [1, 6, 24, 48, 168];
 
   return (
-    <main
-      style={{
-        maxWidth: "1100px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <main className="page-container">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+      <div className="flows-header">
         <div>
           <div style={{ marginBottom: "8px" }}>
             <Link
@@ -99,7 +93,7 @@ export default async function StablecoinFlowsPage({
         </div>
 
         {/* Time selector */}
-        <div style={{ display: "flex", gap: "4px" }}>
+        <div className="time-selector">
           {HOUR_OPTIONS.map((h) => (
             <a
               key={h}
@@ -132,18 +126,16 @@ export default async function StablecoinFlowsPage({
       >
         {/* Column headers */}
         <div
+          className="flow-table-header"
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 140px 80px",
-            padding: "10px 16px",
             background: "var(--color-surface)",
             borderBottom: "1px solid var(--color-border)",
-            gap: "8px",
           }}
         >
           {["From", "To", "Net Flow USD", "Tx Count"].map((h, i) => (
             <span
               key={h}
+              className={h === "Tx Count" ? "hide-mobile-flow" : undefined}
               style={{
                 fontFamily: "var(--font-mono), monospace",
                 fontSize: "10px",
@@ -175,12 +167,9 @@ export default async function StablecoinFlowsPage({
           aggregated.map((row) => (
             <div
               key={`${row.from}:${row.to}`}
+              className="flow-table-row"
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 140px 80px",
-                padding: "12px 16px",
                 borderBottom: "1px solid var(--color-border)",
-                gap: "8px",
                 alignItems: "center",
               }}
             >
@@ -213,6 +202,7 @@ export default async function StablecoinFlowsPage({
                 {formatUsd(row.usd)}
               </span>
               <span
+                className="hide-mobile-flow"
                 style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: "12px",

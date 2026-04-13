@@ -147,14 +147,7 @@ export default async function TokenPage({
           )}
         </div>
 
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "13px",
-            color: "var(--color-secondary)",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="address-text">
           {address}
         </div>
 

@@ -104,6 +104,147 @@ body {
   gap: 1px;
 }
 
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 48px;
+}
+
+.footer-columns {
+  display: flex;
+  gap: 64px;
+}
+
+/* ── Hero terminal panel ──────────────────────────────────────────── */
+
+.hero-terminal {
+  background: var(--color-terminal);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 400px;
+}
+
+/* ── Time selector (flows page) ───────────────────────────────────── */
+
+.time-selector {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ── Flows header row ─────────────────────────────────────────────── */
+
+.flows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+/* ── About heading ────────────────────────────────────────────────── */
+
+.about-h1 {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: var(--color-text);
+  margin: 0 0 40px;
+}
+
+/* ── Services page ────────────────────────────────────────────────── */
+
+.services-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* ── Terminal page ────────────────────────────────────────────────── */
+
+.terminal-page {
+  padding: 24px 48px;
+  background: var(--color-bg);
+}
+
+/* ── Stablecoin detail 2-col ──────────────────────────────────────── */
+
+.stablecoin-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Stablecoins header ───────────────────────────────────────────── */
+
+.stablecoins-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+/* ── Stablecoins legend ───────────────────────────────────────────── */
+
+.stablecoins-legend {
+  margin-top: 16px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* ── Hero CTA buttons ─────────────────────────────────────────────── */
+
+.hero-ctas {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Hero H1 ──────────────────────────────────────────────────────── */
+
+.hero-h1 {
+  font-family: var(--font-inter);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+
+/* ── Flow table grid ──────────────────────────────────────────────── */
+
+.flow-table-header,
+.flow-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 140px 80px;
+  padding: 10px 16px;
+  gap: 8px;
+}
+
+/* ── Address text (token detail) ──────────────────────────────────── */
+
+.address-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-secondary);
+  margin-bottom: 20px;
+  word-break: break-all;
+}
+
 @media (max-width: 768px) {
   .hero-grid {
     grid-template-columns: 1fr;
@@ -114,6 +255,23 @@ body {
     padding: 48px 24px;
   }
 
+  .hero-terminal {
+    min-height: 300px;
+  }
+
+  .hero-h1 {
+    font-size: 28px;
+  }
+
+  .hero-ctas {
+    flex-direction: column;
+  }
+
+  .hero-ctas a {
+    text-align: center;
+    justify-content: center;
+  }
+
   .page-container,
   .page-container-narrow {
     padding: 24px 16px;
@@ -121,6 +279,11 @@ body {
 
   .page-container-about {
     padding: 48px 20px;
+  }
+
+  .about-h1 {
+    font-size: 28px;
+    letter-spacing: -0.5px;
   }
 
   .metrics-grid {
@@ -166,5 +329,65 @@ body {
   .stablecoin-table-header .hide-mobile,
   .stablecoin-table-row .hide-mobile {
     display: none;
+  }
+
+  .footer-inner {
+    padding: 32px 20px;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .footer-columns {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .services-container {
+    padding: 24px 16px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .terminal-page {
+    padding: 16px;
+  }
+
+  .stablecoin-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stablecoins-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stablecoins-legend {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .time-selector {
+    flex-wrap: wrap;
+  }
+
+  .flows-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .flow-table-header,
+  .flow-table-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .flow-table-header .hide-mobile-flow,
+  .flow-table-row .hide-mobile-flow {
+    display: none;
+  }
+
+  .address-text {
+    font-size: 11px;
   }
 }

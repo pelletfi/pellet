@@ -26,7 +26,7 @@ export default async function StablecoinsPage() {
   return (
     <main className="page-container">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
+      <div className="stablecoins-header">
         <div>
           <h1
             style={{
@@ -117,13 +117,7 @@ export default async function StablecoinsPage() {
       </div>
 
       {/* Legend */}
-      <div
-        style={{
-          marginTop: "16px",
-          display: "flex",
-          gap: "20px",
-        }}
-      >
+      <div className="stablecoins-legend">
         {[
           { color: "var(--color-positive)", label: "tight peg (<0.1%)" },
           { color: "#d97706", label: "mild deviation (<0.5%)" },

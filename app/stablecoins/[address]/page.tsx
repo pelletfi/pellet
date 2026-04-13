@@ -117,13 +117,7 @@ export default async function StablecoinDetailPage({
       : "var(--color-negative)";
 
   return (
-    <main
-      style={{
-        maxWidth: "1000px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <main className="page-container-narrow">
       {/* Header */}
       <div style={{ marginBottom: "28px" }}>
         <Link
@@ -160,14 +154,7 @@ export default async function StablecoinDetailPage({
           </span>
         </div>
 
-        <div
-          style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: "12px",
-            color: "var(--color-muted)",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="address-text" style={{ color: "var(--color-muted)" }}>
           {address}
         </div>
 
@@ -217,13 +204,7 @@ export default async function StablecoinDetailPage({
       </div>
 
       {/* 2-col grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "16px",
-        }}
-      >
+      <div className="stablecoin-detail-grid">
         {/* Compliance */}
         <Card title="Compliance">
           <DataRow label="Policy ID" value={data.policy_id.toString()} />

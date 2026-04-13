@@ -33,13 +33,7 @@ export default async function ServicesPage() {
   const services = await fetchServices();
 
   return (
-    <main
-      style={{
-        maxWidth: 1100,
-        margin: "0 auto",
-        padding: 48,
-      }}
-    >
+    <main className="services-container">
       <h1
         style={{
           fontSize: 28,
@@ -64,13 +58,7 @@ export default async function ServicesPage() {
         Machine-payable APIs, agent-ready endpoints.
       </p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gap: 16,
-        }}
-      >
+      <div className="services-grid">
         {services.map((service) => (
           <a
             key={service.url}
