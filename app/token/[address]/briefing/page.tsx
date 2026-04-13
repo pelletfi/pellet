@@ -47,7 +47,7 @@ export default async function BriefingPage({
 
         <h1
           style={{
-            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+            fontFamily: "var(--font-inter), system-ui, sans-serif",
             fontSize: "28px",
             fontWeight: 700,
             color: "var(--color-text)",
@@ -60,7 +60,7 @@ export default async function BriefingPage({
 
         <p
           style={{
-            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+            fontFamily: "var(--font-inter), system-ui, sans-serif",
             fontSize: "17px",
             color: "var(--color-secondary)",
             lineHeight: 1.7,
@@ -140,7 +140,7 @@ export default async function BriefingPage({
             <div>
               <div
                 style={{
-                  fontFamily: "var(--font-geist-sans)",
+                  fontFamily: "var(--font-inter)",
                   fontSize: "14px",
                   fontWeight: 600,
                   color: "var(--color-text)",
@@ -151,7 +151,7 @@ export default async function BriefingPage({
               </div>
               <div
                 style={{
-                  fontFamily: "var(--font-geist-sans)",
+                  fontFamily: "var(--font-inter)",
                   fontSize: "12px",
                   color: "var(--color-secondary)",
                 }}
@@ -171,7 +171,7 @@ export default async function BriefingPage({
       >
         <h2
           style={{
-            fontFamily: "var(--font-geist-sans)",
+            fontFamily: "var(--font-inter)",
             fontSize: "14px",
             fontWeight: 600,
             color: "var(--color-text)",
@@ -182,7 +182,7 @@ export default async function BriefingPage({
         </h2>
         <p
           style={{
-            fontFamily: "var(--font-geist-sans)",
+            fontFamily: "var(--font-inter)",
             fontSize: "13px",
             color: "var(--color-secondary)",
             lineHeight: 1.65,
@@ -231,7 +231,7 @@ export default async function BriefingPage({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "13px",
-              color: "#e8e8e8",
+              color: "var(--color-terminal-text)",
               display: "block",
               whiteSpace: "pre-wrap",
               wordBreak: "break-all",
@@ -279,7 +279,7 @@ export default async function BriefingPage({
       <a
         href={`/token/${address}`}
         style={{
-          fontFamily: "var(--font-geist-sans)",
+          fontFamily: "var(--font-inter)",
           fontSize: "13px",
           color: "var(--color-secondary)",
           textDecoration: "none",

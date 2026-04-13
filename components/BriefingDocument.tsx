@@ -51,7 +51,7 @@ function SectionHeader({ n, title, source }: { n: string; title: string; source?
         </span>
         <span
           style={{
-            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+            fontFamily: "var(--font-inter), system-ui, sans-serif",
             fontSize: "16px",
             fontWeight: 600,
             color: "var(--color-text)",
@@ -100,7 +100,7 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-geist-sans), system-ui, sans-serif",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-inter), system-ui, sans-serif",
           fontSize: "14px",
           color: "var(--color-text)",
           textAlign: "right",
@@ -375,7 +375,7 @@ function AnalystSection({ text }: { text: string }) {
       <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
       <p
         style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+          fontFamily: "var(--font-inter), system-ui, sans-serif",
           fontSize: "14px",
           lineHeight: 1.7,
           color: "var(--color-secondary)",
@@ -422,7 +422,7 @@ export default function BriefingDocument({
         maxWidth: "720px",
         margin: "0 auto",
         padding: "40px 24px",
-        fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+        fontFamily: "var(--font-inter), system-ui, sans-serif",
       }}
     >
       {/* Document header */}
@@ -430,7 +430,7 @@ export default function BriefingDocument({
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           <h1
             style={{
-              fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+              fontFamily: "var(--font-inter), system-ui, sans-serif",
               fontSize: "22px",
               fontWeight: 600,
               color: "var(--color-text)",
@@ -509,7 +509,7 @@ export default function BriefingDocument({
           <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
           <p
             style={{
-              fontFamily: "var(--font-geist-sans)",
+              fontFamily: "var(--font-inter)",
               fontSize: "13px",
               color: "var(--color-muted)",
               fontStyle: "italic",

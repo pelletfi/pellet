@@ -75,7 +75,7 @@ function DataRow({ label, value, mono = true }: { label: string; value: React.Re
       </span>
       <span
         style={{
-          fontFamily: mono ? "var(--font-mono)" : "var(--font-geist-sans)",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-inter)",
           fontSize: "14px",
           color: "var(--color-text)",
         }}
@@ -217,7 +217,7 @@ export default async function TokenPage({
               background: "var(--color-text)",
               borderRadius: "8px",
               textDecoration: "none",
-              fontFamily: "var(--font-geist-sans)",
+              fontFamily: "var(--font-inter)",
               fontSize: "14px",
               fontWeight: 600,
               color: "var(--color-bg)",
@@ -258,7 +258,7 @@ export default async function TokenPage({
             {safety ? (
               <SafetyBadge safety={safety} />
             ) : (
-              <p style={{ fontFamily: "var(--font-geist-sans)", fontSize: "13px", color: "var(--color-muted)" }}>
+              <p style={{ fontFamily: "var(--font-inter)", fontSize: "13px", color: "var(--color-muted)" }}>
                 Safety analysis unavailable.
               </p>
             )}
@@ -368,7 +368,7 @@ export default async function TokenPage({
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                     <span
                       style={{
-                        fontFamily: "var(--font-geist-sans)",
+                        fontFamily: "var(--font-inter)",
                         fontSize: "12px",
                         color: "var(--color-secondary)",
                         textTransform: "capitalize",
