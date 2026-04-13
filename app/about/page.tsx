@@ -182,6 +182,10 @@ function PixelGrid({ rows = 4, cols = 16 }: { rows?: number; cols?: number }) {
           {Array.from({ length: cols }).map((_, c) => {
             const dist = Math.abs(c - cols / 2) + Math.abs(r - rows / 2);
             const opacity = Math.max(0.02, 0.12 - dist * 0.008);
+            const greenTint = ((r * cols + c) * 2654435761 >>> 0) % 5 === 0;
+            const bg = greenTint
+              ? `rgba(48,164,108,${Math.max(0.04, opacity * 0.7)})`
+              : `rgba(255,255,255,${opacity})`;
             return (
               <motion.div
                 key={c}
@@ -190,7 +194,7 @@ function PixelGrid({ rows = 4, cols = 16 }: { rows?: number; cols?: number }) {
                 transition={{ delay: (r * cols + c) * 0.01, duration: 0.3 }}
                 style={{
                   width: 6, height: 6, borderRadius: 1,
-                  background: `rgba(255,255,255,${opacity})`,
+                  background: bg,
                 }}
               />
             );
@@ -522,11 +526,33 @@ function NetworkViz() {
   );
 }
 
+// ── Section rule divider ───────────────────────────────────────────────────
+
+function SectionRule() {
+  return (
+    <div style={{
+      height: 1,
+      background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",
+      margin: "0 0 40px",
+    }} />
+  );
+}
+
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export default function AboutPage() {
   return (
     <div>
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { background-position: 100% 50%; }
+          50% { background-position: 0% 50%; }
+        }
+        @keyframes callout-pulse {
+          0%, 100% { border-left-color: rgba(48,164,108,0.3); }
+          50% { border-left-color: rgba(48,164,108,0.8); }
+        }
+      `}</style>
       {/* ═══ HERO ═══ */}
       <div style={{ position: "relative" }}>
         <HeroParticles />
@@ -560,11 +586,19 @@ export default function AboutPage() {
             fontFamily: "'Instrument Serif', Georgia, serif",
             fontSize: 48, fontWeight: 400, lineHeight: 1.15,
             letterSpacing: "-0.02em", marginBottom: 24,
+            textShadow: "0 0 40px rgba(255,255,255,0.1)",
           }}
         >
           The first payments chain{" "}
           <br />
-          deserves <em style={{ color: "var(--color-text-secondary)" }}>its own intelligence.</em>
+          deserves <em style={{
+            color: "var(--color-text-secondary)",
+            backgroundImage: "linear-gradient(90deg, var(--color-text-secondary) 0%, rgba(255,255,255,0.9) 45%, rgba(255,255,255,0.9) 55%, var(--color-text-secondary) 100%)",
+            backgroundSize: "200% 100%",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            animation: "shimmer 4s ease-in-out infinite",
+          }}>its own intelligence.</em>
         </motion.h1>
 
         <motion.p
@@ -625,9 +659,11 @@ export default function AboutPage() {
 
       {/* ═══ 01: WHY TEMPO ═══ */}
       <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
+        <SectionRule />
         <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
           color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
+          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
         }}>01</motion.div>
         <motion.h2 variants={fadeUp} style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
@@ -656,7 +692,7 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-          <div style={{ background: "var(--color-bg-subtle)", padding: 24 }}>
+          <div style={{ background: "var(--color-bg-subtle)", padding: 24, borderLeft: "2px solid rgba(48,164,108,0.3)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Tempo</div>
             {["TIP-20 stablecoins (enshrined)", "Native DEX with orderbook", "TIP-403 compliance policies", "Fees in any stablecoin", "MPP — machine payments"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-primary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
@@ -675,9 +711,11 @@ export default function AboutPage() {
 
       {/* ═══ 02: WHAT PELLET DOES ═══ */}
       <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
+        <SectionRule />
         <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
           color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
+          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
         }}>02</motion.div>
         <motion.h2 variants={fadeUp} style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
@@ -691,11 +729,12 @@ export default function AboutPage() {
 
         {/* Callout */}
         <motion.div variants={fadeUp} style={{
-          borderLeft: "2px solid var(--color-success)",
+          borderLeft: "2px solid rgba(48,164,108,0.5)",
           padding: "20px 24px",
           margin: "32px 0",
           background: "rgba(48,164,108,0.04)",
           borderRadius: "0 8px 8px 0",
+          animation: "callout-pulse 3s ease-in-out infinite",
         }}>
           <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--color-text-primary)", fontWeight: 500, margin: 0 }}>
             The briefing aggregates. The assay separates. Pellet is the analytical layer Tempo deserves.
@@ -707,9 +746,11 @@ export default function AboutPage() {
 
       {/* ═══ 03: HOW IT'S BUILT ═══ */}
       <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
+        <SectionRule />
         <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
           color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
+          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
         }}>03</motion.div>
         <motion.h2 variants={fadeUp} style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
@@ -738,16 +779,43 @@ export default function AboutPage() {
           lineHeight: 1.8,
           color: "var(--color-text-secondary)",
           overflowX: "auto" as const,
+          position: "relative" as const,
         }}>
-          <span style={{ color: "var(--color-text-quaternary)" }}># Analyze a token via MPP</span><br />
-          <span style={{ color: "var(--color-success)" }}>$</span> mppx GET https://pelletfi.com/api/v1/tokens/0x20c0...0000/briefing<br />
-          <br />
-          <span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span><br />
-          <span style={{ color: "var(--color-success)" }}>{'{'}</span><br />
-          &nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;safety&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;verdict&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;LOW_RISK&quot;</span> {'}'},<br />
-          &nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;compliance&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;TIP-20&quot;</span> {'}'},<br />
-          &nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;analyst_note&quot;</span>: <span style={{ color: "rgba(255,255,255,0.5)" }}>&quot;pathUSD is Tempo&apos;s native...&quot;</span><br />
-          <span style={{ color: "var(--color-success)" }}>{'}'}</span>
+          {/* Copy button */}
+          <div style={{
+            position: "absolute", top: 12, right: 12,
+            width: 28, height: 28, borderRadius: 6,
+            border: "1px solid var(--color-border-subtle)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "var(--color-text-quaternary)",
+            transition: "color 0.2s ease, border-color 0.2s ease",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          </div>
+          <div style={{ display: "table" }}>
+            {[
+              <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a token via MPP</span></>,
+              <><span style={{ color: "var(--color-success)" }}>$</span> mppx GET https://pelletfi.com/api/v1/tokens/0x20c0...0000/briefing</>,
+              <>&nbsp;</>,
+              <><span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span></>,
+              <><span style={{ color: "var(--color-success)" }}>{'{'}</span></>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;safety&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;verdict&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;LOW_RISK&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;compliance&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;TIP-20&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;analyst_note&quot;</span>: <span style={{ color: "rgba(255,255,255,0.5)" }}>&quot;pathUSD is Tempo&apos;s native...&quot;</span></>,
+              <><span style={{ color: "var(--color-success)" }}>{'}'}</span></>,
+            ].map((line, i) => (
+              <div key={i} style={{ display: "table-row" }}>
+                <span style={{
+                  display: "table-cell", paddingRight: 16, textAlign: "right",
+                  color: "var(--color-text-quaternary)", userSelect: "none", fontSize: 11, opacity: 0.5,
+                }}>{i + 1}</span>
+                <span style={{ display: "table-cell" }}>{line}</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </Section>
 
@@ -758,9 +826,11 @@ export default function AboutPage() {
 
       {/* ═══ 04: BUILT FROM DAY ONE ═══ */}
       <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
+        <SectionRule />
         <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
           color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
+          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
         }}>04</motion.div>
         <motion.h2 variants={fadeUp} style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
@@ -777,10 +847,17 @@ export default function AboutPage() {
       </Section>
 
       {/* ═══ CTA ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "80px 48px", borderTop: "1px solid var(--color-border-subtle)", textAlign: "center" as const }}>
+      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "80px 48px", borderTop: "1px solid var(--color-border-subtle)", textAlign: "center" as const, position: "relative" as const }}>
+        <div style={{
+          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+          width: 320, height: 120,
+          background: "radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
         <motion.h3 variants={fadeUp} style={{
           fontFamily: "'Instrument Serif', Georgia, serif",
           fontSize: 28, fontWeight: 400, marginBottom: 16,
+          position: "relative" as const,
         }}>Start exploring</motion.h3>
         <motion.p variants={fadeUp} style={{
           fontSize: 15, color: "var(--color-text-secondary)", marginBottom: 32,
@@ -797,6 +874,9 @@ export default function AboutPage() {
           </Link>
         </motion.div>
       </Section>
+
+      {/* ═══ FOOTER WAVE DIVIDER ═══ */}
+      <ArcDivider />
     </div>
   );
 }
