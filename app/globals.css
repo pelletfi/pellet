@@ -6,9 +6,9 @@
 
   /* Backgrounds */
   --color-bg-base: #0a0a0a;
-  --color-bg-subtle: #111111;
-  --color-bg-muted: #191919;
-  --color-bg-emphasis: #232323;
+  --color-bg-subtle: rgba(255, 255, 255, 0.03);
+  --color-bg-muted: rgba(255, 255, 255, 0.05);
+  --color-bg-emphasis: rgba(255, 255, 255, 0.08);
 
   /* Borders */
   --color-border-subtle: rgba(255, 255, 255, 0.06);
@@ -72,7 +72,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--color-bg-base);
+  background-color: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border-subtle);
   padding: 0 24px;
   height: 48px;
@@ -134,7 +136,9 @@ body {
 }
 
 .terminal-window {
-  background: var(--color-bg-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border-default);
   border-radius: 10px;
   width: 100%;
@@ -195,6 +199,8 @@ body {
   border: 1px solid var(--color-border-subtle);
   border-radius: 8px;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .table-header-row {
@@ -234,6 +240,8 @@ body {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ── Section cards ── */
@@ -243,6 +251,8 @@ body {
   border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .detail-two-col {
@@ -606,6 +616,8 @@ main {
 .service-card {
   transition: border-color 150ms ease, transform 150ms ease;
   will-change: transform;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .service-card:hover {
   border-color: var(--color-border-default) !important;
