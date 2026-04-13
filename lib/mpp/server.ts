@@ -23,9 +23,11 @@ import { TEMPO_ADDRESSES } from "@/lib/types";
 // ── Lazy singleton ─────────────────────────────────────────────────────────────
 // Deferred so missing env vars at module-load time don't crash the Next.js build.
 
-let _mppx: ReturnType<typeof Mppx.create> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _mppx: any | null = null;
 
-function getMppx(): ReturnType<typeof Mppx.create> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getMppx(): any {
   if (_mppx) return _mppx;
 
   const recipient = process.env.MPP_RECIPIENT as `0x${string}` | undefined;
@@ -35,9 +37,11 @@ function getMppx(): ReturnType<typeof Mppx.create> {
     );
   }
 
+  // Use tempo.charge() directly (not tempo()) so that `charge` is the only
+  // registered intent — this makes mppx.charge a unique shorthand.
   _mppx = Mppx.create({
     methods: [
-      tempo({
+      tempo.charge({
         currency: TEMPO_ADDRESSES.pathUsd,
         recipient,
       }),
