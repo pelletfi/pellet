@@ -101,6 +101,9 @@ function AnimatedPipeline() {
         margin: "40px 0",
         overflow: "hidden",
         position: "relative" as const,
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
       }}
     >
       <ScanLine />
@@ -521,6 +524,21 @@ export default function AboutPage() {
     <div>
       {/* ═══ HERO ═══ */}
       <div style={{ position: "relative" }}>
+        {/* Gradient mesh for depth */}
+        <div style={{
+          position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: -1,
+        }}>
+          <div style={{
+            position: "absolute", top: "-30%", right: "-10%", width: "50%", height: "80%",
+            background: "radial-gradient(ellipse, rgba(48,164,108,0.06) 0%, transparent 70%)",
+            filter: "blur(60px)",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-20%", left: "10%", width: "40%", height: "60%",
+            background: "radial-gradient(ellipse, rgba(100,100,255,0.03) 0%, transparent 70%)",
+            filter: "blur(80px)",
+          }} />
+        </div>
         <HeroParticles />
       <motion.div
         initial="hidden"
@@ -582,7 +600,9 @@ export default function AboutPage() {
           variants={fadeUp}
           style={{
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1,
-            background: "var(--color-border-subtle)", borderRadius: 8, overflow: "hidden",
+            background: "var(--color-border-subtle)", borderRadius: 10, overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 0 40px rgba(48,164,108,0.03), inset 0 1px 0 rgba(255,255,255,0.05)",
           }}
         >
           {[
@@ -591,7 +611,7 @@ export default function AboutPage() {
             { value: "172K", label: "24h Volume", prefix: "$" },
             { value: "8", label: "MPP Services", prefix: "" },
           ].map((stat) => (
-            <div key={stat.label} style={{ background: "var(--color-bg-subtle)", padding: "28px 24px", textAlign: "center" }}>
+            <div key={stat.label} style={{ background: "var(--color-bg-subtle)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", padding: "28px 24px", textAlign: "center" }}>
               <div style={{
                 fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 600,
                 fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginBottom: 6,
