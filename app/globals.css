@@ -517,6 +517,15 @@ body {
     flex-wrap: wrap;
     gap: 10px;
   }
+
+  .table-header-row .hide-mobile,
+  .table-data-row .hide-mobile {
+    display: none;
+  }
+
+  .explorer-main-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 
