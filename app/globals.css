@@ -255,6 +255,11 @@ body {
   gap: 12px;
 }
 
+/* ── Service card hover ── */
+.service-card:hover {
+  border-color: var(--color-border-default) !important;
+}
+
 /* ── Terminal page ── */
 .terminal-page {
   padding: 24px 48px;

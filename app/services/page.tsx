@@ -66,6 +66,7 @@ export default async function ServicesPage() {
             href={service.url}
             target="_blank"
             rel="noopener noreferrer"
+            className="service-card"
             style={{
               padding: 24,
               background: "var(--color-bg-subtle)",
@@ -75,14 +76,6 @@ export default async function ServicesPage() {
               display: "block",
               transition: "border-color 0.2s ease",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.borderColor =
-                "var(--color-border-default)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.borderColor =
-                "var(--color-border-subtle)")
-            }
           >
             <div
               style={{
