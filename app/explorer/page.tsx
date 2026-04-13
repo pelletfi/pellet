@@ -8,6 +8,7 @@ import TokenCard from "@/components/TokenCard";
 import Link from "next/link";
 import { ExplorerSearch } from "./ExplorerSearch";
 import { LiquidityTreemap } from "./LiquidityTreemap";
+import { StablecoinFlows } from "./StablecoinFlows";
 
 export const metadata: Metadata = {
   title: "Explorer — Pellet",
@@ -188,7 +189,7 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
             .slice(0, 5)
             .map((t) => ({ name: t.name, liquidity: t.liquidity }))}
         />
-        <div>{/* Reserved for chart — Tasks 5-7 */}</div>
+        <StablecoinFlows />
       </div>
 
       {/* Main content: token table + sidebar */}
