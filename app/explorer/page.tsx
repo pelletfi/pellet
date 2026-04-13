@@ -10,6 +10,7 @@ import { ExplorerSearch } from "./ExplorerSearch";
 import { LiquidityTreemap } from "./LiquidityTreemap";
 import { StablecoinFlows } from "./StablecoinFlows";
 import { Sidebar } from "./Sidebar";
+import { QuoteTokenTree } from "./QuoteTokenTree";
 
 export const metadata: Metadata = {
   title: "Explorer — Pellet",
@@ -316,6 +317,11 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
 
         {/* Sidebar */}
         <Sidebar />
+      </div>
+
+      {/* Quote Token Tree — full width */}
+      <div style={{ marginTop: 24 }}>
+        <QuoteTokenTree />
       </div>
     </div>
   );
