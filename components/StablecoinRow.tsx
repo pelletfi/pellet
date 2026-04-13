@@ -16,9 +16,9 @@ function formatHeadroom(pct: number): string {
 
 function pegDeviationColor(price: number): string {
   const dev = Math.abs(price - 1);
-  if (dev < 0.001) return "#4ade80"; // <0.1% — tight peg
-  if (dev < 0.005) return "#fbbf24"; // <0.5% — mild deviation
-  return "#f87171";                   // ≥0.5% — notable deviation
+  if (dev < 0.001) return "var(--color-positive)"; // <0.1% — tight peg
+  if (dev < 0.005) return "#d97706";               // <0.5% — mild deviation
+  return "var(--color-negative)";                    // ≥0.5% — notable deviation
 }
 
 interface StablecoinRowProps {
@@ -37,21 +37,21 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         gridTemplateColumns: "160px 90px 70px 110px 130px 90px 70px 80px",
         alignItems: "center",
         padding: "12px 16px",
-        borderBottom: "1px solid #1a1a1f",
+        borderBottom: "1px solid var(--color-border)",
         textDecoration: "none",
         color: "inherit",
         transition: "background 0.1s",
         gap: "8px",
       }}
-      className="hover:bg-[#13131a]"
+      className="hover:bg-[var(--color-surface)]"
     >
       {/* Symbol */}
       <span
         style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "14px",
           fontWeight: 500,
-          color: "#e8e8e8",
+          color: "var(--color-text)",
         }}
       >
         {token.symbol}
@@ -60,7 +60,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Price vs pathUSD */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "13px",
           color: priceColor,
         }}
@@ -71,9 +71,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Spread bps */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "#888",
+          color: "var(--color-muted)",
         }}
       >
         {token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
@@ -82,9 +82,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Policy type */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "#c4c4c4",
+          color: "var(--color-secondary)",
         }}
       >
         {token.policy_type || "none"}
@@ -93,9 +93,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Supply */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "#c4c4c4",
+          color: "var(--color-secondary)",
           textAlign: "right",
         }}
       >
@@ -105,9 +105,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Headroom */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.headroom_pct === -1 ? "#555" : "#c4c4c4",
+          color: token.headroom_pct === -1 ? "var(--color-muted)" : "var(--color-secondary)",
         }}
       >
         {formatHeadroom(token.headroom_pct)}
@@ -116,9 +116,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Currency */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "#555",
+          color: "var(--color-muted)",
         }}
       >
         {token.currency}
@@ -127,9 +127,9 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
       {/* Yield */}
       <span
         style={{
-          fontFamily: "var(--font-geist-mono), monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.yield_rate > 0 ? "#4ade80" : "#555",
+          color: token.yield_rate > 0 ? "var(--color-positive)" : "var(--color-muted)",
           textAlign: "right",
         }}
       >
