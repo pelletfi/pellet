@@ -6,9 +6,8 @@ interface Stat {
 export function StatsBar({ stats }: { stats: Stat[] }) {
   return (
     <div
+      className="stats-bar"
       style={{
-        display: "flex",
-        gap: "1px",
         background: "var(--color-border)",
         borderTop: "1px solid var(--color-border)",
         borderBottom: "1px solid var(--color-border)",

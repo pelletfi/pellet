@@ -51,13 +51,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
   const hasPrev = page > 1;
 
   return (
-    <div
-      style={{
-        maxWidth: "1100px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <div className="page-container">
       {/* Header */}
       <h1
         style={{
@@ -88,9 +82,8 @@ export default async function TokensPage({ searchParams }: PageProps) {
 
       {/* Table header */}
       <div
+        className="token-table-header"
         style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr",
           padding: "8px 16px",
           borderBottom: "1px solid var(--color-border)",
         }}
@@ -98,6 +91,7 @@ export default async function TokensPage({ searchParams }: PageProps) {
         {["Token", "Price", "Volume 24H", "Liquidity"].map((label) => (
           <span
             key={label}
+            className={label === "Volume 24H" || label === "Liquidity" ? "hide-mobile" : undefined}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",

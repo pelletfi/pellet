@@ -118,13 +118,7 @@ export default async function TokenPage({
   ]);
 
   return (
-    <main
-      style={{
-        maxWidth: "1000px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <main className="page-container-narrow">
       {/* Header */}
       <div style={{ marginBottom: "28px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
@@ -157,14 +151,7 @@ export default async function TokenPage({
         </div>
 
         {/* Key metrics row */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="metrics-grid">
           {[
             { label: "Price", value: formatUsd(market.price_usd) },
             { label: "Volume 24h", value: formatUsd(market.volume_24h) },
@@ -251,7 +238,7 @@ export default async function TokenPage({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+      <div className="detail-two-col">
         {/* Safety */}
         <div>
           <Section title="Safety">

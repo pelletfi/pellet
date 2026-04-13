@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { PixelIcon } from "./PixelIcon";
+/* eslint-disable @next/next/no-img-element */
 
 const navLinks = [
   { label: "Tokens", href: "/tokens" },
@@ -12,6 +14,7 @@ const navLinks = [
 export function Nav() {
   return (
     <header
+      className="nav-header"
       style={{
         position: "sticky",
         top: 0,
@@ -29,18 +32,24 @@ export function Nav() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          gap: 4,
           textDecoration: "none",
           color: "var(--color-text)",
-          fontSize: 16,
-          fontWeight: 700,
         }}
       >
-        <PixelIcon size={24} />
-        Pellet
+        <span
+          style={{
+            fontFamily: "var(--font-geist-pixel-line)",
+            fontSize: 13,
+            fontWeight: 600,
+            lineHeight: 1,
+          }}
+        >
+          Pellet Finance
+        </span>
       </Link>
 
-      <nav style={{ display: "flex", alignItems: "center", gap: 28 }}>
+      <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 28 }}>
         {navLinks.map((link) => (
           <Link
             key={link.href}

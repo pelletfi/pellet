@@ -1,26 +1,38 @@
 import Image from "next/image";
 import { StatsBar } from "@/components/StatsBar";
 import { HeroTerminal } from "./HeroTerminal";
+import { getPools } from "@/lib/gecko";
+import { getAllStablecoins } from "@/lib/pipeline/stablecoins";
 
 // ---------------------------------------------------------------------------
-// Data fetching
+// Data fetching — call lib functions directly to avoid self-fetch during SSR
 // ---------------------------------------------------------------------------
 
 async function getStats() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
   try {
-    const [tokensRes, stablecoinsRes] = await Promise.all([
-      fetch(`${base}/api/v1/tokens`, { next: { revalidate: 120 } }),
-      fetch(`${base}/api/v1/stablecoins`, { next: { revalidate: 120 } }),
+    const [poolsRes, stablecoins] = await Promise.all([
+      getPools(1),
+      getAllStablecoins(),
     ]);
 
-    const tokensData = tokensRes.ok ? await tokensRes.json() : { tokens: [] };
-    const stablecoinsData = stablecoinsRes.ok ? await stablecoinsRes.json() : { stablecoins: [] };
+    // Deduplicate pools by base token address
+    const seen = new Set<string>();
+    const tokens: { price_usd: number; liquidity_usd: number; volume_24h: number }[] = [];
 
-    const tokens: { price_usd: number; liquidity_usd: number; volume_24h: number }[] =
-      tokensData.tokens ?? [];
-    const stablecoins: unknown[] = stablecoinsData.stablecoins ?? [];
+    for (const pool of poolsRes.data ?? []) {
+      const baseId = pool.relationships?.base_token?.data?.id;
+      if (!baseId) continue;
+
+      const addr = baseId.includes("_") ? baseId.split("_").pop()! : baseId;
+      if (!addr || seen.has(addr.toLowerCase())) continue;
+      seen.add(addr.toLowerCase());
+
+      tokens.push({
+        price_usd: parseFloat(pool.attributes.base_token_price_usd ?? "0"),
+        liquidity_usd: parseFloat(pool.attributes.reserve_in_usd ?? "0"),
+        volume_24h: parseFloat(pool.attributes.volume_usd?.h24 ?? "0"),
+      });
+    }
 
     const totalVolume = tokens.reduce((sum, t) => sum + (t.volume_24h || 0), 0);
     const totalLiquidity = tokens.reduce((sum, t) => sum + (t.liquidity_usd || 0), 0);
@@ -53,24 +65,25 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero — split layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          minHeight: "80vh",
-        }}
-      >
+      <div className="hero-grid">
         {/* Left — thesis */}
         <div
+          className="hero-left"
           style={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            padding: "80px 64px",
             maxWidth: "640px",
             marginLeft: "auto",
           }}
         >
+          {/* Pixel strip */}
+          <div style={{ display: "flex", gap: "3px", marginBottom: "24px" }}>
+            {["#0a0a0a","#333","#555","#888","#aaa","#ccc","#aaa","#888","#555","#333","#0a0a0a"].map((c, i) => (
+              <div key={i} style={{ width: 6, height: 6, background: c, imageRendering: "pixelated" as const }} />
+            ))}
+          </div>
+
           {/* Overline */}
           <div
             style={{

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 function formatUsd(value: number): string {
@@ -36,9 +38,8 @@ export default function TokenCard({
   return (
     <Link
       href={`/token/${address}`}
+      className="token-table-row"
       style={{
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr 1fr 1fr",
         alignItems: "center",
         padding: "12px 16px",
         borderBottom: "1px solid #f5f5f5",
@@ -128,7 +129,7 @@ export default function TokenCard({
       </div>
 
       {/* Volume 24h */}
-      <div style={{ textAlign: "right" }}>
+      <div className="hide-mobile" style={{ textAlign: "right" }}>
         <span
           style={{
             fontFamily: "var(--font-mono)",
@@ -141,7 +142,7 @@ export default function TokenCard({
       </div>
 
       {/* Liquidity */}
-      <div style={{ textAlign: "right" }}>
+      <div className="hide-mobile" style={{ textAlign: "right" }}>
         <span
           style={{
             fontFamily: "var(--font-mono)",

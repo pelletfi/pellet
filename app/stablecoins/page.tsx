@@ -24,13 +24,7 @@ export default async function StablecoinsPage() {
   let stablecoins = await getAllStablecoins().catch(() => []);
 
   return (
-    <main
-      style={{
-        maxWidth: "1100px",
-        margin: "0 auto",
-        padding: "48px 24px",
-      }}
-    >
+    <main className="page-container">
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
         <div>
@@ -83,6 +77,7 @@ export default async function StablecoinsPage() {
       >
         {/* Column headers */}
         <div
+          className="stablecoin-table-header"
           style={{
             display: "grid",
             gridTemplateColumns: "160px 90px 70px 110px 130px 90px 70px 80px",
@@ -95,11 +90,11 @@ export default async function StablecoinsPage() {
           <ColHeader label="Symbol" />
           <ColHeader label="Price" />
           <ColHeader label="Spread" />
-          <ColHeader label="Policy" />
-          <ColHeader label="Supply" right />
-          <ColHeader label="Headroom" right />
-          <ColHeader label="Ccy" />
-          <ColHeader label="Yield" right />
+          <span className="hide-mobile"><ColHeader label="Policy" /></span>
+          <span className="hide-mobile"><ColHeader label="Supply" right /></span>
+          <span className="hide-mobile"><ColHeader label="Headroom" right /></span>
+          <span className="hide-mobile"><ColHeader label="Ccy" /></span>
+          <span className="hide-mobile"><ColHeader label="Yield" right /></span>
         </div>
 
         {/* Rows */}

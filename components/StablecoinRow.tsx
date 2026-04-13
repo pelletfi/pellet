@@ -32,6 +32,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
   return (
     <Link
       href={`/stablecoins/${token.address}`}
+      className="stablecoin-table-row hover:bg-[var(--color-surface)]"
       style={{
         display: "grid",
         gridTemplateColumns: "160px 90px 70px 110px 130px 90px 70px 80px",
@@ -43,7 +44,6 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         transition: "background 0.1s",
         gap: "8px",
       }}
-      className="hover:bg-[var(--color-surface)]"
     >
       {/* Symbol */}
       <span
@@ -81,6 +81,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
       {/* Policy type */}
       <span
+        className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
@@ -92,6 +93,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
       {/* Supply */}
       <span
+        className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
@@ -104,6 +106,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
       {/* Headroom */}
       <span
+        className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
@@ -115,6 +118,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
       {/* Currency */}
       <span
+        className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
@@ -126,6 +130,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
 
       {/* Yield */}
       <span
+        className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",

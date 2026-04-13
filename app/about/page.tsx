@@ -60,13 +60,7 @@ const pStyle: React.CSSProperties = {
 
 export default function AboutPage() {
   return (
-    <main
-      style={{
-        maxWidth: 720,
-        margin: "0 auto",
-        padding: "96px 48px",
-      }}
-    >
+    <main className="page-container-about">
       {/* Top pixel strip */}
       <div style={{ marginBottom: 32 }}>
         <PixelStrip colors={topPixels} />
