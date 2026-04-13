@@ -1,0 +1,17 @@
+{
+  "name": "@pelletfi/mcp",
+  "version": "1.0.0",
+  "description": "Pellet MCP server — Tempo chain intelligence for AI agents",
+  "type": "module",
+  "bin": { "mcp": "./dist/index.js" },
+  "main": "./dist/index.js",
+  "scripts": { "build": "tsc", "dev": "tsc --watch" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.0",
+    "mppx": "^0.5.12",
+    "viem": "^2.47.5"
+  },
+  "devDependencies": { "typescript": "^5.7.0" },
+  "keywords": ["pellet", "tempo", "mcp", "token", "intelligence"],
+  "license": "MIT"
+}
