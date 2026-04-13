@@ -5,31 +5,25 @@ interface Stat {
 
 export function StatsBar({ stats }: { stats: Stat[] }) {
   return (
-    <div
-      className="stats-bar"
-      style={{
-        background: "var(--color-border)",
-        borderTop: "1px solid var(--color-border)",
-        borderBottom: "1px solid var(--color-border)",
-      }}
-    >
+    <div className="stats-bar">
       {stats.map((stat) => (
         <div
           key={stat.label}
           style={{
-            flex: 1,
-            background: "var(--color-surface)",
-            padding: "24px",
+            background: "var(--color-bg-subtle)",
+            padding: 20,
             textAlign: "center",
           }}
         >
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: "22px",
+              fontSize: 20,
               fontWeight: 600,
-              color: "var(--color-text)",
-              marginBottom: "4px",
+              color: "var(--color-text-primary)",
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: "-0.02em",
+              marginBottom: 4,
             }}
           >
             {stat.value}
@@ -37,11 +31,11 @@ export function StatsBar({ stats }: { stats: Stat[] }) {
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: "10px",
+              fontSize: 10,
               fontWeight: 500,
               textTransform: "uppercase" as const,
-              letterSpacing: "1.5px",
-              color: "var(--color-muted)",
+              letterSpacing: "0.06em",
+              color: "var(--color-text-quaternary)",
             }}
           >
             {stat.label}

@@ -1,6 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
-import { PixelIcon } from "./PixelIcon";
 
 const productLinks = [
   { label: "Tokens", href: "/tokens" },
@@ -25,48 +23,40 @@ export function Footer() {
   return (
     <footer
       style={{
-        borderTop: "1px solid var(--color-border)",
-        marginTop: 96,
+        borderTop: "1px solid var(--color-border-subtle)",
+        marginTop: 64,
       }}
     >
       <div className="footer-inner">
-        {/* Left: brand + built on */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div
+        {/* Left: brand + system info */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <span
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              color: "var(--color-text)",
-              fontSize: 16,
-              fontWeight: 700,
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-geist-pixel-line)", fontSize: 13, fontWeight: 600, lineHeight: 1 }}>Pellet Finance</span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
               fontSize: 13,
-              color: "var(--color-secondary)",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
             }}
           >
-            Built on
-            <Image
-              src="/tempo-logo.svg"
-              alt="Tempo"
-              width={60}
-              height={14}
-              style={{ opacity: 0.7 }}
-            />
+            Pellet Finance
+          </span>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-text-quaternary)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <span>Built on Tempo</span>
+            <span>API v1 · 12 endpoints</span>
           </div>
         </div>
 
         {/* Right: three columns */}
         <div className="footer-columns">
-          <FooterColumn title="Product" links={productLinks} internal />
+          <FooterColumn title="Product" links={productLinks} />
           <FooterColumn title="Resources" links={resourceLinks} />
           <FooterColumn title="Social" links={socialLinks} />
         </div>
@@ -78,21 +68,30 @@ export function Footer() {
 function FooterColumn({
   title,
   links,
-  internal,
 }: {
   title: string;
   links: { label: string; href: string }[];
-  internal?: boolean;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <span className="label">{title}</span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 500,
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.06em",
+          color: "var(--color-text-quaternary)",
+        }}
+      >
+        {title}
+      </span>
       {links.map((link) => {
         const isExternal = link.href.startsWith("http");
         const style = {
           fontSize: 13,
-          color: "var(--color-secondary)",
-          textDecoration: "none",
+          color: "var(--color-text-tertiary)",
+          textDecoration: "none" as const,
         };
 
         if (isExternal) {

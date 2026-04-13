@@ -29,17 +29,17 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
   }, [lines]);
 
   const colorMap: Record<string, string> = {
-    green: "var(--color-terminal-green)",
-    yellow: "var(--color-terminal-yellow)",
-    muted: "var(--color-terminal-muted)",
-    default: "var(--color-terminal-text)",
+    green: "var(--color-success)",
+    yellow: "var(--color-warning)",
+    muted: "var(--color-text-quaternary)",
+    default: "var(--color-text-secondary)",
   };
 
   return (
     <div
       ref={containerRef}
       style={{
-        background: "var(--color-terminal)",
+        background: "var(--color-bg-subtle)",
         padding: "24px",
         fontFamily: "var(--font-mono)",
         fontSize: "13px",
@@ -50,19 +50,19 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
     >
       {lines.map((line, i) => {
         if (line.type === "divider") {
-          return <div key={i} style={{ borderTop: "1px solid #222", margin: "8px 0" }} />;
+          return <div key={i} style={{ borderTop: "1px solid var(--color-border-subtle)", margin: "8px 0" }} />;
         }
         if (line.type === "header") {
           return (
-            <div key={i} style={{ fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1.5px", color: "#444", marginBottom: "4px", marginTop: "8px" }}>
+            <div key={i} style={{ fontSize: "10px", textTransform: "uppercase" as const, letterSpacing: "1.5px", color: "var(--color-text-quaternary)", marginBottom: "4px", marginTop: "8px" }}>
               {line.text}
             </div>
           );
         }
         if (line.type === "prompt") {
           return (
-            <div key={i} style={{ color: "var(--color-terminal-text)" }}>
-              <span style={{ color: "var(--color-terminal-muted)" }}>$ </span>
+            <div key={i} style={{ color: "var(--color-text-primary)" }}>
+              <span style={{ color: "var(--color-text-quaternary)" }}>$ </span>
               <span>{line.command}</span>
             </div>
           );
@@ -76,7 +76,7 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
 
       {interactive && (
         <div style={{ display: "flex", marginTop: "4px" }}>
-          <span style={{ color: "var(--color-terminal-muted)", marginRight: "8px" }}>$</span>
+          <span style={{ color: "var(--color-text-quaternary)", marginRight: "8px" }}>$</span>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -91,7 +91,7 @@ export function Terminal({ lines, interactive = false, onCommand }: TerminalProp
               background: "transparent",
               border: "none",
               outline: "none",
-              color: "var(--color-terminal-text)",
+              color: "var(--color-text-primary)",
               fontFamily: "inherit",
               fontSize: "inherit",
               flex: 1,
