@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from "next/server";
+import { isTip20, getCompliance } from "@/lib/pipeline/compliance";
+import { getMarketData } from "@/lib/pipeline/market";
+import { getHolders } from "@/lib/pipeline/holders";
+import { scanSafety } from "@/lib/pipeline/safety";
+
+const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ address: string }> }
+) {
+  const { address } = await params;
+
+  if (!ADDRESS_RE.test(address)) {
+    return NextResponse.json(
+      { error: { code: "INVALID_ADDRESS", message: "Address must be a 42-character 0x hex string" } },
+      { status: 400 }
+    );
+  }
+
+  const addr = address.toLowerCase() as `0x${string}`;
+
+  try {
+    // isTip20 and compliance can run together; market and holders are independent
+    const [tip20, compliance, market] = await Promise.all([
+      isTip20(addr),
+      getCompliance(addr),
+      getMarketData(addr),
+    ]);
+
+    // Holders and safety can now run in parallel (safety needs pools from market)
+    const [holders, safety] = await Promise.all([
+      getHolders(addr),
+      scanSafety(addr, tip20, market.pools),
+    ]);
+
+    return NextResponse.json({
+      address: addr,
+      token_type: compliance.token_type,
+      market: {
+        price_usd: market.price_usd,
+        volume_24h: market.volume_24h,
+        liquidity_usd: market.liquidity_usd,
+        fdv_usd: market.fdv_usd,
+        price_change_24h: market.price_change_24h,
+        pool_count: market.pools.length,
+      },
+      safety: {
+        score: safety.score,
+        verdict: safety.verdict,
+        flags: safety.flags,
+        warnings: safety.warnings,
+        can_buy: safety.can_buy,
+        can_sell: safety.can_sell,
+        honeypot: safety.honeypot,
+      },
+      compliance: {
+        policy_type: compliance.policy_type,
+        paused: compliance.paused,
+        supply_cap: compliance.supply_cap,
+        headroom_pct: compliance.headroom_pct,
+      },
+      holders: {
+        total: holders.total_holders,
+        top5_pct: holders.top5_pct,
+        top10_pct: holders.top10_pct,
+        creator: holders.creator_address,
+      },
+    });
+  } catch (err) {
+    console.error(`[GET /api/v1/tokens/${address}]`, err);
+    return NextResponse.json(
+      { error: { code: "ENRICHMENT_FAILED", message: "Failed to aggregate token data" } },
+      { status: 502 }
+    );
+  }
+}
