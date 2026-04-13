@@ -5,6 +5,7 @@ import { ExplorerSearch } from "./ExplorerSearch";
 import { StablecoinFlows } from "./StablecoinFlows";
 import { Sidebar } from "./Sidebar";
 import { QuoteTokenTree } from "./QuoteTokenTree";
+import { SupplyDistribution } from "./SupplyDistribution";
 import StablecoinsTable from "./TokenTable";
 
 export const metadata: Metadata = {
@@ -122,8 +123,9 @@ export default async function ExplorerPage() {
         ))}
       </div>
 
-      {/* Graphics row — StablecoinFlows full-width */}
-      <div style={{ marginBottom: 24 }}>
+      {/* Graphics row — Supply distribution + Flow diagram */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+        <SupplyDistribution stablecoins={stablecoins} />
         <StablecoinFlows />
       </div>
 
