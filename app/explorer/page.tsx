@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ExplorerSearch } from "./ExplorerSearch";
 import { LiquidityTreemap } from "./LiquidityTreemap";
 import { StablecoinFlows } from "./StablecoinFlows";
+import { Sidebar } from "./Sidebar";
 
 export const metadata: Metadata = {
   title: "Explorer — Pellet",
@@ -313,8 +314,8 @@ export default async function ExplorerPage({ searchParams }: PageProps) {
           )}
         </div>
 
-        {/* Sidebar placeholder */}
-        <div>{/* Reserved for sidebar — Tasks 4-7 */}</div>
+        {/* Sidebar */}
+        <Sidebar />
       </div>
     </div>
   );
