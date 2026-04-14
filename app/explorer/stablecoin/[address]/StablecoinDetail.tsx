@@ -528,6 +528,214 @@ function formatUsd(n: number | null): string {
   return `$${n.toFixed(2)}`;
 }
 
+// ── Rewards panel — TIP-20 reward precompile activity ──
+
+interface RewardsResponse {
+  effective_apy_pct: number | null;
+  opted_in_supply: string | null;
+  opted_in_tokens: number | null;
+  distribution_count: number;
+  distributed: {
+    last_24h_tokens: number;
+    last_7d_tokens: number;
+    all_time_tokens: number;
+  };
+  opt_in: { recipient_count: number; distinct_recipients: number; redirected_count: number };
+  top_funders: Array<{ address: string; label: string | null; distribution_count: number; total_amount_tokens: number }>;
+  recent_distributions: Array<{ funder: string; funder_label: string | null; amount_tokens: number; block_number: number; block_timestamp: string; tx_hash: string }>;
+}
+
+function RewardsPanel({ address, symbol }: { address: string; symbol: string }) {
+  const [rewards, setRewards] = useState<RewardsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/v1/stablecoins/${address}/rewards`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => !cancelled && setRewards(data))
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [address]);
+
+  if (loading || !rewards) return null;
+
+  const hasOptIns = rewards.opt_in.recipient_count > 0;
+  const hasOptedSupply = (rewards.opted_in_tokens ?? 0) > 0;
+  const hasDistributions = rewards.distribution_count > 0;
+  // Don't render if nothing has happened — avoids empty "0 / 0 / 0" blocks on
+  // stables where no one has even opted in yet.
+  if (!hasOptIns && !hasOptedSupply && !hasDistributions) return null;
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      style={{
+        marginTop: 16,
+        padding: "24px",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--color-text-quaternary)",
+          }}
+        >
+          Rewards
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 20,
+            fontWeight: 500,
+            color: "var(--color-text-primary)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {rewards.effective_apy_pct != null ? `${rewards.effective_apy_pct.toFixed(2)}%` : "—"}
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--color-text-quaternary)",
+              marginLeft: 8,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            APY
+          </span>
+        </div>
+      </div>
+
+      {/* Stat grid — opted-in supply, distributions, opt-in count */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 24 }}>
+        <Stat label="Opted-in" value={rewards.opted_in_tokens != null ? rewards.opted_in_tokens.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—"} unit={symbol} />
+        <Stat label="Distributed 7d" value={rewards.distributed.last_7d_tokens.toLocaleString(undefined, { maximumFractionDigits: 2 })} unit={symbol} />
+        <Stat label="Opt-ins" value={rewards.opt_in.recipient_count.toString()} unit={rewards.opt_in.redirected_count > 0 ? `${rewards.opt_in.redirected_count} redirected` : undefined} />
+      </div>
+
+      {rewards.top_funders.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--color-text-quaternary)",
+              paddingBottom: 8,
+              borderBottom: "1px solid var(--color-border-subtle)",
+            }}
+          >
+            Top funders
+          </div>
+          {rewards.top_funders.slice(0, 5).map((f) => (
+            <div
+              key={f.address}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                padding: "10px 0",
+                borderBottom: "1px solid var(--color-border-subtle)",
+              }}
+            >
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--color-text-primary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {f.label ?? shortAddr(f.address)}
+                </div>
+                {f.label && (
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--color-text-quaternary)",
+                      marginTop: 2,
+                    }}
+                  >
+                    {shortAddr(f.address)}
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  color: "var(--color-text-primary)",
+                  fontVariantNumeric: "tabular-nums",
+                  marginLeft: 16,
+                }}
+              >
+                {f.total_amount_tokens.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// Small stat cell used in RewardsPanel.
+function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--color-text-quaternary)",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 16,
+          color: "var(--color-text-primary)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
+      {unit && (
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-text-quaternary)",
+            marginTop: 2,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {unit}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReservesPanel({ address }: { address: string }) {
   const [total, setTotal] = useState<number | null>(null);
   const [reserves, setReserves] = useState<ReserveEntry[]>([]);
@@ -1627,6 +1835,7 @@ export default function StablecoinDetail({
         </BodyProse>
 
         <ReservesPanel address={token.address} />
+        <RewardsPanel address={token.address} symbol={token.symbol} />
         <RiskPanel address={token.address} />
         <RolesPanel address={token.address} />
 
