@@ -159,7 +159,7 @@ export default function StablecoinsTable({ stablecoins: initial }: StablecoinsTa
               borderBottom: "1px solid var(--color-border-default)",
             }}
           >
-            {["Symbol", "Price", "Spread", "Policy", "Supply", "Headroom", "Currency", "Yield"].map(
+            {["Symbol", "Price", "Spread", "Policy", "Supply", "Headroom", "Risk", "Yield"].map(
               (label, i) => (
                 <span
                   key={label}

@@ -1,6 +1,6 @@
 {
   "name": "@pelletfi/mcp",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Pellet MCP server — Tempo chain intelligence for AI agents",
   "type": "module",
   "bin": { "mcp": "./dist/index.js" },

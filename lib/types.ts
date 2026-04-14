@@ -87,6 +87,11 @@ export interface StablecoinData {
   volume_24h: number;
   yield_rate: number;
   opted_in_supply: string;
+  risk?: {
+    composite: number;
+    components: Record<string, number>;
+    computed_at: string;
+  } | null;
 }
 
 export interface StablecoinFlow {

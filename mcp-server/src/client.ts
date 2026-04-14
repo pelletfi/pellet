@@ -59,3 +59,23 @@ export async function getStablecoins(): Promise<unknown> {
 export async function getStablecoinFlows(hours: number = 24): Promise<unknown> {
   return apiGet(`/api/v1/stablecoins/flows?hours=${hours}`);
 }
+
+/** Current peg + 1h/24h/7d aggregates for a stablecoin */
+export async function getPegStats(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/peg`);
+}
+
+/** Detected peg-break events for a stablecoin (mild and severe) */
+export async function getPegEvents(address: string, limit: number = 20): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/peg-events?limit=${limit}`);
+}
+
+/** Composite risk score (0-100) with explainable component breakdown */
+export async function getRiskScore(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/risk`);
+}
+
+/** Reserve / backing data: total backing USD + per-component breakdown */
+export async function getReserves(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/reserves`);
+}

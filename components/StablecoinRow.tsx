@@ -123,16 +123,17 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         {formatHeadroom(token.headroom_pct)}
       </span>
 
-      {/* Currency */}
+      {/* Risk score */}
       <span
         className="hide-mobile"
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: "var(--color-text-tertiary)",
+          color: "var(--color-text-secondary)",
+          fontVariantNumeric: "tabular-nums",
         }}
       >
-        {token.currency}
+        {token.risk?.composite != null ? token.risk.composite.toFixed(0) : "—"}
       </span>
 
       {/* Yield */}
