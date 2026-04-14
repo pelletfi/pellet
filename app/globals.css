@@ -414,12 +414,13 @@ body {
 }
 
 /* Make Fumadocs docs layout respect our 48px sticky nav so the sidebar
-   stays fully in view. */
+   sticks below it and stays fully in view during scroll. */
 #nd-docs-layout,
 [data-docs="true"] {
   --fd-nav-height: 48px !important;
   --fd-layout-offset: 48px !important;
   --fd-docs-height: calc(100dvh - 48px) !important;
+  --fd-docs-row-1: 48px !important;
   --fd-tocnav-height: 48px !important;
 }
 
