@@ -1,13 +1,37 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
-import { getCompliance } from "@/lib/pipeline/compliance";
+import { tempoClient } from "@/lib/rpc";
+import { TEMPO_ADDRESSES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 interface Params {
   params: Promise<{ address: string }>;
 }
+
+// Same getPolicy signature used by the working stablecoins pipeline.
+const TIP403_GET_POLICY_ABI = [
+  {
+    name: "getPolicy",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [
+      { name: "policyId", type: "uint256" },
+      { name: "policyType", type: "uint8" },
+      { name: "admin", type: "address" },
+      { name: "supplyCap", type: "uint256" },
+      { name: "paused", type: "bool" },
+    ],
+  },
+] as const;
+
+const POLICY_TYPE_LABELS: Record<number, string> = {
+  0: "whitelist",
+  1: "blacklist",
+  2: "compound",
+};
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
@@ -41,28 +65,34 @@ export async function GET(_req: Request, { params }: Params) {
       });
     }
 
-    // 2. Augment with TIP-403 policy admin — this we always know via direct RPC
-    //    by reusing the existing compliance pipeline (which reads token metadata
-    //    to get transferPolicyId, then fetches policyData(policyId) for admin).
+    // 2. Augment with TIP-403 policy admin via direct RPC.
+    //    This works for any stable that has a non-default policy attached
+    //    (transferPolicyId > 1). For pathUSD and others without one, returns null.
     let policyAdmin: string | null = null;
     try {
-      const compliance = await getCompliance(stable as `0x${string}`);
-      const admin = compliance.policy_admin;
+      const policy = await tempoClient.readContract({
+        address: TEMPO_ADDRESSES.tip403Registry,
+        abi: TIP403_GET_POLICY_ABI,
+        functionName: "getPolicy",
+        args: [stable as `0x${string}`],
+      });
+      const [, ptype, admin] = policy as readonly [bigint, number, `0x${string}`, bigint, boolean];
       if (admin && admin.toLowerCase() !== ZERO_ADDR) {
         policyAdmin = admin.toLowerCase();
+        const policyTypeLabel = POLICY_TYPE_LABELS[Number(ptype)] ?? "policy";
         byRole.set("POLICY_ADMIN", [
           {
             holder: policyAdmin,
             granted_at: null,
             granted_tx_hash: null,
             holder_type: null,
-            label: compliance.policy_type ? `TIP-403 ${compliance.policy_type} admin` : null,
+            label: `TIP-403 ${policyTypeLabel} admin`,
             source: "tip403_registry",
           },
         ]);
       }
     } catch {
-      // Compliance read failed — leave POLICY_ADMIN out
+      // No policy attached, or RPC failed — leave POLICY_ADMIN out
     }
 
     // Coverage metadata — be transparent about what data is available.
