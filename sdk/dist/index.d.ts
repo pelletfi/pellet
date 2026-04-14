@@ -1,4 +1,4 @@
-import type { Address, AddressLabel, CronRunsResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RewardsResponse, RiskResponse, RolesResponse, StablecoinSummary, StablecoinsListResponse } from "./types.js";
+import type { Address, AddressLabel, CronRunsResponse, FeeEconomicsOverviewResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RewardsResponse, RiskResponse, RolesResponse, StablecoinSummary, StablecoinsListResponse } from "./types.js";
 export * from "./types.js";
 interface PelletConfig {
     /** Base URL — defaults to https://pelletfi.com */
@@ -53,6 +53,11 @@ export declare class Pellet {
     flows(opts?: {
         hours?: number;
     }): Promise<PelletResponse<FlowsResponse>>;
+    /** Fee-token economics overview — which stables are being elected as fee tokens,
+     * how many fees each has received, ecosystem-wide totals. */
+    feeEconomics(opts?: {
+        asOf?: AsOf;
+    }): Promise<PelletResponse<FeeEconomicsOverviewResponse>>;
     /** Recent flow anomalies (z-score-detected unusual flows). */
     flowAnomalies(opts?: {
         limit?: number;

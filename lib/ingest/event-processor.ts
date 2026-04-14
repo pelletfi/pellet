@@ -33,6 +33,7 @@ const BACKFILL_FROM_BLOCK = process.env.BACKFILL_FROM_BLOCK
 const WATCHED_CONTRACTS = [
   ...KNOWN_STABLECOINS.map((s) => s.address),
   TEMPO_ADDRESSES.tip403Registry,
+  TEMPO_ADDRESSES.feeManager,
 ];
 
 interface Cursor {

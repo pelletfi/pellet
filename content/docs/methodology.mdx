@@ -219,6 +219,33 @@ If either exceeds threshold, status returns `drift` (HTTP 503 on `/api/v1/system
 
 ---
 
+## Fee-token economics
+
+Tempo lets users and validators elect which TIP-20 token pays transaction fees (`setUserToken`, `setValidatorToken`). When fees accumulate, anyone can call `distributeFees(validator, token)` to settle them to the validator. These elections and distributions are invisible to standard indexers because the fee manager is a chain precompile — standard ABI detection tools don't pick it up.
+
+**Events indexed** (decoded every 5 minutes):
+
+| Event | Captures | Stored in |
+| --- | --- | --- |
+| `UserTokenSet(indexed user, indexed token)` | User's fee-token election | `fee_token_users` (current state, latest wins) |
+| `ValidatorTokenSet(indexed validator, indexed token)` | Validator's fee-token election | `fee_token_validators` |
+| `FeesDistributed(indexed validator, indexed token, uint256 amount)` | Actual fee settlement | `fee_distributions` (append-only) |
+
+**Fee source contract:** `0xfeec000000000000000000000000000000000000` (Tempo fee manager precompile).
+
+**Share computation:**
+
+```
+share_of_fees_7d_pct = fees_distributed_in_token_last_7d / total_fees_all_tokens_last_7d × 100
+```
+
+**Caveats:**
+- Users / validators can elect any TIP-20 — not only the stables Pellet tracks. The overview only enumerates `KNOWN_STABLECOINS`; other elected tokens are still counted toward ecosystem totals but not given their own row.
+- `token = 0x0` means opt-out (revert to default). Filtered from election counts.
+- Fee history starts from when we added the fee manager to our ingestion watch list (`2026-04-14`). Distributions or elections prior to that aren't indexed unless we run a targeted backfill.
+
+---
+
 ## Rewards & effective yield
 
 Tempo TIP-20 has an **opt-in reward precompile** on every stablecoin. Any address can fund a reward pool via `distribute(amount)`; opted-in holders accrue claimable rewards proportional to their balance. Claiming is explicit (`claim()`) — no rebase.

@@ -77,6 +77,11 @@ export class Pellet {
         const hours = opts.hours ?? 24;
         return this.request(`/api/v1/stablecoins/flows?hours=${hours}`);
     }
+    /** Fee-token economics overview — which stables are being elected as fee tokens,
+     * how many fees each has received, ecosystem-wide totals. */
+    feeEconomics(opts = {}) {
+        return this.request(`/api/v1/fee-economics/overview`, { asOf: opts.asOf });
+    }
     /** Recent flow anomalies (z-score-detected unusual flows). */
     flowAnomalies(opts = {}) {
         const limit = opts.limit ?? 20;

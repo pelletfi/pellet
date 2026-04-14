@@ -87,6 +87,7 @@ The response `meta.asOf` confirms which frozen slice you got. Risk and reserves 
 | `pellet.stablecoin(addr).roles()` | Forensically-derived role holders |
 | `pellet.flows({ hours? })` | Cross-stable flow data |
 | `pellet.flowAnomalies({ limit? })` | Z-score-detected flow anomalies |
+| `pellet.feeEconomics()` | Which stables are elected as Tempo fee tokens + revenue share |
 | `pellet.address(addr).lookup()` | Address label / entity resolution |
 | `pellet.system.health()` | Pellet system health probe |
 | `pellet.system.cronRuns()` | Per-pipeline run history + 24h success rate |

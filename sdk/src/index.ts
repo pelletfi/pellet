@@ -12,6 +12,7 @@ import type {
   Address,
   AddressLabel,
   CronRunsResponse,
+  FeeEconomicsOverviewResponse,
   FlowAnomaliesResponse,
   FlowsResponse,
   HealthResponse,
@@ -121,6 +122,15 @@ export class Pellet {
   flows(opts: { hours?: number } = {}) {
     const hours = opts.hours ?? 24;
     return this.request<FlowsResponse>(`/api/v1/stablecoins/flows?hours=${hours}`);
+  }
+
+  /** Fee-token economics overview — which stables are being elected as fee tokens,
+   * how many fees each has received, ecosystem-wide totals. */
+  feeEconomics(opts: { asOf?: AsOf } = {}) {
+    return this.request<FeeEconomicsOverviewResponse>(
+      `/api/v1/fee-economics/overview`,
+      { asOf: opts.asOf },
+    );
   }
 
   /** Recent flow anomalies (z-score-detected unusual flows). */

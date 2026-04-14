@@ -315,6 +315,57 @@ export const rewardRecipients = pgTable(
   }),
 );
 
+// FeesDistributed events — one row per (validator, token, amount) distribution.
+export const feeDistributions = pgTable(
+  "fee_distributions",
+  {
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    validator: text("validator").notNull(),
+    token: text("token").notNull(),
+    amount: numeric("amount").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+    blockTimestamp: timestamp("block_timestamp", { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.txHash, t.logIndex] }),
+    tokenTimeIdx: index("fee_distributions_token_time_idx").on(t.token, t.blockTimestamp),
+    validatorIdx: index("fee_distributions_validator_idx").on(t.validator),
+  }),
+);
+
+// Current fee-token election per user. UserTokenSet events; latest wins.
+export const feeTokenUsers = pgTable(
+  "fee_token_users",
+  {
+    user: text("user").primaryKey(),
+    token: text("token").notNull(),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull(),
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+  },
+  (t) => ({
+    tokenIdx: index("fee_token_users_token_idx").on(t.token),
+  }),
+);
+
+// Same shape for validators.
+export const feeTokenValidators = pgTable(
+  "fee_token_validators",
+  {
+    validator: text("validator").primaryKey(),
+    token: text("token").notNull(),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull(),
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+  },
+  (t) => ({
+    tokenIdx: index("fee_token_validators_token_idx").on(t.token),
+  }),
+);
+
 // Append-only history of risk_scores snapshots. Written on every cron tick.
 // Enables time-travel (`?as_of=`) queries.
 export const riskScoresHistory = pgTable(

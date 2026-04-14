@@ -229,6 +229,46 @@ export interface RewardsResponse {
   recent_distributions: RewardDistribution[];
 }
 
+// ── Fee economics ────────────────────────────────────────────────────────────
+
+export interface FeeStablecoinRow {
+  address: Address;
+  symbol: string;
+  name: string;
+  users_electing: number;
+  validators_electing: number;
+  fees_received_24h_tokens: number;
+  fees_received_7d_tokens: number;
+  fees_received_all_time_tokens: number;
+  /** This stable's share of total fees distributed in last 7d (pct). Null if no fees yet. */
+  share_of_fees_7d_pct: number | null;
+  distribution_count: number;
+}
+
+export interface FeeRecentDistribution {
+  validator: Address;
+  validator_label: string | null;
+  token: Address;
+  token_symbol: string | null;
+  amount_tokens: number;
+  block_number: number;
+  block_timestamp: string;
+  tx_hash: string;
+}
+
+export interface FeeEconomicsOverviewResponse {
+  as_of: string | null;
+  totals: {
+    users_electing: number;
+    validators_electing: number;
+    fees_distributed_7d_tokens: number;
+    fees_distributed_all_time_tokens: number;
+    distribution_count: number;
+  };
+  stablecoins: FeeStablecoinRow[];
+  recent_distributions: FeeRecentDistribution[];
+}
+
 // ── System health & cron runs ────────────────────────────────────────────────
 
 export interface HealthResponse {
