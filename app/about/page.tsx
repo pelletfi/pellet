@@ -184,10 +184,7 @@ function PixelGrid({ rows = 4, cols = 16 }: { rows?: number; cols?: number }) {
           {Array.from({ length: cols }).map((_, c) => {
             const dist = Math.abs(c - cols / 2) + Math.abs(r - rows / 2);
             const opacity = Math.max(0.02, 0.12 - dist * 0.008);
-            const greenTint = ((r * cols + c) * 2654435761 >>> 0) % 5 === 0;
-            const bg = greenTint
-              ? `rgba(48,164,108,${Math.max(0.04, opacity * 0.7)})`
-              : `rgba(255,255,255,${opacity})`;
+            const bg = `rgba(255,255,255,${opacity})`;
             return (
               <motion.div
                 key={c}
@@ -605,8 +602,8 @@ export default function AboutPage() {
           50% { background-position: 0% 50%; }
         }
         @keyframes callout-pulse {
-          0%, 100% { border-left-color: rgba(48,164,108,0.3); }
-          50% { border-left-color: rgba(48,164,108,0.8); }
+          0%, 100% { border-left-color: rgba(255,255,255,0.2); }
+          50% { border-left-color: rgba(255,255,255,0.55); }
         }
       `}</style>
       {/* ═══ HERO ═══ */}
@@ -804,10 +801,10 @@ export default function AboutPage() {
 
         {/* Callout */}
         <motion.div variants={fadeUp} style={{
-          borderLeft: "2px solid rgba(48,164,108,0.5)",
+          borderLeft: "2px solid rgba(255,255,255,0.3)",
           padding: "20px 24px",
           margin: "32px 0",
-          background: "rgba(48,164,108,0.04)",
+          background: "rgba(255,255,255,0.025)",
           borderRadius: "0 8px 8px 0",
           animation: "callout-pulse 3s ease-in-out infinite",
         }}>
@@ -875,16 +872,16 @@ export default function AboutPage() {
           <div style={{ display: "table" }}>
             {[
               <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a stablecoin via MPP</span></>,
-              <><span style={{ color: "var(--color-success)" }}>$</span> mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000</>,
+              <><span style={{ color: "rgba(255,255,255,0.93)" }}>$</span> mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000</>,
               <>&nbsp;</>,
               <><span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span></>,
-              <><span style={{ color: "var(--color-success)" }}>{'{'}</span></>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;symbol&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;pathUSD&quot;</span>,</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;peg&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;price&quot;</span>: <span style={{ color: "var(--color-success)" }}>1.0000</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;spread_bps&quot;</span>: <span style={{ color: "var(--color-success)" }}>0</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;supply&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;current&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;1.09M&quot;</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;cap&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;uncapped&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;policy&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;blacklist&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;backing&quot;</span>: <span style={{ color: "var(--color-success)" }}>&quot;protocol-native&quot;</span></>,
-              <><span style={{ color: "var(--color-success)" }}>{'}'}</span></>,
+              <><span style={{ color: "rgba(255,255,255,0.93)" }}>{'{'}</span></>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;symbol&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;pathUSD&quot;</span>,</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;peg&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;price&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>1.0000</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;spread_bps&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>0</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;supply&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;current&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;1.09M&quot;</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;cap&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;uncapped&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;policy&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;blacklist&quot;</span> {'}'},</>,
+              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;backing&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;protocol-native&quot;</span></>,
+              <><span style={{ color: "rgba(255,255,255,0.93)" }}>{'}'}</span></>,
             ].map((line, i) => (
               <div key={i} style={{ display: "table-row" }}>
                 <span style={{
