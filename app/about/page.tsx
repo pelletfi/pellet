@@ -527,6 +527,47 @@ function NetworkViz() {
   );
 }
 
+// ── Cycling word for hero eyebrow ──────────────────────────────────────────
+
+function CyclingWord() {
+  const words = ["Peg", "Policy", "Flow"];
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2200);
+    return () => clearInterval(id);
+  }, [words.length]);
+
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        position: "relative",
+        minWidth: 52,
+        height: 14,
+        verticalAlign: "middle",
+      }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={words[i]}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as const }}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            color: "var(--color-text-primary)",
+          }}
+        >
+          {words[i]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
 // ── Section rule divider ───────────────────────────────────────────────────
 
 function SectionRule() {
@@ -572,7 +613,9 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span>Stablecoin Intelligence</span>
+          <span>MPP Native</span>
+          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
+          <CyclingWord />
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             Built on
