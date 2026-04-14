@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, numeric, timestamp, jsonb, primaryKey, index } from "drizzle-orm/pg-core";
 
 export const tokens = pgTable("tokens", {
   address: text("address").primaryKey(),
@@ -55,5 +55,53 @@ export const policies = pgTable("policies", {
   admin: text("admin"),
   tokenCount: integer("token_count").default(0),
   tokens: text("tokens").array(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── Ingestion foundation ────────────────────────────────────────────────────
+
+// Raw chain events — idempotent by (txHash, logIndex).
+// Covers TIP-20 events (Transfer, Mint, Burn, RoleGranted, etc.) and
+// TIP-403 events (PolicyAdded, PolicyRemoved, PolicyUpdated).
+export const events = pgTable(
+  "events",
+  {
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+    blockTimestamp: timestamp("block_timestamp", { withTimezone: true }).notNull(),
+    contract: text("contract").notNull(),
+    eventType: text("event_type").notNull(),
+    args: jsonb("args").notNull(),
+    ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.txHash, t.logIndex] }),
+    contractBlockIdx: index("events_contract_block_idx").on(t.contract, t.blockNumber),
+    typeBlockIdx: index("events_type_block_idx").on(t.eventType, t.blockNumber),
+  }),
+);
+
+// Per-block peg price samples — one row per stable per sampled block.
+export const pegSamples = pgTable(
+  "peg_samples",
+  {
+    id: serial("id").primaryKey(),
+    stable: text("stable").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+    sampledAt: timestamp("sampled_at", { withTimezone: true }).notNull(),
+    priceVsPathusd: numeric("price_vs_pathusd").notNull(),
+    spreadBps: numeric("spread_bps").notNull(),
+  },
+  (t) => ({
+    stableTimeIdx: index("peg_samples_stable_time_idx").on(t.stable, t.sampledAt),
+  }),
+);
+
+// Ingestion cursor — tracks last processed block per contract.
+// Separate row for peg sampler ("__peg_sampler__") and one per stable contract.
+export const ingestionCursors = pgTable("ingestion_cursors", {
+  contract: text("contract").primaryKey(),
+  lastBlock: bigint("last_block", { mode: "number" }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

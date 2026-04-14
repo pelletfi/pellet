@@ -37,8 +37,8 @@ yarn-error.log*
 # vercel
 .vercel
 
-# drizzle
-drizzle/
+# drizzle (migrations are tracked; only ignore drizzle-kit's metadata cache)
+drizzle/meta/
 
 # fumadocs generated
 /.source/
