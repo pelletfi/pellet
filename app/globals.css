@@ -578,11 +578,11 @@ body {
   }
 
   .explorer-main-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .explorer-graphics {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* ── Mobile polish — landing hero & sections ── */
@@ -654,13 +654,14 @@ body {
     gap: 8px !important;
   }
 
-  /* Prevent any explorer-page child from overflowing viewport */
-  .explorer-page,
-  .explorer-page * {
-    max-width: 100%;
-  }
+  /* Prevent any explorer-page descendant from overflowing viewport */
   .explorer-page {
     overflow-x: hidden;
+  }
+  .explorer-page > div,
+  .explorer-page .explorer-main-grid > div {
+    min-width: 0;
+    max-width: 100%;
   }
 
   /* ── Stablecoin detail page ── */

@@ -35,7 +35,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
     .sort((a, b) => b.supply - a.supply);
 
   const total = entries.reduce((sum, e) => sum + e.supply, 0);
-  if (total === 0 || entries.length === 0) return null;
+  const hasData = total > 0 && entries.length > 0;
 
   // Take up to 5, aggregate rest as "Other"
   const top = entries.slice(0, 5);
@@ -79,6 +79,14 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
         SUPPLY DISTRIBUTION
       </div>
 
+      {!hasData ? (
+        <div style={{
+          flex: 1, minHeight: 150, display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "var(--font-mono)", fontSize: 11, color: "rgba(255,255,255,0.28)",
+        }}>
+          No supply data available
+        </div>
+      ) : (
       <div
         className="supply-grid"
         style={{
@@ -158,6 +166,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
