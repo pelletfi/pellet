@@ -1,0 +1,30 @@
+{
+  "name": "@pelletfi/sdk",
+  "version": "1.0.0",
+  "description": "Typed TypeScript client for the Pellet API — stablecoin intelligence on Tempo.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["pellet", "tempo", "stablecoin", "intelligence", "api", "sdk"],
+  "license": "MIT",
+  "homepage": "https://pelletfi.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pelletfi/pellet"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
