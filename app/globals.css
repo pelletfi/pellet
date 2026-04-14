@@ -424,6 +424,13 @@ body {
   --fd-tocnav-height: 48px !important;
 }
 
+/* All-black sidebar — no card background, minimal editorial look */
+.dark #nd-sidebar {
+  --color-fd-card: var(--color-bg-base);
+  background: var(--color-bg-base) !important;
+  border-inline-end-color: var(--color-border-subtle) !important;
+}
+
 /* Hide theme toggle and its empty wrapper — site is dark-only by design */
 [data-theme-toggle] {
   display: none !important;
