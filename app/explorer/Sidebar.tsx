@@ -392,16 +392,7 @@ function LiveFeed() {
     <div style={cardStyle}>
       <div style={cardHeaderStyle}>
         <span style={cardTitleStyle}>Live Feed</span>
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "var(--color-success)",
-            opacity: 0.7,
-            display: "inline-block",
-          }}
-        />
+        <span className="status-dot" />
       </div>
       <div style={{ padding: "6px 14px 10px" }}>
         {feed.slice(0, 7).map((item) => (
