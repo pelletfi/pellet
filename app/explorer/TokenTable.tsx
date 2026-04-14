@@ -113,7 +113,9 @@ export default function StablecoinsTable({ stablecoins: initial }: StablecoinsTa
     background: "none",
     border: "none",
     cursor: "pointer",
-    borderBottom: "2px solid transparent",
+    borderBottomWidth: 2,
+    borderBottomStyle: "solid",
+    borderBottomColor: "transparent",
     marginBottom: -1,
   };
 
