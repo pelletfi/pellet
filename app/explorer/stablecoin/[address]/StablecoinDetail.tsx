@@ -340,9 +340,10 @@ function PegSparkline({ price }: { price: number }) {
 
 interface RoleHolder {
   holder: string;
+  holder_label: string | null;
+  holder_category: string | null;
   granted_at: string | null;
   granted_tx_hash: string | null;
-  label: string | null;
   source: string;
 }
 interface RoleEntry {
@@ -453,14 +454,37 @@ function RolesPanel({ address }: { address: string }) {
                       rel="noopener noreferrer"
                       style={{
                         display: "block",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 12,
-                        color: "var(--color-text-primary)",
                         textDecoration: "none",
-                        marginBottom: 2,
+                        marginBottom: 4,
                       }}
                     >
-                      {shortAddr(h.holder)}
+                      {h.holder_label ? (
+                        <>
+                          <div style={{
+                            fontSize: 12,
+                            color: "var(--color-text-primary)",
+                            lineHeight: 1.3,
+                          }}>
+                            {h.holder_label}
+                          </div>
+                          <div style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            color: "var(--color-text-quaternary)",
+                            marginTop: 1,
+                          }}>
+                            {shortAddr(h.holder)}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          color: "var(--color-text-primary)",
+                        }}>
+                          {shortAddr(h.holder)}
+                        </div>
+                      )}
                     </a>
                   ))
                 )}

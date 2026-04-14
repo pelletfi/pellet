@@ -126,6 +126,19 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Address labels — human-readable resolution for any on-chain address that
+// shows up in our data. Powers the role-holder UI, peg-events, flow-anomalies,
+// and the standalone /api/v1/addresses/:addr endpoint.
+export const addressLabels = pgTable("address_labels", {
+  address: text("address").primaryKey(),
+  label: text("label").notNull(),
+  category: text("category").notNull(),
+  source: text("source").notNull(),
+  verified: text("verified").notNull().default("true"),
+  notes: jsonb("notes"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Cron run history — one row per cron invocation. Tracks duration, status,
 // and per-cron details for operator visibility (drift, latency, failures).
 export const cronRuns = pgTable(

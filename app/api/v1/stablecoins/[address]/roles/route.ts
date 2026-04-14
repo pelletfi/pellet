@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { lookupLabels } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -33,16 +34,23 @@ export async function GET(_req: Request, { params }: Params) {
     const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
       ?? (result as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
 
+    // Resolve labels for every holder address in one query
+    const allHolderAddrs = rows.map((r) => String(r.holder));
+    const labels = await lookupLabels(allHolderAddrs);
+
     const byRole = new Map<string, Array<Record<string, unknown>>>();
     for (const r of rows) {
       const name = String(r.role_name ?? "UNKNOWN");
+      const holderAddr = String(r.holder).toLowerCase();
+      const labelEntry = labels.get(holderAddr);
       if (!byRole.has(name)) byRole.set(name, []);
       byRole.get(name)!.push({
         holder: r.holder,
+        holder_label: labelEntry?.label ?? null,
+        holder_category: labelEntry?.category ?? null,
+        holder_notes: labelEntry?.notes ?? null,
         granted_at: r.granted_at,
         granted_tx_hash: r.granted_tx_hash,
-        holder_type: r.holder_type,
-        label: r.label,
         source: "forensic_derivation",
       });
     }
