@@ -529,8 +529,8 @@ function NetworkViz() {
 
 // ── Cycling word for hero eyebrow ──────────────────────────────────────────
 
-function CyclingWord() {
-  const words = ["Peg", "Supply", "Policy", "Flow"];
+function CyclingWord({ size = 15, italic = true }: { size?: number; italic?: boolean } = {}) {
+  const words = ["peg", "policy", "flow"];
   const [i, setI] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setI((n) => (n + 1) % words.length), 3500);
@@ -543,12 +543,9 @@ function CyclingWord() {
     <span
       style={{
         display: "inline-flex",
-        color: "var(--color-text-secondary)",
-        fontFamily: "'Instrument Serif', Georgia, serif",
-        fontStyle: "italic",
-        fontSize: 15,
+        fontStyle: italic ? "italic" : "normal",
+        fontSize: size,
         textTransform: "none",
-        letterSpacing: "-0.01em",
         lineHeight: 1,
         perspective: 400,
       }}
@@ -631,8 +628,6 @@ export default function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.5 }} />
           </span>
-          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
-          <CyclingWord />
         </motion.div>
 
         <motion.h1
@@ -644,16 +639,18 @@ export default function AboutPage() {
             textShadow: "0 0 40px rgba(255,255,255,0.1)",
           }}
         >
-          The first payments chain{" "}
+          The first payments chain.
           <br />
-          has its own <em style={{
+          Every <CyclingWord size={48} italic={false} /> mapped.
+          <br />
+          <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             animation: "shimmer 10s ease-in-out infinite",
-          }}>stablecoin intelligence.</em>
+          }}>Stablecoin Intelligence.</em>
         </motion.h1>
 
         <motion.p
