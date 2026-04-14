@@ -336,6 +336,155 @@ function PegSparkline({ price }: { price: number }) {
 
 // ── Supply cap bar ──────────────────────────────────────────────────────────
 
+// ── Role holders panel — fetched from /api/v1/stablecoins/:address/roles ──
+
+interface RoleHolder {
+  holder: string;
+  granted_at: string | null;
+  granted_tx_hash: string | null;
+  label: string | null;
+  source: string;
+}
+interface RoleEntry {
+  role_name: string;
+  holder_count: number;
+  holders: RoleHolder[];
+}
+interface RolesResponse {
+  coverage: { status: string; message: string; roles_tracked: { name: string; powers: string }[] };
+  roles: RoleEntry[];
+}
+
+function shortAddr(addr: string): string {
+  if (!addr || addr.length < 12) return addr;
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function RolesPanel({ address }: { address: string }) {
+  const [data, setData] = useState<RolesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/v1/stablecoins/${address}/roles`)
+      .then((r) => r.json())
+      .then((d) => !cancelled && setData(d))
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  if (loading || !data) return null;
+
+  // Build a map of role_name → holders
+  const heldByRole = new Map<string, RoleHolder[]>();
+  for (const r of data.roles) heldByRole.set(r.role_name, r.holders);
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      style={{
+        marginTop: 16,
+        padding: "24px",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--color-text-quaternary)",
+          }}
+        >
+          Role holders (TIP-20 RBAC)
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-text-quaternary)",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}
+        >
+          {data.coverage.status}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {data.coverage.roles_tracked.map((role) => {
+          const holders = heldByRole.get(role.name) ?? [];
+          return (
+            <div
+              key={role.name}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gap: 12,
+                paddingBottom: 10,
+                borderBottom: "1px solid var(--color-border-subtle)",
+                alignItems: "baseline",
+              }}
+            >
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-secondary)", letterSpacing: "0.04em" }}>
+                  {role.name.replace(/_/g, " ")}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--color-text-tertiary)", marginTop: 2 }}>
+                  {role.powers}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                {holders.length === 0 ? (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-quaternary)" }}>—</span>
+                ) : (
+                  holders.map((h) => (
+                    <a
+                      key={h.holder}
+                      href={`https://tempoexplorer.com/address/${h.holder}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "block",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 12,
+                        color: "var(--color-text-primary)",
+                        textDecoration: "none",
+                        marginBottom: 2,
+                      }}
+                    >
+                      {shortAddr(h.holder)}
+                    </a>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p
+        style={{
+          marginTop: 14,
+          marginBottom: 0,
+          fontSize: 11,
+          color: "var(--color-text-quaternary)",
+          lineHeight: 1.5,
+        }}
+      >
+        Holders are derived forensically from on-chain action history (mint, burn, burnBlocked transactions traced via debug_traceTransaction, then verified with hasRole). Empty rows mean no role-bearing actions have happened for that role yet.
+      </p>
+    </motion.div>
+  );
+}
+
 // ── Backing & reserves panel — fetched from /api/v1/stablecoins/:address/reserves ──
 
 interface ReserveEntry {
@@ -1455,6 +1604,7 @@ export default function StablecoinDetail({
 
         <ReservesPanel address={token.address} />
         <RiskPanel address={token.address} />
+        <RolesPanel address={token.address} />
 
         {editorial && editorial.risks.length > 0 && (
           <motion.div variants={fadeUp} style={{ marginTop: 32 }}>
