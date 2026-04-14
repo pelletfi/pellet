@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} dark`} suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
@@ -26,7 +26,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <RootProvider theme={{ enabled: false }}>
+        <RootProvider theme={{ enabled: true, defaultTheme: "dark", forcedTheme: "dark" }}>
           <Nav />
           <main>{children}</main>
           <Footer />
