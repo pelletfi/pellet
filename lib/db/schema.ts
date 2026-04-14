@@ -106,6 +106,26 @@ export const ingestionCursors = pgTable("ingestion_cursors", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Current role holders per stable — rebuilt from RoleGranted / RoleRevoked
+// events on each cron tick. Not authoritative history; point-in-time current state.
+export const roleHolders = pgTable(
+  "role_holders",
+  {
+    stable: text("stable").notNull(),
+    roleHash: text("role_hash").notNull(), // bytes32 as hex
+    roleName: text("role_name").notNull(), // decoded, e.g. "MINTER_ROLE" or "0xabc..." if unknown
+    holder: text("holder").notNull(),
+    grantedAt: timestamp("granted_at", { withTimezone: true }).notNull(),
+    grantedTxHash: text("granted_tx_hash").notNull(),
+    holderType: text("holder_type"), // 'eoa' | 'contract' | null if unresolved
+    label: text("label"), // human-readable label if known
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.stable, t.roleHash, t.holder] }),
+    stableIdx: index("role_holders_stable_idx").on(t.stable),
+  }),
+);
+
 // Rolling peg aggregates — computed from peg_samples on a cron cadence.
 // One row per (stable, window_label). Updated in place.
 export const pegAggregates = pgTable(

@@ -3,6 +3,7 @@
   "crons": [
     { "path": "/api/cron/ingest", "schedule": "*/1 * * * *" },
     { "path": "/api/cron/peg-sample", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/peg-aggregate", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/peg-aggregate", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/role-holders", "schedule": "*/10 * * * *" }
   ]
 }
