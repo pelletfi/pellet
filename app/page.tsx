@@ -242,7 +242,7 @@ function ArchDiagram() {
         Distribution Surfaces
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div className="arch-row-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         {[
           { label: "pelletfi.com", desc: "Web explorer" },
           { label: "REST API", desc: "GET /v1/stablecoins/*" },
@@ -264,7 +264,7 @@ function ArchDiagram() {
 
       <motion.div variants={fadeIn} style={{ display: "flex", justifyContent: "center", padding: "10px 0", color: "var(--color-text-quaternary)", fontSize: 16 }}>↑</motion.div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div className="arch-row-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         {[
           { label: "TIP-20 Precompile", desc: "Supply · Roles · Rewards" },
           { label: "TIP-403 Registry", desc: "Policies · Admins" },
@@ -613,10 +613,12 @@ export default function AboutPage() {
         initial="hidden"
         animate="visible"
         variants={stagger}
+        className="hero-wrap"
         style={{ maxWidth: 800, margin: "0 auto", padding: "120px 48px 60px", position: "relative" }}
       >
         <motion.div
           variants={fadeUp}
+          className="hero-eyebrow"
           style={{
             fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 500,
             textTransform: "uppercase" as const, letterSpacing: "0.06em",
@@ -639,6 +641,7 @@ export default function AboutPage() {
 
         <motion.h1
           variants={fadeUp}
+          className="hero-h1"
           style={{
             fontFamily: "'Instrument Serif', Georgia, serif",
             fontSize: 48, fontWeight: 400, lineHeight: 1.15,
@@ -660,6 +663,7 @@ export default function AboutPage() {
 
         <motion.p
           variants={fadeUp}
+          className="hero-subhead"
           style={{
             fontSize: 18, lineHeight: 1.7, color: "var(--color-text-secondary)",
             maxWidth: 600, marginBottom: 0,
@@ -680,6 +684,7 @@ export default function AboutPage() {
       <Section style={{ maxWidth: 800, margin: "0 auto 80px", padding: "0 48px" }}>
         <motion.div
           variants={fadeUp}
+          className="landing-stats"
           style={{
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
           }}
@@ -742,7 +747,7 @@ export default function AboutPage() {
         </motion.div>
 
         {/* Comparison */}
-        <motion.div variants={fadeUp} style={{
+        <motion.div variants={fadeUp} className="landing-compare" style={{
           display: "grid", gridTemplateColumns: "1fr 1fr",
           border: "1px solid var(--color-border-subtle)",
           borderRadius: 8,
@@ -752,7 +757,7 @@ export default function AboutPage() {
           overflow: "hidden",
           margin: "40px 0 0",
         }}>
-          <div style={{ padding: 24, borderRight: "1px solid var(--color-border-subtle)" }}>
+          <div className="landing-compare-cell" style={{ padding: 24, borderRight: "1px solid var(--color-border-subtle)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Other Chains</div>
             {["Generic ERC-20 stablecoins", "External DEX routing", "No native compliance", "Gas token for fees", "Fragmented peg tracking"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-tertiary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>

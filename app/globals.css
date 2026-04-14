@@ -584,6 +584,70 @@ body {
   .explorer-graphics {
     grid-template-columns: 1fr;
   }
+
+  /* ── Mobile polish — landing hero & sections ── */
+  .hero-wrap {
+    padding: 72px 20px 40px !important;
+  }
+  .hero-eyebrow {
+    flex-wrap: wrap !important;
+    row-gap: 4px !important;
+  }
+  .hero-h1 {
+    font-size: 30px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 20px !important;
+  }
+  .hero-subhead {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+  }
+  .landing-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .landing-compare {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-compare-cell {
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border-subtle) !important;
+  }
+  .arch-row-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Explorer ── */
+  .explorer-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* ── Stablecoin detail page ── */
+  .stable-hero-h1 {
+    font-size: 28px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 24px !important;
+  }
+  .stable-price {
+    font-size: 32px !important;
+    gap: 8px !important;
+    flex-wrap: wrap;
+  }
+  .stablecoin-metric-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .stable-origin-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+  .stable-peg-health {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Nav compaction ── */
+  .nav-kbd-badge,
+  .nav-kbd-sep {
+    display: none !important;
+  }
 }
 
 

@@ -572,6 +572,7 @@ export default function StablecoinDetail({
         {editorial?.tagline && (
           <motion.h1
             variants={fadeUp}
+            className="stable-hero-h1"
             style={{
               fontFamily: "'Instrument Serif', Georgia, serif",
               fontSize: 44,
@@ -602,6 +603,7 @@ export default function StablecoinDetail({
             Current price
           </div>
           <div
+            className="stable-price"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 48,
@@ -690,13 +692,13 @@ export default function StablecoinDetail({
         <SectionNumber>01 — Origin</SectionNumber>
         <SectionHeadline>Where it comes from</SectionHeadline>
         <div
+          className="stable-origin-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 260px",
             gap: 40,
             alignItems: "start",
           }}
-          className="stablecoin-origin-grid"
         >
           <BodyProse>
             {editorial ? (
@@ -822,6 +824,7 @@ export default function StablecoinDetail({
         >
           <PegSparkline price={token.price_vs_pathusd} />
           <div
+            className="stable-peg-health"
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr 1fr",

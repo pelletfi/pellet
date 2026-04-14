@@ -76,6 +76,7 @@ export default async function ExplorerPage() {
 
       {/* Stats row — 5 outlined cells */}
       <div
+        className="explorer-stats"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",

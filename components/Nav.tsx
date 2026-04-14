@@ -60,8 +60,8 @@ export function Nav() {
             </span>
           </>
         )}
-        <span style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
-        <span style={{
+        <span className="nav-kbd-sep" style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
+        <span className="nav-kbd-badge" style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           minWidth: 20, height: 20, padding: "0 5px",
           fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
