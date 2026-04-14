@@ -543,9 +543,11 @@ function CyclingWord({ size = 15, italic = true }: { size?: number; italic?: boo
     <span
       style={{
         display: "inline-flex",
+        fontFamily: "'Instrument Serif', Georgia, serif",
         fontStyle: italic ? "italic" : "normal",
         fontSize: size,
         textTransform: "none",
+        letterSpacing: "-0.01em",
         lineHeight: 1,
         perspective: 400,
       }}
