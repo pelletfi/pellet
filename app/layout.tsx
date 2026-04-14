@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { RootProvider } from "fumadocs-ui/provider/next";
@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: "Pellet — Stablecoin Intelligence on Tempo",
   description:
     "The first payments chain deserves its own stablecoin intelligence. Every peg, every policy, every flow — tracked natively on Tempo.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
