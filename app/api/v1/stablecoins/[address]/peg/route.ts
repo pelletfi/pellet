@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { withReproducibility } from "@/lib/reproducibility";
 
 export const dynamic = "force-dynamic";
 
@@ -41,29 +42,39 @@ export async function GET(_req: Request, { params }: Params) {
       ?? (currentResult as unknown as Record<string, unknown>[]);
     const current = Array.isArray(currentRows) ? currentRows[0] : null;
 
-    return NextResponse.json({
-      address: stable,
-      current: current
-        ? {
-            price_vs_pathusd: Number(current.price_vs_pathusd),
-            spread_bps: Number(current.spread_bps),
-            block_number: Number(current.block_number),
-            sampled_at: current.sampled_at,
-          }
-        : null,
-      windows: Array.isArray(rows) ? rows.map((r) => ({
-        window: r.window_label,
-        computed_at: r.computed_at,
-        sample_count: Number(r.sample_count),
-        mean_price: Number(r.mean_price),
-        stddev_price: Number(r.stddev_price),
-        min_price: Number(r.min_price),
-        max_price: Number(r.max_price),
-        max_deviation_bps: Number(r.max_deviation_bps),
-        seconds_outside_10bps: Number(r.seconds_outside_10bps),
-        seconds_outside_50bps: Number(r.seconds_outside_50bps),
-      })) : [],
-    });
+    return withReproducibility(
+      NextResponse.json({
+        address: stable,
+        current: current
+          ? {
+              price_vs_pathusd: Number(current.price_vs_pathusd),
+              spread_bps: Number(current.spread_bps),
+              block_number: Number(current.block_number),
+              sampled_at: current.sampled_at,
+            }
+          : null,
+        windows: Array.isArray(rows) ? rows.map((r) => ({
+          window: r.window_label,
+          computed_at: r.computed_at,
+          sample_count: Number(r.sample_count),
+          mean_price: Number(r.mean_price),
+          stddev_price: Number(r.stddev_price),
+          min_price: Number(r.min_price),
+          max_price: Number(r.max_price),
+          max_deviation_bps: Number(r.max_deviation_bps),
+          seconds_outside_10bps: Number(r.seconds_outside_10bps),
+          seconds_outside_50bps: Number(r.seconds_outside_50bps),
+        })) : [],
+      }),
+      {
+        method: "peg-aggregates-v1",
+        rpcCall: "quoteSwapExactAmountIn(stable, pathUSD, 1e6)",
+        contracts: ["0xdec0000000000000000000000000000000000000"],
+        tables: ["peg_samples", "peg_aggregates"],
+        block: current ? Number(current.block_number) : undefined,
+        freshnessSec: 60,
+      },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
