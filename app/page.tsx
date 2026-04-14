@@ -540,11 +540,10 @@ function CyclingWord() {
   return (
     <span
       style={{
-        display: "inline-block",
-        position: "relative",
+        display: "inline-grid",
+        gridTemplateColumns: "1fr",
+        gridTemplateRows: "1fr",
         width: 52,
-        height: 14,
-        verticalAlign: "middle",
         textAlign: "center",
       }}
     >
@@ -556,11 +555,7 @@ function CyclingWord() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.65, ease: "easeInOut" }}
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            textAlign: "center",
+            gridArea: "1 / 1",
             color: "var(--color-text-tertiary)",
           }}
         >
