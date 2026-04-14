@@ -60,6 +60,8 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
         border: "1px solid var(--color-border-subtle)",
         borderRadius: 8,
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div
@@ -82,7 +84,8 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
           gridTemplateColumns: "1fr 1fr 1fr",
           gridTemplateRows: "1fr 1fr",
           gap: 2,
-          height: 150,
+          flex: 1,
+          minHeight: 150,
           padding: "0 2px 2px",
         }}
       >
