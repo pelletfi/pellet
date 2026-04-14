@@ -628,29 +628,31 @@ export default function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.5 }} />
           </span>
+          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
+          <span style={{ color: "var(--color-text-secondary)" }}>
+            <CyclingWord />
+          </span>
         </motion.div>
 
         <motion.h1
           variants={fadeUp}
           style={{
             fontFamily: "'Instrument Serif', Georgia, serif",
-            fontSize: 42, fontWeight: 400, lineHeight: 1.15,
+            fontSize: 48, fontWeight: 400, lineHeight: 1.15,
             letterSpacing: "-0.02em", marginBottom: 24,
             textShadow: "0 0 40px rgba(255,255,255,0.1)",
           }}
         >
-          The first payments chain.
+          The first payments chain{" "}
           <br />
-          <CyclingWord size={42} italic={false} />
-          <br />
-          <em style={{
+          now has <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             animation: "shimmer 10s ease-in-out infinite",
-          }}>Stablecoin Intelligence.</em>
+          }}>stablecoin intelligence.</em>
         </motion.h1>
 
         <motion.p
