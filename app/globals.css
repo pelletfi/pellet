@@ -688,6 +688,9 @@ body {
   .peg-historical-grid {
     grid-template-columns: 1fr !important;
   }
+  .risk-components-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
 
   /* ── Nav compaction ── */
   .nav-kbd-badge,

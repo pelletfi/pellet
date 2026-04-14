@@ -336,6 +336,263 @@ function PegSparkline({ price }: { price: number }) {
 
 // ── Supply cap bar ──────────────────────────────────────────────────────────
 
+// ── Backing & reserves panel — fetched from /api/v1/stablecoins/:address/reserves ──
+
+interface ReserveEntry {
+  reserve_type: string;
+  backing_usd: number | null;
+  attestation_source: string | null;
+  attested_at: string | null;
+  verified_by: string | null;
+  notes: { label?: string; issuer?: string; backing_model?: string } | null;
+}
+
+function formatUsd(n: number | null): string {
+  if (n == null) return "—";
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return `$${n.toFixed(2)}`;
+}
+
+function ReservesPanel({ address }: { address: string }) {
+  const [total, setTotal] = useState<number | null>(null);
+  const [reserves, setReserves] = useState<ReserveEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/v1/stablecoins/${address}/reserves`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setTotal(data.total_backing_usd ?? null);
+        setReserves(data.reserves ?? []);
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  if (loading || reserves.length === 0) return null;
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      style={{
+        marginTop: 32,
+        padding: "24px",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--color-text-quaternary)",
+          }}
+        >
+          Reserves
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 20,
+            fontWeight: 500,
+            color: "var(--color-text-primary)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {formatUsd(total)}
+        </div>
+      </div>
+      {reserves.map((r) => (
+        <div
+          key={r.reserve_type}
+          style={{
+            paddingTop: 16,
+            borderTop: "1px solid var(--color-border-subtle)",
+            marginTop: 16,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                color: "var(--color-text-secondary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {r.reserve_type.replace(/_/g, " ")}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                color: "var(--color-text-primary)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {formatUsd(r.backing_usd)}
+            </span>
+          </div>
+          {r.notes?.backing_model && (
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--color-text-tertiary)", margin: "6px 0" }}>
+              {r.notes.backing_model}
+            </p>
+          )}
+          {r.attestation_source && (
+            <a
+              href={r.attestation_source}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                marginTop: 4,
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--color-text-quaternary)",
+                textDecoration: "underline",
+                textDecorationColor: "var(--color-border-subtle)",
+                textUnderlineOffset: 3,
+              }}
+            >
+              {new URL(r.attestation_source).host}
+            </a>
+          )}
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+// ── Risk score panel — fetched from /api/v1/stablecoins/:address/risk ──
+
+interface RiskResponse {
+  composite: number;
+  components: { peg_risk?: number; peg_break_risk?: number; supply_risk?: number; policy_risk?: number };
+  computed_at: string;
+}
+
+function RiskPanel({ address }: { address: string }) {
+  const [risk, setRisk] = useState<RiskResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/v1/stablecoins/${address}/risk`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => !cancelled && setRisk(data))
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  if (loading || !risk || risk.composite == null) return null;
+
+  // Composite thresholds for verdict
+  const composite = risk.composite;
+  const verdict =
+    composite < 15 ? "low" : composite < 35 ? "moderate" : composite < 60 ? "elevated" : "high";
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      style={{
+        marginTop: 16,
+        padding: "24px",
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--color-text-quaternary)",
+          }}
+        >
+          Composite risk score
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 24,
+              fontWeight: 500,
+              color: "var(--color-text-primary)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {composite.toFixed(1)}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--color-text-quaternary)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            / 100 · {verdict}
+          </span>
+        </div>
+      </div>
+      <div className="risk-components-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--color-border-subtle)", borderRadius: 6, overflow: "hidden" }}>
+        <RiskComponent label="Peg" value={risk.components.peg_risk ?? 0} />
+        <RiskComponent label="Peg break" value={risk.components.peg_break_risk ?? 0} />
+        <RiskComponent label="Supply" value={risk.components.supply_risk ?? 0} />
+        <RiskComponent label="Policy" value={risk.components.policy_risk ?? 0} />
+      </div>
+    </motion.div>
+  );
+}
+
+function RiskComponent({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ background: "var(--color-bg-base)", padding: "14px 12px" }}>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--color-text-quaternary)",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 15,
+          color: "var(--color-text-primary)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value.toFixed(0)}
+      </div>
+    </div>
+  );
+}
+
 // ── Historical peg stats — fetched from /api/v1/stablecoins/:address/peg ────
 
 interface PegWindow {
@@ -1195,6 +1452,9 @@ export default function StablecoinDetail({
               "Backing structure has not been documented for this stablecoin."}
           </p>
         </BodyProse>
+
+        <ReservesPanel address={token.address} />
+        <RiskPanel address={token.address} />
 
         {editorial && editorial.risks.length > 0 && (
           <motion.div variants={fadeUp} style={{ marginTop: 32 }}>
