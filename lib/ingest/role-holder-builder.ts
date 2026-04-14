@@ -1,120 +1,199 @@
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
-import { keccak256, toBytes, isAddress, getAddress, decodeAbiParameters } from "viem";
+import { keccak256, toBytes } from "viem";
+import { tempoClient } from "@/lib/rpc";
 import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 
-// Tempo's TIP-20 RBAC uses a single combined event:
-// RoleMembershipUpdated(bytes32 role indexed, address account indexed, address sender indexed, bool hasRole)
-// (Different from OpenZeppelin's RoleGranted/RoleRevoked split.)
-const ROLE_MEMBERSHIP_TOPIC = keccak256(
-  toBytes("RoleMembershipUpdated(bytes32,address,address,bool)"),
-).toLowerCase();
+// Tempo TIP-20 doesn't expose role enumeration AND doesn't emit role events.
+// But role HOLDERS leave fingerprints: any address that successfully called
+// mint/burn/burnBlocked on a TIP-20 contract MUST hold the corresponding role
+// at the time of the call. We can derive role holders by inspecting the
+// `from` field of transactions that emitted those events, then verify each
+// candidate is still active via hasRole().
 
-// Pre-hashed Tempo TIP-20 role names. Source: ox/tempo TokenRole.toPreHashed.
-const KNOWN_ROLES: Record<string, string> = {
-  "0x0000000000000000000000000000000000000000000000000000000000000000": "DEFAULT_ADMIN_ROLE",
-  [keccak256(toBytes("ISSUER_ROLE")).toLowerCase()]: "ISSUER_ROLE",
-  [keccak256(toBytes("PAUSE_ROLE")).toLowerCase()]: "PAUSE_ROLE",
-  [keccak256(toBytes("UNPAUSE_ROLE")).toLowerCase()]: "UNPAUSE_ROLE",
-  [keccak256(toBytes("BURN_BLOCKED_ROLE")).toLowerCase()]: "BURN_BLOCKED_ROLE",
+const TOPICS = {
+  // From event-type discovery in events table
+  Mint: "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
+  Burn: "0xcc16f5dbb4873280815c1ee09dbd06736cffcc184412cf7a71a0fdb75d397ca5",
+  BurnBlocked: "0xbbf8c20751167a65b38d4dd87c3eba00bfae01d85fb809a89eee1ba842673b98",
 };
 
-function decodeRoleName(hash: string): string {
-  return KNOWN_ROLES[hash.toLowerCase()] ?? hash;
+const ROLE_HASHES = {
+  ISSUER_ROLE: keccak256(toBytes("ISSUER_ROLE")),
+  BURN_BLOCKED_ROLE: keccak256(toBytes("BURN_BLOCKED_ROLE")),
+};
+
+const HAS_ROLE_ABI = [
+  {
+    name: "hasRole",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "role", type: "bytes32" },
+      { name: "account", type: "address" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
+
+interface EventRow {
+  tx_hash: string;
+  block_number: number;
+  block_timestamp: string;
+  event_type: string;
 }
 
-function topicToAddress(topic: string): string | null {
-  if (!topic.startsWith("0x") || topic.length !== 66) return null;
-  const candidate = `0x${topic.slice(26)}`;
-  if (!isAddress(candidate)) return null;
-  return getAddress(candidate).toLowerCase();
+interface RoleProbe {
+  roleName: string;
+  roleHash: `0x${string}`;
+  candidateAddrs: Set<string>;
+  earliestSeenAt: Map<string, { tx: string; ts: string }>;
 }
 
-// args.data is the abi-encoded `bool hasRole` (32 bytes, last byte 0 or 1)
-function decodeHasRole(data: string): boolean {
+export interface BuildResult {
+  stablesProcessed: number;
+  txsFetched: number;
+  roleVerifications: number;
+  confirmedHolders: number;
+  unverifiedCandidates: number;
+}
+
+async function fetchTxFrom(txHash: string): Promise<string | null> {
   try {
-    const [b] = decodeAbiParameters([{ type: "bool" }], data as `0x${string}`);
-    return b as boolean;
+    const tx = await tempoClient.getTransaction({ hash: txHash as `0x${string}` });
+    return tx.from?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function probeHasRole(stable: string, role: `0x${string}`, account: string): Promise<boolean> {
+  try {
+    const res = await tempoClient.readContract({
+      address: stable as `0x${string}`,
+      abi: HAS_ROLE_ABI,
+      functionName: "hasRole",
+      args: [role, account as `0x${string}`],
+    });
+    return Boolean(res);
   } catch {
     return false;
   }
 }
 
-export interface BuildResult {
-  stablesProcessed: number;
-  rolesSeen: number;
-  currentHolders: number;
-}
-
 export async function rebuildRoleHolders(): Promise<BuildResult> {
-  let currentHolders = 0;
-  const rolesSeen = new Set<string>();
+  let txsFetched = 0;
+  let roleVerifications = 0;
+  let confirmedHolders = 0;
+  let unverifiedCandidates = 0;
+
+  // Cache tx → from across all stables (some txs span multiple events)
+  const txFromCache = new Map<string, string | null>();
 
   for (const stable of KNOWN_STABLECOINS) {
     const stableAddr = stable.address.toLowerCase();
 
-    const result = await db.execute(sql`
-      SELECT block_number, block_timestamp, tx_hash, log_index, args
+    // Build per-role candidate sets
+    const probes: RoleProbe[] = [
+      {
+        roleName: "ISSUER_ROLE",
+        roleHash: ROLE_HASHES.ISSUER_ROLE,
+        candidateAddrs: new Set(),
+        earliestSeenAt: new Map(),
+      },
+      {
+        roleName: "BURN_BLOCKED_ROLE",
+        roleHash: ROLE_HASHES.BURN_BLOCKED_ROLE,
+        candidateAddrs: new Set(),
+        earliestSeenAt: new Map(),
+      },
+    ];
+    const issuerProbe = probes[0];
+    const burnBlockedProbe = probes[1];
+
+    // Pull mint+burn (issuer fingerprint) and burnBlocked events
+    const evResult = await db.execute(sql`
+      SELECT tx_hash, block_number, block_timestamp, event_type
       FROM events
       WHERE contract = ${stableAddr}
-        AND LOWER(event_type) = ${ROLE_MEMBERSHIP_TOPIC}
+        AND event_type IN (${TOPICS.Mint}, ${TOPICS.Burn}, ${TOPICS.BurnBlocked})
       ORDER BY block_number ASC, log_index ASC
     `);
-    const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
-      ?? (result as unknown as Record<string, unknown>[])) as Array<{
-      block_number: number;
-      block_timestamp: string;
-      tx_hash: string;
-      log_index: number;
-      args: { topics?: string[]; data?: string };
-    }>;
+    const events = ((evResult as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (evResult as unknown as Record<string, unknown>[])) as unknown as EventRow[];
 
-    interface Membership {
-      roleHash: string;
-      roleName: string;
-      grantedAt: string;
-      grantedTxHash: string;
-    }
-    const current = new Map<string, Membership>();
+    if (events.length === 0) continue;
 
-    for (const row of rows) {
-      const topics = row.args?.topics ?? [];
-      if (topics.length < 3) continue;
-      const roleHash = (topics[1] ?? "").toLowerCase();
-      const account = topicToAddress(topics[2] ?? "");
-      if (!account) continue;
-      const hasRole = decodeHasRole(row.args?.data ?? "0x");
-      rolesSeen.add(roleHash);
+    // Fetch tx.from for each unique tx hash
+    for (const ev of events) {
+      let from = txFromCache.get(ev.tx_hash);
+      if (from === undefined) {
+        from = await fetchTxFrom(ev.tx_hash);
+        txFromCache.set(ev.tx_hash, from);
+        txsFetched += 1;
+      }
+      if (!from) continue;
 
-      const key = `${roleHash}:${account}`;
-      if (hasRole) {
-        // Granted (or maintained)
-        current.set(key, {
-          roleHash,
-          roleName: decodeRoleName(roleHash),
-          grantedAt: row.block_timestamp,
-          grantedTxHash: row.tx_hash,
-        });
-      } else {
-        current.delete(key);
+      const target = ev.event_type === TOPICS.BurnBlocked ? burnBlockedProbe : issuerProbe;
+      target.candidateAddrs.add(from);
+      const existing = target.earliestSeenAt.get(from);
+      if (!existing || ev.block_timestamp < existing.ts) {
+        target.earliestSeenAt.set(from, { tx: ev.tx_hash, ts: ev.block_timestamp });
       }
     }
 
+    // Verify each candidate with hasRole, then write confirmed holders
+    interface Confirmed {
+      roleName: string;
+      roleHash: string;
+      account: string;
+      earliestTx: string;
+      earliestTs: string;
+    }
+    const confirmed: Confirmed[] = [];
+
+    for (const probe of probes) {
+      for (const account of probe.candidateAddrs) {
+        roleVerifications += 1;
+        const has = await probeHasRole(stableAddr, probe.roleHash, account);
+        if (has) {
+          const seen = probe.earliestSeenAt.get(account);
+          if (!seen) continue;
+          confirmed.push({
+            roleName: probe.roleName,
+            roleHash: probe.roleHash.toLowerCase(),
+            account,
+            earliestTx: seen.tx,
+            earliestTs: seen.ts,
+          });
+        } else {
+          unverifiedCandidates += 1;
+        }
+      }
+    }
+
+    // Wipe + reinsert this stable's confirmed holders
     await db.execute(sql`DELETE FROM role_holders WHERE stable = ${stableAddr}`);
-    for (const [key, m] of current) {
-      const holder = key.split(":")[1];
+    for (const h of confirmed) {
       await db.execute(sql`
-        INSERT INTO role_holders (stable, role_hash, role_name, holder, granted_at, granted_tx_hash)
-        VALUES (${stableAddr}, ${m.roleHash}, ${m.roleName}, ${holder}, ${m.grantedAt}, ${m.grantedTxHash})
+        INSERT INTO role_holders (
+          stable, role_hash, role_name, holder, granted_at, granted_tx_hash, label
+        ) VALUES (
+          ${stableAddr}, ${h.roleHash}, ${h.roleName}, ${h.account},
+          ${h.earliestTs}, ${h.earliestTx},
+          ${"derived from on-chain action history"}
+        )
         ON CONFLICT (stable, role_hash, holder) DO NOTHING
       `);
-      currentHolders += 1;
+      confirmedHolders += 1;
     }
   }
 
   return {
     stablesProcessed: KNOWN_STABLECOINS.length,
-    rolesSeen: rolesSeen.size,
-    currentHolders,
+    txsFetched,
+    roleVerifications,
+    confirmedHolders,
+    unverifiedCandidates,
   };
 }

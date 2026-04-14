@@ -43,19 +43,20 @@ export async function GET(_req: Request, { params }: Params) {
         granted_tx_hash: r.granted_tx_hash,
         holder_type: r.holder_type,
         label: r.label,
-        source: "tempo_event_replay",
+        source: "forensic_derivation",
       });
     }
 
     return NextResponse.json({
       address: stable,
       coverage: {
-        status: byRole.size > 0 ? "partial" : "unavailable",
+        status: byRole.size > 0 ? "partial" : "deriving",
         message:
           byRole.size > 0
-            ? `${byRole.size} of ${TEMPO_ROLES.length} TIP-20 roles have known holders.`
-            : "No role holders are currently knowable for this stable. Tempo's TIP-20 precompile does not emit role-change events for these contracts and does not expose role enumeration. Role membership can only be verified by probing specific candidate addresses via hasRole(), which requires a curated suspect list per issuer.",
+            ? `${byRole.size} of ${TEMPO_ROLES.length} TIP-20 roles have confirmed holders.`
+            : "No role-bearing on-chain actions have been recorded for this stable yet. The forensic derivation pipeline scans mint/burn/burnBlocked transactions and probes the senders via hasRole(); empty means none of those actions have happened.",
         roles_tracked: TEMPO_ROLES,
+        derivation: "Forensic — every mint/burn/burnBlocked tx is inspected; the calling address is verified with hasRole() to confirm current membership.",
       },
       roles: [...byRole.entries()].map(([role_name, holders]) => ({
         role_name,

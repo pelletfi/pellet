@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { rebuildRoleHolders } from "@/lib/ingest/role-holder-builder";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
