@@ -572,7 +572,7 @@ export default function AboutPage() {
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <span>Stablecoin Analytics</span>
+          <span>Stablecoin Intelligence</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             Built on
@@ -599,7 +599,7 @@ export default function AboutPage() {
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             animation: "shimmer 10s ease-in-out infinite",
-          }}>stablecoin analytics.</em>
+          }}>stablecoin intelligence.</em>
         </motion.h1>
 
         <motion.p
@@ -853,7 +853,7 @@ export default function AboutPage() {
             We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 12 stablecoins, we analyze all 12. When it has 100, we&apos;ll analyze all 100.
           </p>
           <p style={{ margin: 0 }}>
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. The stablecoin analytics layer for Tempo. Here to stay.</strong>
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. The stablecoin intelligence layer for Tempo. Here to stay.</strong>
           </p>
         </motion.div>
       </Section>
