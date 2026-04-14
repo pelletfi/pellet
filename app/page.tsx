@@ -742,10 +742,16 @@ export default function AboutPage() {
 
         {/* Comparison */}
         <motion.div variants={fadeUp} style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1,
-          background: "var(--color-border-subtle)", borderRadius: 8, overflow: "hidden", margin: "40px 0 0",
+          display: "grid", gridTemplateColumns: "1fr 1fr",
+          border: "1px solid var(--color-border-subtle)",
+          borderRadius: 8,
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          background: "rgba(255,255,255,0.012)",
+          overflow: "hidden",
+          margin: "40px 0 0",
         }}>
-          <div style={{ background: "var(--color-bg-subtle)", padding: 24 }}>
+          <div style={{ padding: 24, borderRight: "1px solid var(--color-border-subtle)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Other Chains</div>
             {["Generic ERC-20 stablecoins", "External DEX routing", "No native compliance", "Gas token for fees", "Fragmented peg tracking"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-tertiary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
@@ -754,11 +760,11 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-          <div style={{ background: "var(--color-bg-subtle)", padding: 24, borderLeft: "2px solid rgba(48,164,108,0.3)" }}>
+          <div style={{ padding: 24 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Tempo</div>
             {["TIP-20 stablecoins (enshrined)", "Native DEX with orderbook", "TIP-403 compliance policies", "Fees paid in any stablecoin", "Unified peg monitoring"].map((item) => (
               <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-primary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-success)", flexShrink: 0 }} />
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-primary)", flexShrink: 0 }} />
                 {item}
               </div>
             ))}
