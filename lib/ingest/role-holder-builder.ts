@@ -1,33 +1,43 @@
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
-import { keccak256, toBytes, isAddress, getAddress } from "viem";
+import { keccak256, toBytes, isAddress, getAddress, decodeAbiParameters } from "viem";
 import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 
-// Topic0 hashes for the role events we replay
-const ROLE_GRANTED_TOPIC = keccak256(toBytes("RoleGranted(bytes32,address,address)")).toLowerCase();
-const ROLE_REVOKED_TOPIC = keccak256(toBytes("RoleRevoked(bytes32,address,address)")).toLowerCase();
+// Tempo's TIP-20 RBAC uses a single combined event:
+// RoleMembershipUpdated(bytes32 role indexed, address account indexed, address sender indexed, bool hasRole)
+// (Different from OpenZeppelin's RoleGranted/RoleRevoked split.)
+const ROLE_MEMBERSHIP_TOPIC = keccak256(
+  toBytes("RoleMembershipUpdated(bytes32,address,address,bool)"),
+).toLowerCase();
 
-// Precomputed role-name lookup
+// Pre-hashed Tempo TIP-20 role names. Source: ox/tempo TokenRole.toPreHashed.
 const KNOWN_ROLES: Record<string, string> = {
   "0x0000000000000000000000000000000000000000000000000000000000000000": "DEFAULT_ADMIN_ROLE",
-  [keccak256(toBytes("MINTER_ROLE")).toLowerCase()]: "MINTER_ROLE",
-  [keccak256(toBytes("BURNER_ROLE")).toLowerCase()]: "BURNER_ROLE",
-  [keccak256(toBytes("PAUSER_ROLE")).toLowerCase()]: "PAUSER_ROLE",
-  [keccak256(toBytes("UPGRADER_ROLE")).toLowerCase()]: "UPGRADER_ROLE",
-  [keccak256(toBytes("REWARDS_ROLE")).toLowerCase()]: "REWARDS_ROLE",
-  [keccak256(toBytes("BLACKLISTER_ROLE")).toLowerCase()]: "BLACKLISTER_ROLE",
+  [keccak256(toBytes("ISSUER_ROLE")).toLowerCase()]: "ISSUER_ROLE",
+  [keccak256(toBytes("PAUSE_ROLE")).toLowerCase()]: "PAUSE_ROLE",
+  [keccak256(toBytes("UNPAUSE_ROLE")).toLowerCase()]: "UNPAUSE_ROLE",
+  [keccak256(toBytes("BURN_BLOCKED_ROLE")).toLowerCase()]: "BURN_BLOCKED_ROLE",
 };
 
 function decodeRoleName(hash: string): string {
   return KNOWN_ROLES[hash.toLowerCase()] ?? hash;
 }
 
-// Topic is a 32-byte left-padded address hex (0x + 24 zeroes + 40-char address).
 function topicToAddress(topic: string): string | null {
   if (!topic.startsWith("0x") || topic.length !== 66) return null;
   const candidate = `0x${topic.slice(26)}`;
   if (!isAddress(candidate)) return null;
   return getAddress(candidate).toLowerCase();
+}
+
+// args.data is the abi-encoded `bool hasRole` (32 bytes, last byte 0 or 1)
+function decodeHasRole(data: string): boolean {
+  try {
+    const [b] = decodeAbiParameters([{ type: "bool" }], data as `0x${string}`);
+    return b as boolean;
+  } catch {
+    return false;
+  }
 }
 
 export interface BuildResult {
@@ -43,14 +53,11 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
   for (const stable of KNOWN_STABLECOINS) {
     const stableAddr = stable.address.toLowerCase();
 
-    // Pull all role-change events for this stable in chronological order.
-    // Now that we have full event history, this finds every grant / revoke
-    // since the contract was deployed.
     const result = await db.execute(sql`
-      SELECT block_number, block_timestamp, tx_hash, log_index, event_type, args
+      SELECT block_number, block_timestamp, tx_hash, log_index, args
       FROM events
       WHERE contract = ${stableAddr}
-        AND LOWER(event_type) IN (${ROLE_GRANTED_TOPIC}, ${ROLE_REVOKED_TOPIC})
+        AND LOWER(event_type) = ${ROLE_MEMBERSHIP_TOPIC}
       ORDER BY block_number ASC, log_index ASC
     `);
     const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
@@ -59,8 +66,7 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
       block_timestamp: string;
       tx_hash: string;
       log_index: number;
-      event_type: string;
-      args: { topics?: string[] };
+      args: { topics?: string[]; data?: string };
     }>;
 
     interface Membership {
@@ -75,12 +81,14 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
       const topics = row.args?.topics ?? [];
       if (topics.length < 3) continue;
       const roleHash = (topics[1] ?? "").toLowerCase();
-      const holder = topicToAddress(topics[2] ?? "");
-      if (!holder) continue;
+      const account = topicToAddress(topics[2] ?? "");
+      if (!account) continue;
+      const hasRole = decodeHasRole(row.args?.data ?? "0x");
       rolesSeen.add(roleHash);
 
-      const key = `${roleHash}:${holder}`;
-      if (row.event_type.toLowerCase() === ROLE_GRANTED_TOPIC) {
+      const key = `${roleHash}:${account}`;
+      if (hasRole) {
+        // Granted (or maintained)
         current.set(key, {
           roleHash,
           roleName: decodeRoleName(roleHash),
@@ -92,7 +100,6 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
       }
     }
 
-    // Wipe + reinsert current snapshot
     await db.execute(sql`DELETE FROM role_holders WHERE stable = ${stableAddr}`);
     for (const [key, m] of current) {
       const holder = key.split(":")[1];

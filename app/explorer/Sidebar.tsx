@@ -365,101 +365,180 @@ function RecentBlocks() {
 
 // ── Card 3: Live Feed ──
 
-function LiveFeed() {
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const lastBlock = useRef<number>(0);
+interface SignalEvent {
+  id: string;
+  type: "PEG" | "FLOW";
+  severity: string;
+  symbol: string;
+  detail: string;
+  time: string;
+}
 
-  const poll = useCallback(() => {
-    fetch("/api/v1/health")
-      .then((r) => r.json())
-      .then((data) => {
-        const block = data.block ?? 0;
-        if (block && block !== lastBlock.current) {
-          lastBlock.current = block;
-          setFeed(generateMockFeed(block));
+function symbolForAddr(addr: string): string {
+  const lc = addr.toLowerCase();
+  // Inline lookup — small set, avoids extra import
+  const map: Record<string, string> = {
+    "0x20c0000000000000000000000000000000000000": "pathUSD",
+    "0x20c000000000000000000000b9537d11c60e8b50": "USDC.e",
+    "0x20c0000000000000000000001621e21f71cf12fb": "EURC.e",
+    "0x20c00000000000000000000014f22ca97301eb73": "USDT0",
+    "0x20c0000000000000000000003554d28269e0f3c2": "frxUSD",
+    "0x20c0000000000000000000000520792dcccccccc": "cUSD",
+    "0x20c0000000000000000000008ee4fcff88888888": "stcUSD",
+    "0x20c0000000000000000000005c0bac7cef389a11": "GUSD",
+    "0x20c0000000000000000000007f7ba549dd0251b9": "rUSD",
+    "0x20c000000000000000000000aeed2ec36a54d0e5": "wsrUSD",
+    "0x20c0000000000000000000009a4a4b17e0dc6651": "EURAU",
+    "0x20c000000000000000000000383a23bacb546ab9": "reUSD",
+  };
+  return map[lc] ?? `${addr.slice(0, 6)}...`;
+}
+
+function timeAgoShort(iso: string): string {
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
+  return `${Math.floor(sec / 86400)}d`;
+}
+
+function LiveFeed() {
+  const [feed, setFeed] = useState<SignalEvent[]>([]);
+
+  const poll = useCallback(async () => {
+    try {
+      // Pull peg events across all stables (top of recent feeds for each) +
+      // recent flow anomalies. Merge + sort by time desc.
+      const stables = [
+        "0x20c0000000000000000000000000000000000000",
+        "0x20c000000000000000000000b9537d11c60e8b50",
+        "0x20c00000000000000000000014f22ca97301eb73",
+        "0x20c0000000000000000000003554d28269e0f3c2",
+        "0x20c0000000000000000000000520792dcccccccc",
+      ];
+      const [pegResults, flowResp] = await Promise.all([
+        Promise.all(
+          stables.map((s) =>
+            fetch(`/api/v1/stablecoins/${s}/peg-events?limit=2`).then((r) =>
+              r.ok ? r.json() : { events: [] },
+            ).catch(() => ({ events: [] })),
+          ),
+        ),
+        fetch("/api/v1/stablecoins/flow-anomalies?limit=10")
+          .then((r) => (r.ok ? r.json() : { anomalies: [] }))
+          .catch(() => ({ anomalies: [] })),
+      ]);
+
+      const events: SignalEvent[] = [];
+      pegResults.forEach((res, i) => {
+        for (const e of res.events ?? []) {
+          events.push({
+            id: `peg-${stables[i]}-${e.started_at}`,
+            type: "PEG",
+            severity: e.severity,
+            symbol: symbolForAddr(stables[i]),
+            detail: `${e.max_deviation_bps.toFixed(0)}bps · ${e.ongoing ? "ongoing" : "resolved"}`,
+            time: e.started_at,
+          });
         }
-      })
-      .catch(() => {});
+      });
+      for (const a of flowResp.anomalies ?? []) {
+        const usd = a.observed_flow_usd >= 1_000_000
+          ? `$${(a.observed_flow_usd / 1_000_000).toFixed(1)}M`
+          : `$${(a.observed_flow_usd / 1_000).toFixed(0)}K`;
+        events.push({
+          id: `flow-${a.from_token}-${a.window_start}`,
+          type: "FLOW",
+          severity: Math.abs(a.z_score).toFixed(1) + "σ",
+          symbol: `${symbolForAddr(a.from_token)}→${symbolForAddr(a.to_token)}`,
+          detail: usd,
+          time: a.window_start,
+        });
+      }
+
+      events.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setFeed(events.slice(0, 7));
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
     poll();
-    const id = setInterval(poll, 15_000);
+    const id = setInterval(poll, 30_000);
     return () => clearInterval(id);
   }, [poll]);
 
   return (
     <div style={cardStyle}>
       <div style={cardHeaderStyle}>
-        <span style={cardTitleStyle}>Live Feed</span>
+        <span style={cardTitleStyle}>Signals</span>
         <span className="status-dot" />
       </div>
       <div style={{ padding: "6px 14px 10px" }}>
-        {feed.slice(0, 7).map((item) => (
-          <div
-            key={item.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "40px 36px minmax(0, 1fr) auto",
-              alignItems: "center",
-              gap: 6,
-              padding: "5px 0",
-              borderBottom: "1px solid rgba(255,255,255,0.03)",
-            }}
-          >
-            {/* Timestamp */}
-            <span
+        {feed.length > 0 ? (
+          feed.map((item) => (
+            <div
+              key={item.id}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--color-text-quaternary)",
+                display: "grid",
+                gridTemplateColumns: "32px 38px minmax(0, 1fr) auto",
+                alignItems: "center",
+                gap: 6,
+                padding: "5px 0",
+                borderBottom: "1px solid rgba(255,255,255,0.03)",
               }}
             >
-              {item.time}
-            </span>
-            {/* Type badge */}
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                fontWeight: 500,
-                textTransform: "uppercase",
-                color: "var(--color-text-tertiary)",
-                background: "rgba(255,255,255,0.04)",
-                borderRadius: 3,
-                padding: "2px 6px",
-                textAlign: "center",
-              }}
-            >
-              {item.type}
-            </span>
-            {/* Addresses */}
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-text-tertiary)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {item.from} → {item.to}
-            </span>
-            {/* Amount */}
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--color-text-secondary)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {item.amount}
-            </span>
-          </div>
-        ))}
-        {feed.length === 0 && (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--color-text-quaternary)",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {timeAgoShort(item.time)}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  color: "var(--color-text-tertiary)",
+                  background: "rgba(255,255,255,0.04)",
+                  borderRadius: 3,
+                  padding: "2px 6px",
+                  textAlign: "center",
+                }}
+              >
+                {item.type}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--color-text-secondary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.symbol} <span style={{ color: "var(--color-text-quaternary)" }}>· {item.severity}</span>
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--color-text-tertiary)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.detail}
+              </span>
+            </div>
+          ))
+        ) : (
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -469,7 +548,7 @@ function LiveFeed() {
               padding: "16px 0",
             }}
           >
-            Waiting for blocks...
+            All quiet — no recent signals
           </div>
         )}
       </div>
