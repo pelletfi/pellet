@@ -105,3 +105,25 @@ export const ingestionCursors = pgTable("ingestion_cursors", {
   lastBlock: bigint("last_block", { mode: "number" }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Rolling peg aggregates — computed from peg_samples on a cron cadence.
+// One row per (stable, window_label). Updated in place.
+export const pegAggregates = pgTable(
+  "peg_aggregates",
+  {
+    stable: text("stable").notNull(),
+    windowLabel: text("window_label").notNull(), // '1h' | '24h' | '7d'
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull(),
+    sampleCount: integer("sample_count").notNull(),
+    meanPrice: numeric("mean_price").notNull(),
+    stddevPrice: numeric("stddev_price").notNull(),
+    minPrice: numeric("min_price").notNull(),
+    maxPrice: numeric("max_price").notNull(),
+    maxDeviationBps: numeric("max_deviation_bps").notNull(),
+    secondsOutside10bps: integer("seconds_outside_10bps").notNull(),
+    secondsOutside50bps: integer("seconds_outside_50bps").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.stable, t.windowLabel] }),
+  }),
+);
