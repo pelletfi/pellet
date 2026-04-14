@@ -414,13 +414,18 @@ body {
 }
 
 /* Make Fumadocs docs layout respect our 48px sticky nav so the sidebar
-   (including its bottom theme toggle) stays fully in view. */
+   stays fully in view. */
 #nd-docs-layout,
 [data-docs="true"] {
   --fd-nav-height: 48px !important;
   --fd-layout-offset: 48px !important;
   --fd-docs-height: calc(100dvh - 48px) !important;
   --fd-tocnav-height: 48px !important;
+}
+
+/* Hide theme toggle — site is dark-only by design */
+[data-theme-toggle] {
+  display: none !important;
 }
 
 /* ── Address text ── */

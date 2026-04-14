@@ -26,7 +26,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <RootProvider theme={{ enabled: true, defaultTheme: "dark" }}>
+        <RootProvider theme={{ enabled: true, defaultTheme: "dark", forcedTheme: "dark" }}>
           <Nav />
           <main>{children}</main>
           <Footer />
