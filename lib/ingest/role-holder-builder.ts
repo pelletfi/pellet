@@ -23,14 +23,15 @@ const ROLE_HASHES = {
   BURN_BLOCKED_ROLE: keccak256(toBytes("BURN_BLOCKED_ROLE")),
 };
 
+// Tempo's hasRole signature reverses the OpenZeppelin order: (account, role).
 const HAS_ROLE_ABI = [
   {
     name: "hasRole",
     type: "function",
     stateMutability: "view",
     inputs: [
-      { name: "role", type: "bytes32" },
       { name: "account", type: "address" },
+      { name: "role", type: "bytes32" },
     ],
     outputs: [{ type: "bool" }],
   },
@@ -73,7 +74,7 @@ async function probeHasRole(stable: string, role: `0x${string}`, account: string
       address: stable as `0x${string}`,
       abi: HAS_ROLE_ABI,
       functionName: "hasRole",
-      args: [role, account as `0x${string}`],
+      args: [account as `0x${string}`, role],
     });
     return Boolean(res);
   } catch {
