@@ -56,3 +56,11 @@ curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c
 If you want the issuer's global attested reserves, follow `attestation_source` to the issuer's transparency page. We don't pull that data into the API because the per-chain slice is more useful for risk decisions on Tempo.
 
 Refreshed every hour from live chain state.
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../reserves?as_of=7d'
+```
+
+Returns the most recent reserves snapshot per `reserve_type` at or before `as_of`. History is append-only from `2026-04-14`.

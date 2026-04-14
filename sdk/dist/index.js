@@ -28,8 +28,8 @@ export class Pellet {
         this.fetchFn = config.fetch ?? globalThis.fetch.bind(globalThis);
     }
     // ── Internal request ──────────────────────────────────────────────────────
-    async request(path) {
-        const url = `${this.baseUrl}${path}`;
+    async request(path, opts = {}) {
+        const url = `${this.baseUrl}${withAsOf(path, opts.asOf)}`;
         const headers = {};
         if (this.apiKey)
             headers.Authorization = `Bearer ${this.apiKey}`;
@@ -48,19 +48,22 @@ export class Pellet {
             sourceContracts: csvOrUndef(res.headers.get("x-pellet-source-contracts")),
             sourceTables: csvOrUndef(res.headers.get("x-pellet-source-tables")),
             freshnessSec: numOrUndef(res.headers.get("x-pellet-freshness-sla")?.replace(/s$/, "") ?? null),
+            asOf: res.headers.get("x-pellet-as-of") ?? undefined,
         };
         return { data, meta };
     }
     // ── Stablecoin namespaces ─────────────────────────────────────────────────
-    /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc. */
+    /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc.
+     * Most methods accept `{ asOf }` for time-travel queries.
+     * `asOf` accepts a Date, ISO string, unix seconds, or relative "1h"/"24h"/"7d". */
     stablecoin(address) {
         const path = (suffix) => `/api/v1/stablecoins/${address}${suffix}`;
         return {
             detail: () => this.request(path("")),
-            peg: () => this.request(path("/peg")),
-            pegEvents: (limit = 20) => this.request(path(`/peg-events?limit=${limit}`)),
-            risk: () => this.request(path("/risk")),
-            reserves: () => this.request(path("/reserves")),
+            peg: (opts = {}) => this.request(path("/peg"), opts),
+            pegEvents: (opts = {}) => this.request(path(`/peg-events?limit=${opts.limit ?? 20}`), { asOf: opts.asOf }),
+            risk: (opts = {}) => this.request(path("/risk"), opts),
+            reserves: (opts = {}) => this.request(path("/reserves"), opts),
             roles: () => this.request(path("/roles")),
         };
     }
@@ -76,7 +79,7 @@ export class Pellet {
     /** Recent flow anomalies (z-score-detected unusual flows). */
     flowAnomalies(opts = {}) {
         const limit = opts.limit ?? 20;
-        return this.request(`/api/v1/stablecoins/flow-anomalies?limit=${limit}`);
+        return this.request(`/api/v1/stablecoins/flow-anomalies?limit=${limit}`, { asOf: opts.asOf });
     }
     /** Address label / entity resolution. */
     address(addr) {
@@ -89,6 +92,13 @@ export class Pellet {
         health: () => this.request(`/api/v1/system/health`),
         cronRuns: () => this.request(`/api/v1/system/cron-runs`),
     };
+}
+function withAsOf(path, asOf) {
+    if (asOf == null)
+        return path;
+    const value = asOf instanceof Date ? asOf.toISOString() : String(asOf);
+    const sep = path.includes("?") ? "&" : "?";
+    return `${path}${sep}as_of=${encodeURIComponent(value)}`;
 }
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function numOrUndef(v) {

@@ -219,6 +219,28 @@ If either exceeds threshold, status returns `drift` (HTTP 503 on `/api/v1/system
 
 ---
 
+## Time-travel queries (`?as_of=`)
+
+Every time-aware endpoint accepts an `?as_of=` parameter to freeze the response to historical state:
+
+| Endpoint | Source | Availability |
+| --- | --- | --- |
+| `/stablecoins/:addr/peg` | `peg_samples` (raw) | Since peg sampling began |
+| `/stablecoins/:addr/peg-events` | `peg_events` | Since peg-break detector began |
+| `/stablecoins/:addr/risk` | `risk_scores_history` | Since 2026-04-14 |
+| `/stablecoins/:addr/reserves` | `reserves_history` | Since 2026-04-14 |
+| `/stablecoins/flow-anomalies` | `flow_anomalies` | Since anomaly detector began |
+
+**Accepted `as_of` formats:** ISO 8601 (`2026-04-14T12:00:00Z`), unix epoch seconds, relative duration (`1h`, `24h`, `7d`), or `now`.
+
+**For peg:** `/peg?as_of=X` returns the nearest sample at or before `X`, plus 1h/24h/7d windows **recomputed on-the-fly** from raw `peg_samples` ending at `X`. Live responses use pre-computed `peg_aggregates` for speed; time-travel responses recompute to guarantee the returned window is the exact historical slice.
+
+**For risk/reserves:** returned row is the most recent snapshot at or before `as_of`. Because these tables were append-only only since `2026-04-14`, queries before that date return 404. The response `note` field explains.
+
+**Reproducibility:** Every time-travel response sets the `X-Pellet-As-Of` response header and a top-level `"as_of"` field, so clients can independently confirm which frozen slice they received.
+
+---
+
 ## Versioning policy
 
 When a formula changes:

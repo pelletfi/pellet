@@ -24,13 +24,24 @@ export declare class Pellet {
     private readonly fetchFn;
     constructor(config?: PelletConfig);
     private request;
-    /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc. */
+    /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc.
+     * Most methods accept `{ asOf }` for time-travel queries.
+     * `asOf` accepts a Date, ISO string, unix seconds, or relative "1h"/"24h"/"7d". */
     stablecoin(address: Address): {
         detail: () => Promise<PelletResponse<StablecoinSummary>>;
-        peg: () => Promise<PelletResponse<PegResponse>>;
-        pegEvents: (limit?: number) => Promise<PelletResponse<PegEventsResponse>>;
-        risk: () => Promise<PelletResponse<RiskResponse>>;
-        reserves: () => Promise<PelletResponse<ReservesResponse>>;
+        peg: (opts?: {
+            asOf?: AsOf;
+        }) => Promise<PelletResponse<PegResponse>>;
+        pegEvents: (opts?: {
+            limit?: number;
+            asOf?: AsOf;
+        }) => Promise<PelletResponse<PegEventsResponse>>;
+        risk: (opts?: {
+            asOf?: AsOf;
+        }) => Promise<PelletResponse<RiskResponse>>;
+        reserves: (opts?: {
+            asOf?: AsOf;
+        }) => Promise<PelletResponse<ReservesResponse>>;
         roles: () => Promise<PelletResponse<RolesResponse>>;
     };
     /** List all tracked TIP-20 stablecoins with risk inline. */
@@ -42,6 +53,7 @@ export declare class Pellet {
     /** Recent flow anomalies (z-score-detected unusual flows). */
     flowAnomalies(opts?: {
         limit?: number;
+        asOf?: AsOf;
     }): Promise<PelletResponse<FlowAnomaliesResponse>>;
     /** Address label / entity resolution. */
     address(addr: Address): {
@@ -53,3 +65,6 @@ export declare class Pellet {
         cronRuns: () => Promise<PelletResponse<CronRunsResponse>>;
     };
 }
+/** Accepts a Date, ISO 8601 string, unix epoch seconds, or a relative duration
+ * like "1h", "24h", "7d". Passed through verbatim to the API's `?as_of=` param. */
+export type AsOf = Date | string | number;

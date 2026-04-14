@@ -276,6 +276,41 @@ export const reserves = pgTable(
   }),
 );
 
+// Append-only history of risk_scores snapshots. Written on every cron tick.
+// Enables time-travel (`?as_of=`) queries.
+export const riskScoresHistory = pgTable(
+  "risk_scores_history",
+  {
+    id: serial("id").primaryKey(),
+    stable: text("stable").notNull(),
+    composite: numeric("composite").notNull(),
+    components: jsonb("components").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    stableTimeIdx: index("risk_scores_history_stable_time_idx").on(t.stable, t.computedAt),
+  }),
+);
+
+// Append-only history of reserves snapshots. Written whenever refreshReserves()
+// picks up a new backing_usd value for a (stable, reserve_type). Powers time-travel.
+export const reservesHistory = pgTable(
+  "reserves_history",
+  {
+    id: serial("id").primaryKey(),
+    stable: text("stable").notNull(),
+    reserveType: text("reserve_type").notNull(),
+    backingUsd: numeric("backing_usd"),
+    attestationSource: text("attestation_source"),
+    verifiedBy: text("verified_by"),
+    notes: jsonb("notes"),
+    attestedAt: timestamp("attested_at", { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    stableTimeIdx: index("reserves_history_stable_time_idx").on(t.stable, t.attestedAt),
+  }),
+);
+
 // Rolling peg aggregates — computed from peg_samples on a cron cadence.
 // One row per (stable, window_label). Updated in place.
 export const pegAggregates = pgTable(

@@ -22,6 +22,8 @@ interface SourceInfo {
   tables?: string[];
   /** Maximum staleness of the response data in seconds */
   freshnessSec?: number;
+  /** If this is a time-travel query, the `as_of` timestamp the response was frozen at */
+  asOf?: Date | null;
 }
 
 export function withReproducibility<T>(
@@ -41,6 +43,9 @@ export function withReproducibility<T>(
   }
   if (info.freshnessSec != null) {
     response.headers.set("X-Pellet-Freshness-SLA", `${info.freshnessSec}s`);
+  }
+  if (info.asOf) {
+    response.headers.set("X-Pellet-As-Of", info.asOf.toISOString());
   }
   return response;
 }

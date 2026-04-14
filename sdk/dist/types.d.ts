@@ -8,6 +8,8 @@ export interface ReproducibilityMeta {
     sourceContracts?: string[];
     sourceTables?: string[];
     freshnessSec?: number;
+    /** If this was a time-travel query, the `as_of` timestamp the data is frozen at */
+    asOf?: string;
 }
 export interface StablecoinSummary {
     address: Address;

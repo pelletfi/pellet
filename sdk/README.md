@@ -55,6 +55,24 @@ console.log(meta);
 
 See [pelletfi.com/docs/methodology](https://pelletfi.com/docs/methodology) for the full spec.
 
+## Time-travel queries
+
+Peg, risk, reserves, peg-events, and flow-anomalies accept `{ asOf }` to query historical state:
+
+```ts
+// ISO 8601 timestamp
+await pellet.stablecoin(addr).peg({ asOf: "2026-04-13T00:00:00Z" });
+
+// Or a relative duration (most convenient)
+await pellet.stablecoin(addr).risk({ asOf: "24h" }); // 24 hours ago
+await pellet.stablecoin(addr).reserves({ asOf: "7d" });
+
+// Or a Date / unix seconds
+await pellet.stablecoin(addr).pegEvents({ asOf: new Date("2026-04-10") });
+```
+
+The response `meta.asOf` confirms which frozen slice you got. Risk and reserves time-travel is served from append-only snapshot history — available from when your first cron tick after this was deployed.
+
 ## Methods
 
 | Method | Returns |

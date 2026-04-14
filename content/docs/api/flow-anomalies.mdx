@@ -58,3 +58,11 @@ For each (from_token, to_token) edge:
 ```
 
 Only edges with ≥10 historical observations get scored (avoids false positives on cold edges). Detector runs every 15 minutes.
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/flow-anomalies?as_of=24h'
+```
+
+Returns anomalies with `window_start` at or before `as_of`. Useful for reconstructing what flow signals were visible at any past moment.

@@ -20,17 +20,35 @@ export async function refreshReserves(): Promise<RefreshResult> {
     const backingUsd = supplyTokens * price;
     if (!isFinite(backingUsd) || backingUsd <= 0) continue;
 
+    const addr = s.address.toLowerCase();
+    const backingStr = backingUsd.toFixed(2);
     const r = await db.execute(sql`
       UPDATE reserves
-      SET backing_usd = ${backingUsd.toFixed(2)},
+      SET backing_usd = ${backingStr},
           attested_at = NOW(),
           updated_at = NOW()
-      WHERE stable = ${s.address.toLowerCase()}
+      WHERE stable = ${addr}
+      RETURNING reserve_type, attestation_source, verified_by, notes
     `);
-    const count = (r as unknown as { rowCount?: number; rowsAffected?: number }).rowCount
-      ?? (r as unknown as { rowsAffected?: number }).rowsAffected
-      ?? 0;
-    if (count > 0) reservesUpdated += 1;
+    const updatedRows = ((r as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (r as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+    for (const row of updatedRows) {
+      const notesJson = row.notes != null ? JSON.stringify(row.notes) : null;
+      await db.execute(sql`
+        INSERT INTO reserves_history
+          (stable, reserve_type, backing_usd, attestation_source, verified_by, notes, attested_at)
+        VALUES (
+          ${addr},
+          ${row.reserve_type as string},
+          ${backingStr},
+          ${(row.attestation_source as string | null) ?? null},
+          ${(row.verified_by as string | null) ?? null},
+          ${notesJson ? sql`${notesJson}::jsonb` : sql`NULL`},
+          NOW()
+        )
+      `);
+    }
+    if (updatedRows.length > 0) reservesUpdated += 1;
   }
 
   return {

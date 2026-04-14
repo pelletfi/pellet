@@ -113,13 +113,19 @@ export async function computeRiskScores(): Promise<ScoreResult> {
       components.supply_risk * WEIGHTS.supply_risk +
       components.policy_risk * WEIGHTS.policy_risk;
 
+    const compositeStr = composite.toFixed(2);
+    const componentsJson = JSON.stringify(components);
     await db.execute(sql`
       INSERT INTO risk_scores (stable, composite, components, computed_at)
-      VALUES (${addr}, ${composite.toFixed(2)}, ${JSON.stringify(components)}::jsonb, NOW())
+      VALUES (${addr}, ${compositeStr}, ${componentsJson}::jsonb, NOW())
       ON CONFLICT (stable) DO UPDATE SET
         composite = EXCLUDED.composite,
         components = EXCLUDED.components,
         computed_at = EXCLUDED.computed_at
+    `);
+    await db.execute(sql`
+      INSERT INTO risk_scores_history (stable, composite, components, computed_at)
+      VALUES (${addr}, ${compositeStr}, ${componentsJson}::jsonb, NOW())
     `);
     stablesScored += 1;
   }

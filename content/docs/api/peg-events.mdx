@@ -51,3 +51,11 @@ This endpoint is also the source of these webhook events:
 - `peg_break.ended` — fires when a previously-ongoing event closes
 
 See [Webhooks](/docs/webhooks) for delivery and signature details.
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../peg-events?as_of=2026-04-13'
+```
+
+Returns only events that had started at or before `as_of`. If an event ended after `as_of`, the `ended_at` is nulled in the response and `ongoing` flips to `true` — because at the historical moment, the event was still in flight.

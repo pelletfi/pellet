@@ -51,3 +51,12 @@ These are convention, not part of the API:
 - **15 – 35** — moderate
 - **35 – 60** — elevated
 - **60+** — high
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../risk?as_of=24h'
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../risk?as_of=2026-04-13T12:00:00Z'
+```
+
+Returns the most recent risk snapshot at or before `as_of`. History is append-only from `2026-04-14`; older queries return 404 with a `note` explaining why.

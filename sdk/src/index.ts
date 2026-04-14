@@ -66,8 +66,8 @@ export class Pellet {
 
   // ── Internal request ──────────────────────────────────────────────────────
 
-  private async request<T>(path: string): Promise<PelletResponse<T>> {
-    const url = `${this.baseUrl}${path}`;
+  private async request<T>(path: string, opts: { asOf?: AsOf } = {}): Promise<PelletResponse<T>> {
+    const url = `${this.baseUrl}${withAsOf(path, opts.asOf)}`;
     const headers: Record<string, string> = {};
     if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;
 
@@ -87,21 +87,25 @@ export class Pellet {
       sourceContracts: csvOrUndef(res.headers.get("x-pellet-source-contracts")),
       sourceTables: csvOrUndef(res.headers.get("x-pellet-source-tables")),
       freshnessSec: numOrUndef(res.headers.get("x-pellet-freshness-sla")?.replace(/s$/, "") ?? null),
+      asOf: res.headers.get("x-pellet-as-of") ?? undefined,
     };
     return { data, meta };
   }
 
   // ── Stablecoin namespaces ─────────────────────────────────────────────────
 
-  /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc. */
+  /** Fluent stablecoin scope: `pellet.stablecoin(addr).peg()` etc.
+   * Most methods accept `{ asOf }` for time-travel queries.
+   * `asOf` accepts a Date, ISO string, unix seconds, or relative "1h"/"24h"/"7d". */
   stablecoin(address: Address) {
     const path = (suffix: string) => `/api/v1/stablecoins/${address}${suffix}`;
     return {
       detail: () => this.request<StablecoinSummary>(path("")),
-      peg: () => this.request<PegResponse>(path("/peg")),
-      pegEvents: (limit = 20) => this.request<PegEventsResponse>(path(`/peg-events?limit=${limit}`)),
-      risk: () => this.request<RiskResponse>(path("/risk")),
-      reserves: () => this.request<ReservesResponse>(path("/reserves")),
+      peg: (opts: { asOf?: AsOf } = {}) => this.request<PegResponse>(path("/peg"), opts),
+      pegEvents: (opts: { limit?: number; asOf?: AsOf } = {}) =>
+        this.request<PegEventsResponse>(path(`/peg-events?limit=${opts.limit ?? 20}`), { asOf: opts.asOf }),
+      risk: (opts: { asOf?: AsOf } = {}) => this.request<RiskResponse>(path("/risk"), opts),
+      reserves: (opts: { asOf?: AsOf } = {}) => this.request<ReservesResponse>(path("/reserves"), opts),
       roles: () => this.request<RolesResponse>(path("/roles")),
     };
   }
@@ -118,9 +122,12 @@ export class Pellet {
   }
 
   /** Recent flow anomalies (z-score-detected unusual flows). */
-  flowAnomalies(opts: { limit?: number } = {}) {
+  flowAnomalies(opts: { limit?: number; asOf?: AsOf } = {}) {
     const limit = opts.limit ?? 20;
-    return this.request<FlowAnomaliesResponse>(`/api/v1/stablecoins/flow-anomalies?limit=${limit}`);
+    return this.request<FlowAnomaliesResponse>(
+      `/api/v1/stablecoins/flow-anomalies?limit=${limit}`,
+      { asOf: opts.asOf },
+    );
   }
 
   /** Address label / entity resolution. */
@@ -135,6 +142,19 @@ export class Pellet {
     health: () => this.request<HealthResponse>(`/api/v1/system/health`),
     cronRuns: () => this.request<CronRunsResponse>(`/api/v1/system/cron-runs`),
   };
+}
+
+// ── Time-travel ─────────────────────────────────────────────────────────────
+
+/** Accepts a Date, ISO 8601 string, unix epoch seconds, or a relative duration
+ * like "1h", "24h", "7d". Passed through verbatim to the API's `?as_of=` param. */
+export type AsOf = Date | string | number;
+
+function withAsOf(path: string, asOf?: AsOf): string {
+  if (asOf == null) return path;
+  const value = asOf instanceof Date ? asOf.toISOString() : String(asOf);
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}as_of=${encodeURIComponent(value)}`;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
