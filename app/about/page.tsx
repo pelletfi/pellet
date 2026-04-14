@@ -626,7 +626,7 @@ export default function AboutPage() {
           <span>MPP-Native</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            Built on
+            Built for
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.5 }} />
           </span>
