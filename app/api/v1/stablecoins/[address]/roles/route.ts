@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { tempoClient } from "@/lib/rpc";
+import { TEMPO_ADDRESSES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -8,11 +10,31 @@ interface Params {
   params: Promise<{ address: string }>;
 }
 
+const TIP403_ABI = [
+  {
+    name: "getPolicy",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [
+      { name: "policyId", type: "uint256" },
+      { name: "policyType", type: "uint8" },
+      { name: "admin", type: "address" },
+      { name: "supplyCap", type: "uint256" },
+      { name: "paused", type: "bool" },
+    ],
+  },
+] as const;
+
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+
 export async function GET(_req: Request, { params }: Params) {
   const { address } = await params;
   const stable = address.toLowerCase();
 
   try {
+    // 1. Read role_holders from event-replayed table (currently empty for
+    //    Tempo-native stables; will populate when role enumeration is unblocked)
     const result = await db.execute(sql`
       SELECT role_name, role_hash, holder, granted_at, granted_tx_hash, holder_type, label
       FROM role_holders
@@ -22,7 +44,6 @@ export async function GET(_req: Request, { params }: Params) {
     const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
       ?? (result as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
 
-    // Group by role
     const byRole = new Map<string, Array<Record<string, unknown>>>();
     for (const r of rows) {
       const name = String(r.role_name ?? "UNKNOWN");
@@ -33,11 +54,59 @@ export async function GET(_req: Request, { params }: Params) {
         granted_tx_hash: r.granted_tx_hash,
         holder_type: r.holder_type,
         label: r.label,
+        source: "tempo_event_replay",
       });
     }
 
+    // 2. Augment with TIP-403 policy admin — this we always know via direct RPC.
+    //    Renders as POLICY_ADMIN role (the address that controls this stable's
+    //    compliance policy: blacklist additions, supply cap changes, etc.)
+    let policyAdmin: string | null = null;
+    try {
+      const policy = await tempoClient.readContract({
+        address: TEMPO_ADDRESSES.tip403Registry,
+        abi: TIP403_ABI,
+        functionName: "getPolicy",
+        args: [stable as `0x${string}`],
+      });
+      const admin = (policy as readonly [bigint, number, `0x${string}`, bigint, boolean])[2];
+      if (admin && admin.toLowerCase() !== ZERO_ADDR) {
+        policyAdmin = admin.toLowerCase();
+        byRole.set("POLICY_ADMIN", [
+          {
+            holder: policyAdmin,
+            granted_at: null,
+            granted_tx_hash: null,
+            holder_type: null,
+            label: null,
+            source: "tip403_registry",
+          },
+        ]);
+      }
+    } catch {
+      // Stable has no TIP-403 policy attached
+    }
+
+    // Coverage metadata — be transparent about what data is available.
+    const coverage = {
+      available: [
+        ...(policyAdmin ? ["POLICY_ADMIN"] : []),
+        ...[...byRole.keys()].filter((k) => k !== "POLICY_ADMIN"),
+      ],
+      pending: [
+        "DEFAULT_ADMIN_ROLE",
+        "ISSUER_ROLE",
+        "PAUSE_ROLE",
+        "UNPAUSE_ROLE",
+        "BURN_BLOCKED_ROLE",
+      ].filter((r) => !byRole.has(r)),
+      pending_reason:
+        "Tempo's TIP-20 RBAC manages role membership at the precompile level without emitting RoleMembershipUpdated events for these stables. Direct enumeration is not exposed; we can only verify role membership for known addresses via hasRole probes.",
+    };
+
     return NextResponse.json({
       address: stable,
+      coverage,
       roles: [...byRole.entries()].map(([role_name, holders]) => ({
         role_name,
         role_hash: rows.find((r) => r.role_name === role_name)?.role_hash ?? null,

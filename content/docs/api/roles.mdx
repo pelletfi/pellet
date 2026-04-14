@@ -1,0 +1,65 @@
+---
+title: Roles
+description: Role holders per stablecoin — admins, issuers, pausers.
+icon: KeyRound
+---
+
+Returns the addresses that hold administrative roles on a stablecoin contract.
+
+## `GET /v1/stablecoins/{address}/roles`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/roles
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "coverage": {
+    "available": ["POLICY_ADMIN"],
+    "pending": ["DEFAULT_ADMIN_ROLE", "ISSUER_ROLE", "PAUSE_ROLE", "UNPAUSE_ROLE", "BURN_BLOCKED_ROLE"],
+    "pending_reason": "Tempo's TIP-20 RBAC manages role membership at the precompile level without emitting events for these stables."
+  },
+  "roles": [
+    {
+      "role_name": "POLICY_ADMIN",
+      "holder_count": 1,
+      "holders": [
+        { "holder": "0x...", "source": "tip403_registry" }
+      ]
+    }
+  ]
+}
+```
+
+## How Tempo roles work
+
+Tempo's TIP-20 has a built-in RBAC system different from Ethereum's OpenZeppelin pattern. Five roles exist:
+
+| Role | Powers |
+| --- | --- |
+| `DEFAULT_ADMIN_ROLE` | Can grant/revoke other roles |
+| `ISSUER_ROLE` | Can mint and burn |
+| `PAUSE_ROLE` | Can pause transfers (emergency) |
+| `UNPAUSE_ROLE` | Can resume transfers |
+| `BURN_BLOCKED_ROLE` | Can mark addresses as burn-blocked (compliance) |
+
+Plus one role tracked separately at the **TIP-403 compliance layer**:
+
+- `POLICY_ADMIN` — controls blacklist/allowlist additions, supply caps, pause flag
+
+## Coverage explained
+
+The `coverage` field is honest about what we have:
+
+- **`available`** — roles whose holders we can confirm right now
+- **`pending`** — roles where Tempo's precompile doesn't expose enumeration. Without per-stable issuer disclosures or Tempo team docs, we can only verify role membership for addresses we already know about (via `hasRole` probes).
+- **`pending_reason`** — why a role is pending
+
+`POLICY_ADMIN` is always available because we read it directly from the TIP-403 registry.
+
+The other roles will populate as we learn issuer-published admin addresses or as Tempo exposes precompile enumeration.
