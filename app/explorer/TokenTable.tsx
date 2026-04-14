@@ -135,7 +135,7 @@ export default function StablecoinsTable({ stablecoins: initial }: StablecoinsTa
       >
         {(
           [
-            ["stablecoins", "Stablecoins"],
+            ["stablecoins", "Stables"],
             ["txns", "Transactions"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
