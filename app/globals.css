@@ -388,6 +388,16 @@ body {
   animation: statusPulse 1.8s ease-in-out infinite;
 }
 
+/* Remove default focus ring on Fumadocs search dialog input */
+[cmdk-input]:focus,
+[cmdk-input]:focus-visible,
+[cmdk-root] input:focus,
+[cmdk-root] input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--color-border-default) !important;
+}
+
 /* ── Address text ── */
 .address-text {
   font-family: var(--font-mono);
