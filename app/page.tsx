@@ -634,16 +634,14 @@ export default function AboutPage() {
           variants={fadeUp}
           style={{
             fontFamily: "'Instrument Serif', Georgia, serif",
-            fontSize: 48, fontWeight: 400, lineHeight: 1.15,
+            fontSize: 42, fontWeight: 400, lineHeight: 1.15,
             letterSpacing: "-0.02em", marginBottom: 24,
             textShadow: "0 0 40px rgba(255,255,255,0.1)",
           }}
         >
           The first payments chain.
           <br />
-          Every <CyclingWord size={48} italic={false} /> mapped.
-          <br />
-          <em style={{
+          Every <CyclingWord size={42} italic={false} /> mapped — <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
