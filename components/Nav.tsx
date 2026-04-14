@@ -47,7 +47,7 @@ export function Nav() {
             whiteSpace: "nowrap",
           }}
         >
-          Pellet Finance
+          Pellet
         </Link>
         <nav className="nav-links">
           {navLinks.map((link) => (
