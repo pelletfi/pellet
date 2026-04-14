@@ -530,7 +530,7 @@ function NetworkViz() {
 // ── Cycling word for hero eyebrow ──────────────────────────────────────────
 
 function CyclingWord({ size = 15, italic = true }: { size?: number; italic?: boolean } = {}) {
-  const words = ["peg", "policy", "flow"];
+  const words = ["Peg", "Policy", "Flow"];
   const [i, setI] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setI((n) => (n + 1) % words.length), 3500);
@@ -641,7 +641,9 @@ export default function AboutPage() {
         >
           The first payments chain.
           <br />
-          Every <CyclingWord size={42} italic={false} /> mapped — <em style={{
+          <CyclingWord size={42} italic={false} />
+          <br />
+          <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
