@@ -77,8 +77,10 @@ export async function sampleAllPegs(): Promise<SampleResult> {
   const settled = await Promise.all(promises);
   for (const r of settled) if (r) rows.push(r);
 
-  if (rows.length > 0) {
-    await db.insert(pegSamples).values(rows);
+  // Neon HTTP driver chokes on multi-row INSERTs with DEFAULT values;
+  // insert rows individually (12 round-trips/minute is negligible).
+  for (const row of rows) {
+    await db.insert(pegSamples).values(row);
   }
 
   return {
