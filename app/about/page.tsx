@@ -644,16 +644,16 @@ export default function AboutPage() {
             textShadow: "0 0 40px rgba(255,255,255,0.1)",
           }}
         >
-          <em style={{
+          The first payments chain{" "}
+          <br />
+          has its own <em style={{
             color: "var(--color-text-secondary)",
             backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
             backgroundSize: "250% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             animation: "shimmer 10s ease-in-out infinite",
-          }}>Stablecoin intelligence</em>{" "}
-          <br />
-          for the first payments chain.
+          }}>stablecoin intelligence.</em>
         </motion.h1>
 
         <motion.p
