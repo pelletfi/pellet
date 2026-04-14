@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const productLinks = [
   { label: "Tokens", href: "/tokens" },
-  { label: "Stablecoins", href: "/stablecoins" },
+  { label: "Stables", href: "/stablecoins" },
   { label: "Services", href: "/services" },
   { label: "Terminal", href: "/terminal" },
 ];

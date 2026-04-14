@@ -730,7 +730,7 @@ export default function AboutPage() {
         }}>What Pellet does</motion.h2>
         <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
           <p style={{ marginBottom: 20 }}>
-            We monitor every TIP-20 stablecoin on Tempo — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, backing structure. Every stablecoin gets its own editorial analysis: origin story, issuer context, risk assessment. Every flow between stablecoins is tracked natively.
+            We monitor every TIP-20 stablecoin on Tempo — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, backing structure. Every stable gets its own editorial analysis: origin story, issuer context, risk assessment. Every flow between stables is tracked natively.
           </p>
           <p style={{ marginBottom: 0 }}>
             Not a generic analytics tool bolted onto another chain. Built specifically for Tempo&apos;s TIP-20 architecture — reading enshrined DEX quotes, TIP-403 policy state, and supply cap events directly from the protocol.
@@ -850,7 +850,7 @@ export default function AboutPage() {
         }}>Built from day one</motion.h2>
         <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
           <p style={{ marginBottom: 20 }}>
-            We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 12 stablecoins, we analyze all 12. When it has 100, we&apos;ll analyze all 100.
+            We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 12 stables, we analyze all 12. When it has 100, we&apos;ll analyze all 100.
           </p>
           <p style={{ margin: 0 }}>
             <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. The stablecoin intelligence layer for Tempo. Here to stay.</strong>
