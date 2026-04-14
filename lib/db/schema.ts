@@ -126,6 +126,30 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Peg-break events — detected from peg_samples.
+// A continuous period where spread_bps > threshold, classified by severity:
+//   'mild'   — spread > 10bps sustained for >= 5 minutes
+//   'severe' — spread > 50bps sustained for >= 1 minute
+// If ended_at is null the event is ongoing at detector last-run time.
+export const pegEvents = pgTable(
+  "peg_events",
+  {
+    id: serial("id").primaryKey(),
+    stable: text("stable").notNull(),
+    severity: text("severity").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    maxDeviationBps: numeric("max_deviation_bps").notNull(),
+    startedBlock: bigint("started_block", { mode: "number" }).notNull(),
+    endedBlock: bigint("ended_block", { mode: "number" }),
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    stableTimeIdx: index("peg_events_stable_time_idx").on(t.stable, t.startedAt),
+  }),
+);
+
 // Rolling peg aggregates — computed from peg_samples on a cron cadence.
 // One row per (stable, window_label). Updated in place.
 export const pegAggregates = pgTable(
