@@ -431,6 +431,17 @@ body {
   display: none !important;
 }
 
+/* Geist Mono for the docs sidebar */
+#nd-sidebar,
+#nd-sidebar * {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+}
+#nd-sidebar [cmdk-input] {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
 /* ── Address text ── */
 .address-text {
   font-family: var(--font-mono);
