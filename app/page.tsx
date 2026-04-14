@@ -533,7 +533,7 @@ function CyclingWord() {
   const words = ["Peg", "Supply", "Policy", "Flow"];
   const [i, setI] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2400);
+    const id = setInterval(() => setI((n) => (n + 1) % words.length), 3500);
     return () => clearInterval(id);
   }, [words.length]);
 
@@ -561,8 +561,8 @@ function CyclingWord() {
             animate={{ rotateX: 0, opacity: 1 }}
             exit={{ rotateX: 90, opacity: 0 }}
             transition={{
-              duration: 0.38,
-              delay: idx * 0.05,
+              duration: 0.7,
+              delay: idx * 0.09,
               ease: [0.22, 1, 0.36, 1] as const,
             }}
             style={{
