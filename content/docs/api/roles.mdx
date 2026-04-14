@@ -20,46 +20,38 @@ curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c
 {
   "address": "0x20c000000000000000000000b9537d11c60e8b50",
   "coverage": {
-    "available": ["POLICY_ADMIN"],
-    "pending": ["DEFAULT_ADMIN_ROLE", "ISSUER_ROLE", "PAUSE_ROLE", "UNPAUSE_ROLE", "BURN_BLOCKED_ROLE"],
-    "pending_reason": "Tempo's TIP-20 RBAC manages role membership at the precompile level without emitting events for these stables."
+    "status": "unavailable",
+    "message": "No role holders are currently knowable for this stable...",
+    "roles_tracked": [
+      { "name": "DEFAULT_ADMIN_ROLE", "powers": "Can grant and revoke other roles" },
+      { "name": "ISSUER_ROLE", "powers": "Can mint and burn tokens" },
+      { "name": "PAUSE_ROLE", "powers": "Can pause transfers (emergency stop)" },
+      { "name": "UNPAUSE_ROLE", "powers": "Can resume transfers after a pause" },
+      { "name": "BURN_BLOCKED_ROLE", "powers": "Can mark addresses as burn-blocked (compliance)" }
+    ]
   },
-  "roles": [
-    {
-      "role_name": "POLICY_ADMIN",
-      "holder_count": 1,
-      "holders": [
-        { "holder": "0x...", "source": "tip403_registry" }
-      ]
-    }
-  ]
+  "roles": []
 }
 ```
 
 ## How Tempo roles work
 
-Tempo's TIP-20 has a built-in RBAC system different from Ethereum's OpenZeppelin pattern. Five roles exist:
+Tempo's TIP-20 includes a built-in RBAC system distinct from Ethereum's OpenZeppelin pattern. Five roles exist (see `coverage.roles_tracked` above for what each does).
 
-| Role | Powers |
-| --- | --- |
-| `DEFAULT_ADMIN_ROLE` | Can grant/revoke other roles |
-| `ISSUER_ROLE` | Can mint and burn |
-| `PAUSE_ROLE` | Can pause transfers (emergency) |
-| `UNPAUSE_ROLE` | Can resume transfers |
-| `BURN_BLOCKED_ROLE` | Can mark addresses as burn-blocked (compliance) |
+## Why the response is currently empty
 
-Plus one role tracked separately at the **TIP-403 compliance layer**:
+Three reasons — all properties of Tempo, not Pellet:
 
-- `POLICY_ADMIN` — controls blacklist/allowlist additions, supply caps, pause flag
+1. **No role events.** Tempo's TIP-20 precompile does not emit `RoleMembershipUpdated` events for the deployed stables. Standard event-replay can't recover historical grants.
+2. **No enumeration methods.** Unlike OpenZeppelin's `AccessControlEnumerable`, Tempo's TIP-20 does not expose `getRoleMember(role, index)` or `getRoleMemberCount(role)`. We can only verify membership for a specific address via `hasRole(role, account)`.
+3. **No TIP-403 policies are attached.** All 12 currently-tracked stables have `policy_id: 0`, so even the policy admin (which we surface for any stable with a registered policy) is unavailable.
 
-## Coverage explained
+Until issuers publish their admin/minter addresses or Tempo exposes role enumeration, this endpoint will return empty for most stables. The infrastructure is ready to populate the moment we have probe targets to verify.
 
-The `coverage` field is honest about what we have:
+## What to use instead
 
-- **`available`** — roles whose holders we can confirm right now
-- **`pending`** — roles where Tempo's precompile doesn't expose enumeration. Without per-stable issuer disclosures or Tempo team docs, we can only verify role membership for addresses we already know about (via `hasRole` probes).
-- **`pending_reason`** — why a role is pending
+For the most useful proxy of "who can change what" today:
 
-`POLICY_ADMIN` is always available because we read it directly from the TIP-403 registry.
-
-The other roles will populate as we learn issuer-published admin addresses or as Tempo exposes precompile enumeration.
+- **Compliance** (`/v1/stablecoins/:addr` field `policy_admin`) — populated for stables with TIP-403 policies attached
+- **Reserves** (`/v1/stablecoins/:addr/reserves`) — issuer + attestation source per backing component
+- **Briefings** ($0.05 paid) — editorial analysis cites known issuer governance per stable
