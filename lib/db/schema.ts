@@ -126,6 +126,24 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Cron run history — one row per cron invocation. Tracks duration, status,
+// and per-cron details for operator visibility (drift, latency, failures).
+export const cronRuns = pgTable(
+  "cron_runs",
+  {
+    id: serial("id").primaryKey(),
+    cronName: text("cron_name").notNull(), // e.g. 'ingest', 'peg-sample'
+    status: text("status").notNull(), // 'ok' | 'error'
+    durationMs: integer("duration_ms").notNull(),
+    detail: jsonb("detail"), // result payload (rows processed, errors, etc.)
+    error: text("error"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    nameTimeIdx: index("cron_runs_name_time_idx").on(t.cronName, t.startedAt),
+  }),
+);
+
 // Health checks — point-in-time records of invariant validations.
 // Each row = one check_type at one timestamp; status 'ok' or 'drift'.
 export const healthChecks = pgTable("health_checks", {

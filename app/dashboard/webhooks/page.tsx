@@ -13,6 +13,22 @@ interface Subscription {
   last_delivery_at: string | null;
 }
 
+interface Delivery {
+  id: number;
+  subscription_id: string;
+  event_type: string;
+  status: string;
+  attempts: number;
+  delivered_at: string | null;
+  last_error: string | null;
+  created_at: string;
+}
+
+interface DeliveriesResp {
+  counts: { pending: number; delivered: number; failed: number };
+  deliveries: Delivery[];
+}
+
 const STABLES = [
   { addr: "0x20c0000000000000000000000000000000000000", symbol: "pathUSD" },
   { addr: "0x20c000000000000000000000b9537d11c60e8b50", symbol: "USDC.e" },
@@ -56,13 +72,20 @@ export default function WebhooksDashboard() {
     }
   }, []);
 
+  const [deliveries, setDeliveries] = useState<DeliveriesResp | null>(null);
+
   useEffect(() => {
     if (!submittedKey) return;
     setLoading(true);
-    fetch("/api/admin/webhooks", { headers: { Authorization: `Bearer ${submittedKey}` } })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status === 401 ? "invalid key" : `HTTP ${r.status}`))))
-      .then((data) => {
-        setSubs(data.subscriptions ?? []);
+    Promise.all([
+      fetch("/api/admin/webhooks", { headers: { Authorization: `Bearer ${submittedKey}` } })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status === 401 ? "invalid key" : `HTTP ${r.status}`)))),
+      fetch("/api/admin/webhook-deliveries?limit=20", { headers: { Authorization: `Bearer ${submittedKey}` } })
+        .then((r) => (r.ok ? r.json() : { counts: { pending: 0, delivered: 0, failed: 0 }, deliveries: [] })),
+    ])
+      .then(([subData, delData]) => {
+        setSubs(subData.subscriptions ?? []);
+        setDeliveries(delData);
         setError(null);
       })
       .catch((e) => setError(e.message))
@@ -275,6 +298,76 @@ export default function WebhooksDashboard() {
           ))}
         </div>
       )}
+
+      {deliveries && (
+        <>
+          <h2 style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginTop: 32, marginBottom: 12 }}>
+            Recent deliveries
+          </h2>
+          <div style={{ display: "flex", gap: 16, marginBottom: 16, fontFamily: "var(--font-mono)", fontSize: 11 }}>
+            <Stat label="Pending" value={deliveries.counts.pending} />
+            <Stat label="Delivered" value={deliveries.counts.delivered} />
+            <Stat label="Failed" value={deliveries.counts.failed} color="var(--color-error, rgba(229,72,77,0.8))" />
+          </div>
+          {deliveries.deliveries.length === 0 ? (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-quaternary)", padding: 24, border: "1px solid var(--color-border-subtle)", borderRadius: 8, textAlign: "center" }}>
+              No deliveries yet — webhooks fire when peg breaks, flow anomalies, or system drift occurs.
+            </div>
+          ) : (
+            <div style={{ border: "1px solid var(--color-border-subtle)", borderRadius: 8, overflow: "hidden" }}>
+              {deliveries.deliveries.map((d, i) => (
+                <div key={d.id} style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr auto auto",
+                  gap: 12,
+                  padding: "12px 16px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--color-border-subtle)",
+                  alignItems: "center",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                }}>
+                  <span style={{
+                    padding: "2px 8px",
+                    borderRadius: 3,
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    background:
+                      d.status === "delivered" ? "rgba(48,164,108,0.12)" :
+                      d.status === "failed" ? "rgba(229,72,77,0.12)" : "rgba(255,255,255,0.06)",
+                    color:
+                      d.status === "delivered" ? "rgba(48,164,108,0.95)" :
+                      d.status === "failed" ? "rgba(229,72,77,0.95)" : "var(--color-text-tertiary)",
+                  }}>
+                    {d.status}
+                  </span>
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span style={{ color: "var(--color-text-primary)" }}>{d.event_type}</span>
+                    {d.last_error && (
+                      <div style={{ fontSize: 10, color: "rgba(229,72,77,0.8)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {d.last_error}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ color: "var(--color-text-quaternary)" }}>{d.attempts}x</span>
+                  <span style={{ color: "var(--color-text-quaternary)", fontSize: 10 }}>
+                    {new Date(d.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
+  return (
+    <div style={{ padding: "8px 14px", border: "1px solid var(--color-border-subtle)", borderRadius: 6 }}>
+      <div style={{ fontSize: 9, color: "var(--color-text-quaternary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 14, color: color ?? "var(--color-text-primary)", fontVariantNumeric: "tabular-nums" }}>{value}</div>
     </div>
   );
 }
