@@ -315,6 +315,18 @@ export const rewardRecipients = pgTable(
   }),
 );
 
+// Pellet Pro subscribers. One row per Stripe customer.
+export const pelletProSubscribers = pgTable("pellet_pro_subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  apiKey: text("api_key").notNull().unique(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+});
+
 // FeesDistributed events — one row per (validator, token, amount) distribution.
 export const feeDistributions = pgTable(
   "fee_distributions",

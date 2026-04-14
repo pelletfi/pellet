@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProCta } from "./ProCta";
 
 export const metadata = {
   title: "Pricing — Pellet",
@@ -46,7 +47,7 @@ const tiers = [
       "Priority support",
       "API key auth (no MPP signing required)",
     ],
-    cta: { label: "Get a key", href: "mailto:hello@pelletfi.com?subject=Pellet%20Pro%20signup" },
+    cta: { label: "Get a key", href: "#" },
     accent: true,
   },
 ];
@@ -153,23 +154,27 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href={tier.cta.href}
-              style={{
-                marginTop: "auto",
-                padding: "10px 16px",
-                borderRadius: 6,
-                background: tier.accent ? "var(--color-text-primary)" : "transparent",
-                color: tier.accent ? "var(--color-bg-base)" : "var(--color-text-primary)",
-                border: tier.accent ? "none" : "1px solid var(--color-border-default)",
-                fontSize: 13,
-                fontWeight: 500,
-                textDecoration: "none",
-                textAlign: "center",
-              }}
-            >
-              {tier.cta.label} →
-            </Link>
+            {tier.accent ? (
+              <ProCta />
+            ) : (
+              <Link
+                href={tier.cta.href}
+                style={{
+                  marginTop: "auto",
+                  padding: "10px 16px",
+                  borderRadius: 6,
+                  background: "transparent",
+                  color: "var(--color-text-primary)",
+                  border: "1px solid var(--color-border-default)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+              >
+                {tier.cta.label} →
+              </Link>
+            )}
           </div>
         ))}
       </div>
