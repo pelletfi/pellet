@@ -261,6 +261,94 @@ const spec = {
         },
       },
     },
+    "/api/v1/stablecoins/{address}/peg": {
+      get: {
+        operationId: "getStablecoinPeg",
+        summary: "Current peg + 1h/24h/7d aggregates",
+        description:
+          "Returns the most recent peg sample and rolling-window stats: mean price, standard deviation, max deviation in basis points, and time spent outside ±10bps and ±50bps thresholds.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+        ],
+        responses: { "200": { description: "Peg statistics", content: { "application/json": { schema: { type: "object" } } } } },
+      },
+    },
+    "/api/v1/stablecoins/{address}/peg-events": {
+      get: {
+        operationId: "getStablecoinPegEvents",
+        summary: "Detected peg-break events",
+        description:
+          "Timeline of detected peg-break events for the stablecoin. Severity is `mild` (>10bps for ≥5min) or `severe` (>50bps for ≥1min). Ongoing events have `ended_at: null`.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
+        ],
+        responses: { "200": { description: "Peg events", content: { "application/json": { schema: { type: "object" } } } } },
+      },
+    },
+    "/api/v1/stablecoins/{address}/risk": {
+      get: {
+        operationId: "getStablecoinRisk",
+        summary: "Composite risk score (0–100)",
+        description:
+          "Weighted composite risk score with explainable components (peg_risk, peg_break_risk, supply_risk, policy_risk). Higher = more risk.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+        ],
+        responses: {
+          "200": { description: "Risk score", content: { "application/json": { schema: { type: "object" } } } },
+          "404": { description: "Score not yet computed" },
+        },
+      },
+    },
+    "/api/v1/stablecoins/{address}/reserves": {
+      get: {
+        operationId: "getStablecoinReserves",
+        summary: "Reserve / backing breakdown",
+        description:
+          "Returns total backing in USD plus per-reserve-type entries with attestation source, issuer, and backing model.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+        ],
+        responses: { "200": { description: "Reserves", content: { "application/json": { schema: { type: "object" } } } } },
+      },
+    },
+    "/api/v1/stablecoins/{address}/roles": {
+      get: {
+        operationId: "getStablecoinRoles",
+        summary: "Role holders",
+        description:
+          "Current role membership (admin, minter, burner, etc.) for a stablecoin. May return empty if Tempo's TIP-20 implementation does not expose role enumeration.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+        ],
+        responses: { "200": { description: "Role holders grouped by role", content: { "application/json": { schema: { type: "object" } } } } },
+      },
+    },
+    "/api/v1/stablecoins/flow-anomalies": {
+      get: {
+        operationId: "getFlowAnomalies",
+        summary: "Recent cross-stable flow anomalies",
+        description:
+          "Returns 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3σ. Sorted most recent / largest deviation first.",
+        parameters: [
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
+        ],
+        responses: { "200": { description: "Anomalies", content: { "application/json": { schema: { type: "object" } } } } },
+      },
+    },
+    "/api/v1/system/health": {
+      get: {
+        operationId: "getSystemHealth",
+        summary: "Pellet ingestion + cron health",
+        description:
+          "Public health endpoint backed by the heartbeat monitor. Returns 200 if ok, 503 if cursor lag or peg sample staleness exceeds threshold. Suitable as an uptime probe.",
+        responses: {
+          "200": { description: "Healthy", content: { "application/json": { schema: { type: "object" } } } },
+          "503": { description: "Drift detected" },
+        },
+      },
+    },
     "/api/v1/health": {
       get: {
         operationId: "health",
