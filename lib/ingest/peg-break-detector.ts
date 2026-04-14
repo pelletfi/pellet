@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
+import { enqueueWebhookEvent } from "./webhook-deliver";
 
 // Severity thresholds
 const MILD_BPS = 10;
@@ -112,8 +113,20 @@ export async function detectPegBreaks(): Promise<DetectResult> {
       }
     }
 
-    // Upsert each window. PK is (stable, started_at) — updates on re-run as duration/max grow.
     for (const w of windows) {
+      // Check if this event already existed before upsert — we only enqueue webhooks
+      // on NEW events (started) or when a previously-open event closes (ended).
+      const existingResult = await db.execute(sql`
+        SELECT ended_at FROM peg_events
+        WHERE stable = ${addr} AND started_at = ${w.startedAt}
+        LIMIT 1
+      `);
+      const existingRows = ((existingResult as unknown as { rows?: Record<string, unknown>[] }).rows
+        ?? (existingResult as unknown as Record<string, unknown>[])) as Array<{ ended_at: unknown }>;
+      const wasNew = existingRows.length === 0;
+      const wasOngoing = existingRows[0]?.ended_at == null;
+      const nowClosed = w.endedAt != null;
+
       await db.execute(sql`
         INSERT INTO peg_events (
           stable, severity, started_at, ended_at, duration_seconds,
@@ -131,6 +144,27 @@ export async function detectPegBreaks(): Promise<DetectResult> {
           detected_at = NOW()
       `);
       eventsUpserted += 1;
+
+      // Emit webhook events
+      if (wasNew) {
+        await enqueueWebhookEvent("peg_break.started", {
+          stable: addr,
+          severity: w.severity,
+          started_at: w.startedAt,
+          max_deviation_bps: w.maxDeviationBps,
+          started_block: w.startedBlock,
+        }, addr);
+      }
+      if (wasOngoing && nowClosed) {
+        await enqueueWebhookEvent("peg_break.ended", {
+          stable: addr,
+          severity: w.severity,
+          started_at: w.startedAt,
+          ended_at: w.endedAt,
+          duration_seconds: w.durationSeconds,
+          max_deviation_bps: w.maxDeviationBps,
+        }, addr);
+      }
     }
   }
 

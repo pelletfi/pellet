@@ -126,6 +126,39 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Webhook subscriptions. Keyed by opaque id; secret used for HMAC signing.
+export const webhookSubscriptions = pgTable("webhook_subscriptions", {
+  id: text("id").primaryKey(),
+  label: text("label"),
+  url: text("url").notNull(),
+  secret: text("secret").notNull(),
+  eventTypes: text("event_types").array().notNull(), // e.g. ['peg_break.started','peg_break.ended']
+  stableFilter: text("stable_filter").array(), // null = all stables; else list of lowercased addresses
+  active: text("active").notNull().default("true"), // text because boolean inserts via raw sql were painful
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastDeliveryAt: timestamp("last_delivery_at", { withTimezone: true }),
+});
+
+// Individual delivery attempts. Worker cron picks these up in FIFO order.
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: serial("id").primaryKey(),
+    subscriptionId: text("subscription_id").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("pending"), // pending | delivered | failed
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    statusIdx: index("webhook_deliveries_status_next_attempt_idx").on(t.status, t.nextAttemptAt),
+  }),
+);
+
 // Peg-break events — detected from peg_samples.
 // A continuous period where spread_bps > threshold, classified by severity:
 //   'mild'   — spread > 10bps sustained for >= 5 minutes
@@ -147,6 +180,34 @@ export const pegEvents = pgTable(
   },
   (t) => ({
     stableTimeIdx: index("peg_events_stable_time_idx").on(t.stable, t.startedAt),
+  }),
+);
+
+// Composite risk score per stable. One row per stable, updated in place.
+// Components is a JSONB with explainable breakdown (peg_risk, supply_risk, etc.)
+export const riskScores = pgTable("risk_scores", {
+  stable: text("stable").primaryKey(),
+  composite: numeric("composite").notNull(), // 0-100, higher = more risk
+  components: jsonb("components").notNull(),
+  computedAt: timestamp("computed_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Reserve / backing data per stable. Manually curated initially; later via issuer APIs.
+// One row per (stable, reserve_type) tuple so we can record multiple reserve components.
+export const reserves = pgTable(
+  "reserves",
+  {
+    stable: text("stable").notNull(),
+    reserveType: text("reserve_type").notNull(), // 'protocol_native' | 'fiat' | 'crypto' | 'treasury'
+    backingUsd: numeric("backing_usd"), // null = unknown
+    attestationSource: text("attestation_source"), // URL or label
+    attestedAt: timestamp("attested_at", { withTimezone: true }),
+    verifiedBy: text("verified_by"), // 'pellet' | 'issuer_api' | 'manual'
+    notes: jsonb("notes"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.stable, t.reserveType] }),
   }),
 );
 
