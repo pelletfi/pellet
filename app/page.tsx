@@ -656,9 +656,11 @@ export default function AboutPage() {
           }}>stablecoin intelligence.</em>
         </motion.h1>
 
+        {/* TEMP: hidden for banner screenshot */}
         <motion.p
           variants={fadeUp}
           style={{
+            display: "none",
             fontSize: 18, lineHeight: 1.7, color: "var(--color-text-secondary)",
             maxWidth: 600, marginBottom: 0,
           }}
