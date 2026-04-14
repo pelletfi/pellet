@@ -45,8 +45,8 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
     if (otherSum > 0) top.push({ symbol: `+${rest.length} more`, supply: otherSum });
   }
 
-  const maxSupply = top[0].supply;
-  const minSupply = top[top.length - 1].supply;
+  const maxSupply = top.length > 0 ? top[0].supply : 1;
+  const minSupply = top.length > 0 ? top[top.length - 1].supply : 0;
   const range = maxSupply - minSupply || 1;
 
   function bgOpacity(supply: number): number {
