@@ -12,7 +12,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       }}
       sidebar={{
         defaultOpenLevel: 1,
-        collapsible: false,
       }}
     >
       {children}
