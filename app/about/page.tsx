@@ -531,35 +531,51 @@ function NetworkViz() {
 
 function CyclingWord() {
   const words = ["Peg", "Policy", "Flow"];
-  const [i, setI] = useState(0);
+  const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const [wordIndex, setWordIndex] = useState(0);
+  const [displayed, setDisplayed] = useState(words[0]);
+
   useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2400);
+    const id = setInterval(() => setWordIndex((n) => (n + 1) % words.length), 2400);
     return () => clearInterval(id);
   }, [words.length]);
+
+  useEffect(() => {
+    const target = words[wordIndex];
+    let frame = 0;
+    const framesPerChar = 4;
+    const totalFrames = target.length * framesPerChar + 6;
+
+    const id = setInterval(() => {
+      frame += 1;
+      if (frame > totalFrames) {
+        clearInterval(id);
+        setDisplayed(target);
+        return;
+      }
+      setDisplayed(
+        target
+          .split("")
+          .map((char, i) => {
+            const revealAt = i * framesPerChar + 3;
+            if (frame >= revealAt) return char;
+            return glyphs[Math.floor(Math.random() * glyphs.length)];
+          })
+          .join("")
+      );
+    }, 32);
+
+    return () => clearInterval(id);
+  }, [wordIndex]);
 
   return (
     <span
       style={{
-        display: "inline-grid",
-        gridTemplateColumns: "1fr",
-        gridTemplateRows: "1fr",
+        fontVariantNumeric: "tabular-nums",
+        color: "var(--color-text-tertiary)",
       }}
     >
-      <AnimatePresence initial={false}>
-        <motion.span
-          key={words[i]}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.65, ease: "easeInOut" }}
-          style={{
-            gridArea: "1 / 1",
-            color: "var(--color-text-tertiary)",
-          }}
-        >
-          {words[i]}
-        </motion.span>
-      </AnimatePresence>
+      {displayed}
     </span>
   );
 }
