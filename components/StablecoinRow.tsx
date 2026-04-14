@@ -17,20 +17,11 @@ function formatHeadroom(pct: number): string {
   return `${pct.toFixed(1)}%`;
 }
 
-function pegDeviationColor(price: number): string {
-  const dev = Math.abs(price - 1);
-  if (dev < 0.001) return "var(--color-success)";  // <0.1% — tight peg
-  if (dev < 0.005) return "var(--color-warning)";   // <0.5% — mild deviation
-  return "var(--color-error)";                       // ≥0.5% — notable deviation
-}
-
 interface StablecoinRowProps {
   token: StablecoinData;
 }
 
 export default function StablecoinRow({ token }: StablecoinRowProps) {
-  const priceColor = pegDeviationColor(token.price_vs_pathusd);
-  const devBps = Math.round(Math.abs(token.price_vs_pathusd - 1) * 10000);
 
   return (
     <Link
@@ -78,7 +69,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "13px",
-          color: priceColor,
+          color: "var(--color-text-primary)",
         }}
       >
         {token.price_vs_pathusd.toFixed(6)}
@@ -150,7 +141,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.yield_rate > 0 ? "var(--color-success)" : "var(--color-text-tertiary)",
+          color: token.yield_rate > 0 ? "var(--color-text-secondary)" : "var(--color-text-tertiary)",
           textAlign: "right",
         }}
       >
