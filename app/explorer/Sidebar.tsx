@@ -400,7 +400,7 @@ function LiveFeed() {
             key={item.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "48px 40px 1fr auto",
+              gridTemplateColumns: "40px 36px minmax(0, 1fr) auto",
               alignItems: "center",
               gap: 6,
               padding: "5px 0",

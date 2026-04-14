@@ -654,6 +654,15 @@ body {
     gap: 8px !important;
   }
 
+  /* Prevent any explorer-page child from overflowing viewport */
+  .explorer-page,
+  .explorer-page * {
+    max-width: 100%;
+  }
+  .explorer-page {
+    overflow-x: hidden;
+  }
+
   /* ── Stablecoin detail page ── */
   .stable-hero-h1 {
     font-size: 28px !important;
