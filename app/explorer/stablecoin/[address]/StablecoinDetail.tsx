@@ -3,7 +3,7 @@
 
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { StablecoinData } from "@/lib/types";
 import type { StablecoinEditorial } from "@/lib/stablecoin-editorial";
 
@@ -335,6 +335,129 @@ function PegSparkline({ price }: { price: number }) {
 }
 
 // ── Supply cap bar ──────────────────────────────────────────────────────────
+
+// ── Historical peg stats — fetched from /api/v1/stablecoins/:address/peg ────
+
+interface PegWindow {
+  window: string;
+  sample_count: number;
+  mean_price: number;
+  stddev_price: number;
+  min_price: number;
+  max_price: number;
+  max_deviation_bps: number;
+  seconds_outside_10bps: number;
+  seconds_outside_50bps: number;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds === 0) return "0s";
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  return `${Math.round(seconds / 3600)}h`;
+}
+
+function PegHistoricalStats({ address }: { address: string }) {
+  const [windows, setWindows] = useState<PegWindow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/v1/stablecoins/${address}/peg`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setWindows(data.windows ?? []);
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  if (loading || windows.length === 0) return null;
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      className="peg-historical-grid"
+      style={{
+        marginTop: 16,
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 1,
+        border: "1px solid var(--color-border-subtle)",
+        borderRadius: 8,
+        overflow: "hidden",
+        background: "var(--color-border-subtle)",
+      }}
+    >
+      {windows.map((w) => (
+        <div
+          key={w.window}
+          style={{
+            background: "var(--color-bg-base)",
+            padding: "18px 16px",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--color-text-quaternary)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
+            Last {w.window}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Row label="Mean" value={`$${w.mean_price.toFixed(6)}`} />
+            <Row
+              label="Stddev"
+              value={w.stddev_price === 0 ? "—" : `${(w.stddev_price * 10000).toFixed(2)} bps`}
+            />
+            <Row
+              label="Max drawdown"
+              value={`${w.max_deviation_bps.toFixed(2)} bps`}
+            />
+            <Row
+              label="Outside 10bps"
+              value={formatDuration(w.seconds_outside_10bps)}
+            />
+            <Row label="Samples" value={String(w.sample_count)} />
+          </div>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+      }}
+    >
+      <span style={{ color: "var(--color-text-quaternary)" }}>{label}</span>
+      <span
+        style={{
+          color: "var(--color-text-primary)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
 function SupplyCapBar({
   current,
@@ -927,6 +1050,8 @@ export default function StablecoinDetail({
             Simulated trace — historical peg series coming soon
           </div>
         </motion.div>
+
+        <PegHistoricalStats address={token.address} />
       </Section>
 
       {/* ═══ 03: SUPPLY ═══ */}

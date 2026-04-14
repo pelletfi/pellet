@@ -685,6 +685,9 @@ body {
   .stable-peg-health {
     grid-template-columns: 1fr !important;
   }
+  .peg-historical-grid {
+    grid-template-columns: 1fr !important;
+  }
 
   /* ── Nav compaction ── */
   .nav-kbd-badge,
