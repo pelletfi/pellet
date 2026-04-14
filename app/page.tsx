@@ -530,7 +530,7 @@ function NetworkViz() {
 // ── Cycling word for hero eyebrow ──────────────────────────────────────────
 
 function CyclingWord() {
-  const words = ["Peg", "Policy", "Flow"];
+  const words = ["Peg", "Supply", "Policy", "Flow", "Risk"];
   const [i, setI] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setI((n) => (n + 1) % words.length), 2400);
@@ -543,7 +543,13 @@ function CyclingWord() {
     <span
       style={{
         display: "inline-flex",
-        color: "var(--color-text-tertiary)",
+        color: "var(--color-text-secondary)",
+        fontFamily: "'Instrument Serif', Georgia, serif",
+        fontStyle: "italic",
+        fontSize: 15,
+        textTransform: "none",
+        letterSpacing: "-0.01em",
+        lineHeight: 1,
         perspective: 400,
       }}
     >
