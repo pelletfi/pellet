@@ -126,6 +126,16 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Health checks — point-in-time records of invariant validations.
+// Each row = one check_type at one timestamp; status 'ok' or 'drift'.
+export const healthChecks = pgTable("health_checks", {
+  id: serial("id").primaryKey(),
+  checkType: text("check_type").notNull(), // 'heartbeat' | 'cursor_lag'
+  status: text("status").notNull(), // 'ok' | 'drift' | 'fail'
+  detail: jsonb("detail").notNull(),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Flow anomalies — z-score-based detection from cross-stable transfer activity.
 // Each row represents one detected spike: a 15-min window where flow on a given
 // from→to edge exceeded the 7-day rolling baseline by > Z_THRESHOLD sigmas.

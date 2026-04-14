@@ -9,6 +9,7 @@
     { "path": "/api/cron/webhook-deliver", "schedule": "*/1 * * * *" },
     { "path": "/api/cron/risk-score", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/reserves-refresh", "schedule": "0 */1 * * *" },
-    { "path": "/api/cron/flow-anomaly", "schedule": "*/15 * * * *" }
+    { "path": "/api/cron/flow-anomaly", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/health-check", "schedule": "*/2 * * * *" }
   ]
 }

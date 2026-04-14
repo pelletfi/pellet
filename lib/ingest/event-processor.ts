@@ -16,12 +16,18 @@ const ingestClient = createPublicClient({
   transport: http("https://rpc.presto.tempo.xyz"),
 }).extend(tempoActions());
 
-// Per-tick chunk size. Chosen to stay well under RPC getLogs limits.
-const CHUNK_BLOCKS = 500;
+// Per-tick chunk size. Native Tempo RPC handles wide ranges; keep at 1000 for safety.
+const CHUNK_BLOCKS = 1_000;
 // Max blocks to advance per invocation — keeps Vercel cron under the 300s budget.
-const MAX_BLOCKS_PER_RUN = 5_000;
+// Bumped from 5000 to 100000 to accelerate backfill.
+const MAX_BLOCKS_PER_RUN = 100_000;
 // Safety buffer: don't index unconfirmed blocks (helps with reorgs).
 const CONFIRMATIONS = 2;
+// On cold start, where to begin? Defaults to safeHead - 100. Override via env to
+// backfill from a specific block (e.g. BACKFILL_FROM_BLOCK=0 for full history).
+const BACKFILL_FROM_BLOCK = process.env.BACKFILL_FROM_BLOCK
+  ? Number(process.env.BACKFILL_FROM_BLOCK)
+  : null;
 
 // All contracts whose events we ingest.
 const WATCHED_CONTRACTS = [
@@ -76,7 +82,8 @@ export async function processEvents(): Promise<ProcessResult> {
   const chainHead = Number(await ingestClient.getBlockNumber());
   const safeHead = Math.max(0, chainHead - CONFIRMATIONS);
   const cursor = await getCursor();
-  const startBlock = cursor === 0 ? safeHead - 100 : cursor + 1; // genesis-lite: only last 100 blocks on cold start
+  const coldStartBlock = BACKFILL_FROM_BLOCK ?? Math.max(0, safeHead - 100);
+  const startBlock = cursor === 0 ? coldStartBlock : cursor + 1;
   const endBlock = Math.min(safeHead, startBlock + MAX_BLOCKS_PER_RUN);
 
   if (startBlock > endBlock) {
