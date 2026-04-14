@@ -413,6 +413,16 @@ body {
   --color-fd-ring: rgba(255,255,255,0.15);
 }
 
+/* Make Fumadocs docs layout respect our 48px sticky nav so the sidebar
+   (including its bottom theme toggle) stays fully in view. */
+#nd-docs-layout,
+[data-docs="true"] {
+  --fd-nav-height: 48px !important;
+  --fd-layout-offset: 48px !important;
+  --fd-docs-height: calc(100dvh - 48px) !important;
+  --fd-tocnav-height: 48px !important;
+}
+
 /* ── Address text ── */
 .address-text {
   font-family: var(--font-mono);
