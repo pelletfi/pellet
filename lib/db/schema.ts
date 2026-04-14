@@ -126,6 +126,30 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Flow anomalies — z-score-based detection from cross-stable transfer activity.
+// Each row represents one detected spike: a 15-min window where flow on a given
+// from→to edge exceeded the 7-day rolling baseline by > Z_THRESHOLD sigmas.
+export const flowAnomalies = pgTable(
+  "flow_anomalies",
+  {
+    id: serial("id").primaryKey(),
+    fromToken: text("from_token").notNull(),
+    toToken: text("to_token").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    windowEnd: timestamp("window_end", { withTimezone: true }).notNull(),
+    observedFlowUsd: numeric("observed_flow_usd").notNull(),
+    baselineMeanUsd: numeric("baseline_mean_usd").notNull(),
+    baselineStddevUsd: numeric("baseline_stddev_usd").notNull(),
+    zScore: numeric("z_score").notNull(),
+    txCount: integer("tx_count").notNull(),
+    detectedAt: timestamp("detected_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    edgeTimeIdx: index("flow_anomalies_edge_time_idx").on(t.fromToken, t.toToken, t.windowStart),
+    timeIdx: index("flow_anomalies_time_idx").on(t.windowStart),
+  }),
+);
+
 // Webhook subscriptions. Keyed by opaque id; secret used for HMAC signing.
 export const webhookSubscriptions = pgTable("webhook_subscriptions", {
   id: text("id").primaryKey(),

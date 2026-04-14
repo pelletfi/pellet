@@ -10,6 +10,26 @@ import type {
 
 const anthropic = new Anthropic();
 
+interface PegStat {
+  window: string;
+  mean_price: number;
+  stddev_price: number;
+  max_deviation_bps: number;
+  seconds_outside_10bps: number;
+}
+
+interface RiskBlock {
+  composite: number;
+  components: { peg_risk?: number; peg_break_risk?: number; supply_risk?: number; policy_risk?: number };
+}
+
+interface ReserveEntry {
+  reserve_type: string;
+  backing_usd: number | null;
+  attestation_source: string | null;
+  notes: { issuer?: string; backing_model?: string } | null;
+}
+
 interface EvaluationInput {
   address: string;
   name: string;
@@ -20,6 +40,11 @@ interface EvaluationInput {
   holders: HolderData;
   identity: IdentityResult;
   origin: OriginResult;
+  // Optional stablecoin enrichment — only populated for TIP-20 stables
+  pegStats?: PegStat[] | null;
+  risk?: RiskBlock | null;
+  reserves?: { total_backing_usd: number | null; entries: ReserveEntry[] } | null;
+  recentPegBreaks?: number | null;
 }
 
 export async function evaluate(input: EvaluationInput): Promise<string> {
@@ -55,6 +80,10 @@ function buildPrompt(input: EvaluationInput): string {
     holders,
     identity,
     origin,
+    pegStats,
+    risk,
+    reserves,
+    recentPegBreaks,
   } = input;
 
   const marketSummary = formatMarketData(market);
@@ -64,12 +93,25 @@ function buildPrompt(input: EvaluationInput): string {
   const identitySummary = formatIdentityData(identity);
   const originSummary = formatOriginData(origin);
 
+  const stablecoinBlock = (pegStats || risk || reserves)
+    ? `
+
+PEG HEALTH (Pellet stablecoin tracking)
+${formatPegStats(pegStats, recentPegBreaks)}
+
+COMPOSITE RISK SCORE
+${formatRisk(risk)}
+
+RESERVES & BACKING
+${formatReserves(reserves)}`
+    : "";
+
   return `You are a token analyst writing a brief evaluation for a Tempo blockchain token.
 
 Token: ${name} (${symbol})
 Address: ${address}
 
-Be factual, neutral, and source-specific. No promotional language. No trading advice.
+Be factual, neutral, and source-specific. No promotional language. No trading advice.${stablecoinBlock ? " For stablecoin-specific data (peg, reserves, risk), cite specific numbers from the data below." : ""}
 
 MARKET DATA
 ${marketSummary}
@@ -87,9 +129,37 @@ IDENTITY & PROTOCOL
 ${identitySummary}
 
 ORIGIN & DEPLOYER
-${originSummary}
+${originSummary}${stablecoinBlock}
 
 Write a 2-3 paragraph analyst note. Lead with the most important finding. Note any unusual patterns. End with what to watch. Be concise and direct.`;
+}
+
+function formatPegStats(stats: PegStat[] | null | undefined, recentBreaks: number | null | undefined): string {
+  if (!stats || stats.length === 0) return "  No peg samples available.";
+  const parts: string[] = [];
+  for (const s of stats) {
+    parts.push(`${s.window} window — mean $${s.mean_price.toFixed(6)}, stddev ${(s.stddev_price * 10_000).toFixed(2)}bps, max deviation ${s.max_deviation_bps.toFixed(2)}bps, ${s.seconds_outside_10bps}s outside 10bps band`);
+  }
+  if (recentBreaks != null) parts.push(`Detected peg-break events (last 7d): ${recentBreaks}`);
+  return parts.map((p) => `  ${p}`).join("\n");
+}
+
+function formatRisk(risk: RiskBlock | null | undefined): string {
+  if (!risk) return "  Risk score not yet computed.";
+  const c = risk.components;
+  return `  Composite: ${risk.composite.toFixed(1)} / 100 (higher = more risk)
+  Components — peg: ${(c.peg_risk ?? 0).toFixed(0)}, peg-break: ${(c.peg_break_risk ?? 0).toFixed(0)}, supply: ${(c.supply_risk ?? 0).toFixed(0)}, policy: ${(c.policy_risk ?? 0).toFixed(0)}`;
+}
+
+function formatReserves(r: { total_backing_usd: number | null; entries: ReserveEntry[] } | null | undefined): string {
+  if (!r || r.entries.length === 0) return "  Reserve data not yet curated.";
+  const total = r.total_backing_usd != null ? `$${formatNumber(r.total_backing_usd)}` : "unknown";
+  const lines = r.entries.map((e) => {
+    const issuer = e.notes?.issuer ? ` (issuer: ${e.notes.issuer})` : "";
+    const amount = e.backing_usd != null ? `$${formatNumber(e.backing_usd)}` : "unknown";
+    return `  ${e.reserve_type}: ${amount}${issuer}${e.attestation_source ? `, attested at ${e.attestation_source}` : ""}`;
+  });
+  return `  Total Tempo-side backing: ${total}\n${lines.join("\n")}`;
 }
 
 function formatMarketData(market: TokenMarketData): string {

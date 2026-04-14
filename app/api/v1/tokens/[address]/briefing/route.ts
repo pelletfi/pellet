@@ -26,7 +26,70 @@ import { getOrigin } from "@/lib/pipeline/origin";
 import { evaluate } from "@/lib/pipeline/evaluation";
 import { db } from "@/lib/db";
 import { briefings } from "@/lib/db/schema";
+import { sql } from "drizzle-orm";
 import type { BriefingResult } from "@/lib/types";
+
+// ── Stablecoin enrichment for the briefing prompt ───────────────────────────
+async function loadStablecoinEnrichment(address: string) {
+  const stable = address.toLowerCase();
+  try {
+    const [pegRows, riskRows, reserveRows, breakRows] = await Promise.all([
+      db.execute(sql`
+        SELECT window_label, mean_price::float8 AS mean_price,
+               stddev_price::float8 AS stddev_price,
+               max_deviation_bps::float8 AS max_deviation_bps,
+               seconds_outside_10bps
+        FROM peg_aggregates WHERE stable = ${stable}
+        ORDER BY CASE window_label WHEN '1h' THEN 1 WHEN '24h' THEN 2 WHEN '7d' THEN 3 END
+      `),
+      db.execute(sql`
+        SELECT composite::float8 AS composite, components
+        FROM risk_scores WHERE stable = ${stable} LIMIT 1
+      `),
+      db.execute(sql`
+        SELECT reserve_type, backing_usd::float8 AS backing_usd, attestation_source, notes
+        FROM reserves WHERE stable = ${stable}
+      `),
+      db.execute(sql`
+        SELECT COUNT(*)::int AS c FROM peg_events
+        WHERE stable = ${stable} AND started_at >= NOW() - INTERVAL '7 days'
+      `),
+    ]);
+    const peg = (((pegRows as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (pegRows as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>).map((r) => ({
+        window: String(r.window_label),
+        mean_price: Number(r.mean_price),
+        stddev_price: Number(r.stddev_price),
+        max_deviation_bps: Number(r.max_deviation_bps),
+        seconds_outside_10bps: Number(r.seconds_outside_10bps),
+      }));
+    const riskArr = ((riskRows as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (riskRows as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+    const risk = riskArr[0]
+      ? {
+          composite: Number(riskArr[0].composite),
+          components: riskArr[0].components as Record<string, number>,
+        }
+      : null;
+    const reserveEntries = (((reserveRows as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (reserveRows as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>).map((r) => ({
+        reserve_type: String(r.reserve_type),
+        backing_usd: r.backing_usd != null ? Number(r.backing_usd) : null,
+        attestation_source: r.attestation_source as string | null,
+        notes: r.notes as { issuer?: string; backing_model?: string } | null,
+      }));
+    const total = reserveEntries.reduce((s, e) => s + (e.backing_usd ?? 0), 0);
+    const reserves = reserveEntries.length > 0
+      ? { total_backing_usd: total || null, entries: reserveEntries }
+      : null;
+    const breaksArr = ((breakRows as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (breakRows as unknown as Record<string, unknown>[])) as Array<{ c: number }>;
+    return { peg, risk, reserves, recentPegBreaks: breaksArr[0]?.c ?? 0 };
+  } catch (e) {
+    console.error("[briefing/stable enrichment]", e);
+    return { peg: null, risk: null, reserves: null, recentPegBreaks: null };
+  }
+}
 
 // Minimal ERC-20 ABI for name/symbol reads on non-TIP-20 tokens
 const ERC20_META_ABI = [
@@ -199,7 +262,10 @@ async function handler(
       }),
     ]);
 
-    // 5. Claude evaluation
+    // 5. Stablecoin enrichment (only adds value for TIP-20 stables we track)
+    const enrichment = tip20 ? await loadStablecoinEnrichment(address) : null;
+
+    // 6. Claude evaluation
     const evaluation = await evaluate({
       address,
       name: resolvedName,
@@ -210,6 +276,10 @@ async function handler(
       holders,
       identity,
       origin,
+      pegStats: enrichment?.peg ?? null,
+      risk: enrichment?.risk ?? null,
+      reserves: enrichment?.reserves ?? null,
+      recentPegBreaks: enrichment?.recentPegBreaks ?? null,
     }).catch((err) => {
       console.error("[briefing/evaluation]", err);
       return "Evaluation unavailable due to an error.";
