@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { RootProvider } from "fumadocs-ui/provider/next";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 
@@ -25,9 +26,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Nav />
-        <main>{children}</main>
-        <Footer />
+        <RootProvider theme={{ enabled: false }}>
+          <Nav />
+          <main>{children}</main>
+          <Footer />
+        </RootProvider>
       </body>
     </html>
   );
