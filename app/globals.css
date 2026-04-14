@@ -694,6 +694,9 @@ body {
   .status-metrics {
     grid-template-columns: 1fr !important;
   }
+  .pricing-grid {
+    grid-template-columns: 1fr !important;
+  }
 
   /* ── Nav compaction ── */
   .nav-kbd-badge,
