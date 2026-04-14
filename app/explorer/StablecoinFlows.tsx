@@ -54,9 +54,9 @@ function formatUsd(n: number): string {
 
 // SVG layout constants
 const SVG_W = 500;
-const SVG_H = 220;
-const NODE_W = 80;
-const NODE_H = 32;
+const SVG_H = 170;
+const NODE_W = 72;
+const NODE_H = 26;
 const NODE_R = 4;
 const LEFT_X = 20;
 const RIGHT_X = SVG_W - NODE_W - 20;
@@ -190,7 +190,7 @@ export function StablecoinFlows() {
       {loading ? (
         <div
           style={{
-            height: 200,
+            height: 150,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -204,7 +204,7 @@ export function StablecoinFlows() {
       ) : error || !hasData ? (
         <div
           style={{
-            height: 200,
+            height: 150,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

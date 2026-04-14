@@ -82,7 +82,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
           gridTemplateColumns: "1fr 1fr 1fr",
           gridTemplateRows: "1fr 1fr",
           gap: 2,
-          height: 200,
+          height: 150,
           padding: "0 2px 2px",
         }}
       >
@@ -120,7 +120,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 18,
+                  fontSize: 15,
                   fontWeight: 600,
                   color: "var(--color-text-primary)",
                   lineHeight: 1.2,
@@ -131,10 +131,10 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 500,
                   color: "var(--color-text-secondary)",
-                  marginTop: 4,
+                  marginTop: 3,
                 }}
               >
                 {entry.symbol}
@@ -142,9 +142,9 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 9,
                   color: "var(--color-text-quaternary)",
-                  marginTop: 2,
+                  marginTop: 1,
                 }}
               >
                 {formatCompact(entry.supply)}
