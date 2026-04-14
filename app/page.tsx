@@ -531,51 +531,44 @@ function NetworkViz() {
 
 function CyclingWord() {
   const words = ["Peg", "Policy", "Flow"];
-  const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const [wordIndex, setWordIndex] = useState(0);
-  const [displayed, setDisplayed] = useState(words[0]);
-
+  const [i, setI] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setWordIndex((n) => (n + 1) % words.length), 2400);
+    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2400);
     return () => clearInterval(id);
   }, [words.length]);
 
-  useEffect(() => {
-    const target = words[wordIndex];
-    let frame = 0;
-    const framesPerChar = 4;
-    const totalFrames = target.length * framesPerChar + 6;
-
-    const id = setInterval(() => {
-      frame += 1;
-      if (frame > totalFrames) {
-        clearInterval(id);
-        setDisplayed(target);
-        return;
-      }
-      setDisplayed(
-        target
-          .split("")
-          .map((char, i) => {
-            const revealAt = i * framesPerChar + 3;
-            if (frame >= revealAt) return char;
-            return glyphs[Math.floor(Math.random() * glyphs.length)];
-          })
-          .join("")
-      );
-    }, 32);
-
-    return () => clearInterval(id);
-  }, [wordIndex]);
+  const word = words[i];
 
   return (
     <span
       style={{
-        fontVariantNumeric: "tabular-nums",
+        display: "inline-flex",
         color: "var(--color-text-tertiary)",
+        perspective: 400,
       }}
     >
-      {displayed}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {word.split("").map((char, idx) => (
+          <motion.span
+            key={`${word}-${idx}`}
+            initial={{ rotateX: -90, opacity: 0 }}
+            animate={{ rotateX: 0, opacity: 1 }}
+            exit={{ rotateX: 90, opacity: 0 }}
+            transition={{
+              duration: 0.38,
+              delay: idx * 0.05,
+              ease: [0.22, 1, 0.36, 1] as const,
+            }}
+            style={{
+              display: "inline-block",
+              transformOrigin: "50% 50%",
+              willChange: "transform, opacity",
+            }}
+          >
+            {char}
+          </motion.span>
+        ))}
+      </AnimatePresence>
     </span>
   );
 }
