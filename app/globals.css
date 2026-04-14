@@ -389,13 +389,28 @@ body {
 }
 
 /* Remove default focus ring on Fumadocs search dialog input */
+[cmdk-input],
 [cmdk-input]:focus,
 [cmdk-input]:focus-visible,
+[cmdk-root] input,
 [cmdk-root] input:focus,
-[cmdk-root] input:focus-visible {
+[cmdk-root] input:focus-visible,
+[role="dialog"] input:focus,
+[role="dialog"] input:focus-visible {
   outline: none !important;
+  outline-offset: 0 !important;
   box-shadow: none !important;
-  border-color: var(--color-border-default) !important;
+  border-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+/* Override Fumadocs ring color to our border color so no accent bleeds in */
+:root {
+  --color-fd-ring: rgba(255,255,255,0.15);
+}
+.dark {
+  --color-fd-ring: rgba(255,255,255,0.15);
 }
 
 /* ── Address text ── */
