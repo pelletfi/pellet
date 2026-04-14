@@ -1,10 +1,20 @@
-import { tempoClient } from "@/lib/rpc";
+import { createPublicClient, http } from "viem";
+import { tempo } from "viem/chains";
+import { tempoActions } from "viem/tempo";
 import { db } from "@/lib/db";
 import { events, ingestionCursors } from "@/lib/db/schema";
 import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 import { TEMPO_ADDRESSES } from "@/lib/types";
 import { TIP20_EVENT_ABI, TIP403_EVENT_ABI } from "./abi";
 import { sql } from "drizzle-orm";
+
+// Dedicated client for historical getLogs — uses Tempo's native RPC directly
+// (Alchemy's free tier caps eth_getLogs at 10-block ranges, which is useless
+// for bulk ingestion). Native Tempo RPC allows much wider ranges.
+const ingestClient = createPublicClient({
+  chain: tempo,
+  transport: http("https://rpc.presto.tempo.xyz"),
+}).extend(tempoActions());
 
 // Per-tick chunk size. Chosen to stay well under RPC getLogs limits.
 const CHUNK_BLOCKS = 500;
@@ -63,7 +73,7 @@ export interface ProcessResult {
 }
 
 export async function processEvents(): Promise<ProcessResult> {
-  const chainHead = Number(await tempoClient.getBlockNumber());
+  const chainHead = Number(await ingestClient.getBlockNumber());
   const safeHead = Math.max(0, chainHead - CONFIRMATIONS);
   const cursor = await getCursor();
   const startBlock = cursor === 0 ? safeHead - 100 : cursor + 1; // genesis-lite: only last 100 blocks on cold start
@@ -78,7 +88,7 @@ export async function processEvents(): Promise<ProcessResult> {
 
   while (from <= endBlock) {
     const to = Math.min(from + CHUNK_BLOCKS - 1, endBlock);
-    const logs = await tempoClient.getLogs({
+    const logs = await ingestClient.getLogs({
       address: WATCHED_CONTRACTS,
       fromBlock: BigInt(from),
       toBlock: BigInt(to),
@@ -89,7 +99,7 @@ export async function processEvents(): Promise<ProcessResult> {
       const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber!))];
       const blockTimestamps = new Map<bigint, Date>();
       for (const bn of uniqueBlocks) {
-        const block = await tempoClient.getBlock({ blockNumber: bn });
+        const block = await ingestClient.getBlock({ blockNumber: bn });
         blockTimestamps.set(bn, new Date(Number(block.timestamp) * 1000));
       }
 
