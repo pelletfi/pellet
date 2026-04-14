@@ -374,9 +374,10 @@ body {
 }
 
 /* ── Status dot ── */
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0; transform: scale(2.5); }
+@keyframes statusPulse {
+  0%   { opacity: 0.9; transform: scale(1); }
+  70%  { opacity: 0;   transform: scale(3); }
+  100% { opacity: 0;   transform: scale(3); }
 }
 
 .status-dot {
@@ -394,7 +395,8 @@ body {
   inset: 0;
   border-radius: 50%;
   background: var(--color-text-primary);
-  animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
+  animation: statusPulse 1.8s cubic-bezier(0.4,0,0.6,1) infinite;
+  pointer-events: none;
 }
 
 /* ── Address text ── */
