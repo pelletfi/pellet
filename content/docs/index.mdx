@@ -1,0 +1,31 @@
+---
+title: Introduction
+description: Stablecoin intelligence for Tempo — every peg, every policy, every flow.
+---
+
+Pellet is the stablecoin intelligence layer for Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
+
+## Why Tempo needs its own intelligence layer
+
+Tempo isn't another general-purpose L1. It's a payments chain with enshrined stablecoin standards (TIP-20), native compliance policies (TIP-403), an enshrined DEX, and the Micropayment Protocol (MPP) for machine-to-machine payments at the HTTP layer.
+
+Generic chain indexers don't understand these primitives. They treat TIP-20 tokens like ERC-20s, miss compliance state entirely, and can't read the enshrined DEX orderbook. Pellet was built ground-up for Tempo, reading directly from the protocol's native data structures.
+
+## What we track
+
+- **Peg stability** — real-time price via enshrined DEX quote swaps, spread in basis points
+- **Supply dynamics** — current supply, caps, mint/burn activity via TIP-20 precompile events
+- **Compliance policies** — TIP-403 policy state, admin roles, blacklist / allowlist status
+- **Cross-pair flows** — movement between stables, routing through native DEX
+- **Backing structure** — issuer context, reserve model (protocol-native, bridged, fiat-backed)
+- **Editorial analysis** — every stable gets a written briefing covering origin, risk, context
+
+## How to use Pellet
+
+Three surfaces, same data:
+
+1. **[Explorer](/explorer)** — human-facing web UI for browsing stables and flows
+2. **[REST API](/docs/api/stablecoins)** — programmatic access, payable via MPP
+3. **[MCP Server](/docs/mcp)** — drop-in for AI agents, Claude-compatible
+
+Pricing is [transparent](/docs/pricing) — free tier for basic reads, MPP micropayments for deep analysis, a Pro subscription for high-volume agents.

@@ -7,7 +7,7 @@ const productLinks = [
 
 const resourceLinks = [
   { label: "About", href: "/about" },
-  { label: "API", href: "/api" },
+  { label: "Docs", href: "/docs" },
   { label: "MCP Server", href: "https://www.npmjs.com/package/@pelletfi/mcp" },
 ];
 

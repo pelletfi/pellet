@@ -1,0 +1,43 @@
+---
+title: Tempo Primer
+description: TIP-20, TIP-403, enshrined DEX, and MPP — the primitives Pellet reads from.
+---
+
+Tempo is a payments-first L1 designed for stablecoin settlement. Its architecture differs from generic EVM chains in four ways Pellet cares about.
+
+## TIP-20 — Enshrined stablecoin standard
+
+TIP-20 is Tempo's native stablecoin interface. Unlike ERC-20, it's implemented as a protocol precompile, meaning the chain itself understands supply, roles, and reward mechanics. Every stable on Tempo is TIP-20 compliant.
+
+What Pellet reads from TIP-20:
+
+- `totalSupply()` — current circulating supply
+- `supplyCap()` — hard cap, if any
+- `roles()` — minter, burner, admin addresses
+- `rewards()` — if the stable accrues yield, the rate and distribution mechanism
+
+## TIP-403 — Compliance policies
+
+TIP-403 is Tempo's enshrined compliance layer. Each stable can attach a policy — blacklist, allowlist, transfer limits, admin controls — enforced at the protocol level rather than in application logic.
+
+Policies are queryable state. Pellet reads the registry and surfaces:
+
+- Policy type (blacklist / allowlist / hybrid)
+- Admin addresses (who can modify the policy)
+- Current policy state (which addresses are blocked or approved)
+
+This matters because an agent or app needs to know if a transfer will be rejected *before* broadcasting.
+
+## Enshrined DEX
+
+Tempo ships a native DEX as a protocol precompile. It has an orderbook, liquidity pools, and — critically — a `quoteSwap` function that returns real-time pricing without executing a trade.
+
+Pellet uses `quoteSwap` to measure peg stability. For every stable, we query the price against pathUSD (the canonical Tempo dollar) and track the spread in basis points. No oracle dependency, no off-chain aggregator — the price comes from the chain itself.
+
+## MPP — Micropayment Protocol
+
+MPP is Tempo's HTTP-layer payment protocol. A client makes an HTTP request, receives a 402 response with payment instructions, signs a micropayment in any TIP-20 stable, and retries. The server verifies the payment and returns the response.
+
+Pellet uses MPP for paid endpoints. Deep stablecoin analysis costs $0.05 pathUSD, settled at the protocol layer. No accounts, no API keys, no rate limits beyond what the payment graph enforces.
+
+See [Pricing](/docs/pricing) for the full endpoint → price map.

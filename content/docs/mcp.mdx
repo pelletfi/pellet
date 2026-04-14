@@ -1,0 +1,60 @@
+---
+title: MCP Server
+description: Drop-in Pellet integration for Claude and any MCP-compatible agent.
+---
+
+Pellet ships an MCP (Model Context Protocol) server as `@pelletfi/mcp` on npm. Install it once, and your agent gets tools for every Pellet endpoint — list stables, inspect peg, fetch flows, request editorial briefings.
+
+## Install
+
+```bash
+npm install -g @pelletfi/mcp
+```
+
+## Configure
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "pellet": {
+      "command": "npx",
+      "args": ["@pelletfi/mcp"],
+      "env": {
+        "PELLET_KEY": "pk_live_...",
+        "EVM_PRIVATE_KEY": "0x..."
+      }
+    }
+  }
+}
+```
+
+Two auth modes, pick one:
+
+- **`PELLET_KEY`** — Pellet Pro subscription key. Unlimited calls, no per-request cost.
+- **`EVM_PRIVATE_KEY`** — a Tempo-compatible private key holding pathUSD. Paid endpoints are settled via MPP automatically.
+
+## Tools exposed
+
+| Tool | Endpoint | Cost |
+| --- | --- | --- |
+| `list_stablecoins` | `GET /v1/stablecoins` | Free |
+| `get_stablecoin` | `GET /v1/stablecoins/{address}` | Free |
+| `analyze_stablecoin` | `GET /v1/stablecoins/{address}/analysis` | $0.05 |
+| `get_flows` | `GET /v1/stablecoins/flows` | Free |
+| `get_flow_history` | `GET /v1/stablecoins/flows/history` | $0.02 |
+| `search_stablecoin` | symbol or address lookup | Free |
+| `get_peg_status` | peg + spread snapshot | Free |
+
+## Example session
+
+Once installed, ask Claude anything natural:
+
+> "Which Tempo stable has the widest peg spread right now?"
+
+Claude calls `list_stablecoins`, compares `peg.spread_bps` across the returned set, and responds. No extra glue code.
+
+> "Analyze frxUSD for me."
+
+Claude calls `analyze_stablecoin`. If you're on Pro, the call is free. If you're paying per request, $0.05 pathUSD is debited from your wallet and Claude returns the full briefing.

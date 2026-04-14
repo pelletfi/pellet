@@ -1,0 +1,61 @@
+---
+title: Pricing
+description: Free reads, MPP micropayments, and Pellet Pro — three tiers for three use cases.
+---
+
+Pellet has three access tiers. You pick based on volume and automation needs.
+
+## Free
+
+No key, no wallet. Works from any HTTP client.
+
+- `GET /v1/stablecoins`
+- `GET /v1/stablecoins/{address}`
+- `GET /v1/stablecoins/flows` (24h window)
+- Rate limit: 60 requests / minute / IP
+
+Fine for a dashboard, a one-off script, or checking a single peg. For anything automated or high-volume, move to MPP or Pro.
+
+## MPP · Per-request
+
+Pay per call with pathUSD over the Micropayment Protocol. No accounts, no signups.
+
+| Endpoint | Price |
+| --- | --- |
+| `GET /v1/stablecoins/{address}/analysis` | $0.05 |
+| `GET /v1/stablecoins/flows/history` | $0.02 |
+
+How it works:
+
+1. Client makes an HTTP request
+2. Server responds `402 Payment Required` with MPP instructions
+3. Client signs a micropayment with its EVM key
+4. Client retries with the `X-Payment` header
+5. Server verifies, returns the response
+
+Use `mppx` or `@pelletfi/mcp` and steps 2–4 happen automatically. See [Tempo Primer](/docs/tempo-primer) for MPP internals.
+
+Best for: agents making sporadic high-value queries, scripts where the compute is worth more than the marginal cost.
+
+## Pellet Pro · $49 / month
+
+Subscription tier for high-volume users and long-running agents.
+
+- Unlimited access to every endpoint
+- API key authentication (`Authorization: Bearer pk_live_...`)
+- No per-request cost — predictable monthly spend
+- Priority routing (higher rate limits, dedicated queue)
+
+Best for: solo quants, DAO treasuries, agent ops teams, anyone making > 1000 calls / month.
+
+Sign up at [pelletfi.com/pro](https://pelletfi.com/pro). Cancel any time — no contract.
+
+## Which tier should I use?
+
+| If you're... | Use |
+| --- | --- |
+| Exploring the data, building a dashboard | Free |
+| An AI agent making 10–100 calls / day | MPP |
+| A team or heavy user | Pro |
+
+All three tiers hit the same endpoints and return the same data. The only difference is how you pay.

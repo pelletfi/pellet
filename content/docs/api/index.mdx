@@ -1,0 +1,24 @@
+---
+title: REST API
+description: HTTP endpoints for stablecoin data on Tempo.
+---
+
+All endpoints are hosted at `https://pelletfi.com/api/v1`. Responses are JSON. CORS is open.
+
+Two authentication modes:
+
+- **Free tier** — unauthenticated. Basic reads (list stables, current peg, latest flows).
+- **MPP-paid** — per-request micropayment in pathUSD. Deep analysis endpoints, flow history, editorial briefings. See [Pricing](/docs/pricing).
+- **Pellet Pro** — subscription. Unlimited access to all endpoints via API key in the `Authorization: Bearer` header.
+
+## Endpoints at a glance
+
+| Endpoint | Tier | Description |
+| --- | --- | --- |
+| `GET /v1/stablecoins` | Free | List every TIP-20 stable on Tempo |
+| `GET /v1/stablecoins/{address}` | Free | Current peg, supply, and policy state |
+| `GET /v1/stablecoins/{address}/analysis` | MPP · $0.05 | Full editorial briefing |
+| `GET /v1/stablecoins/flows` | Free | Aggregate flow graph, 24h window |
+| `GET /v1/stablecoins/flows/history` | MPP · $0.02 | Historical flows, custom window |
+
+See [Stablecoins](/docs/api/stablecoins) and [Flows](/docs/api/flows) for full schemas.
