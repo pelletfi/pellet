@@ -1,30 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
-import { tempoClient } from "@/lib/rpc";
-import { TEMPO_ADDRESSES } from "@/lib/types";
+import { getCompliance } from "@/lib/pipeline/compliance";
 
 export const dynamic = "force-dynamic";
 
 interface Params {
   params: Promise<{ address: string }>;
 }
-
-const TIP403_ABI = [
-  {
-    name: "getPolicy",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "token", type: "address" }],
-    outputs: [
-      { name: "policyId", type: "uint256" },
-      { name: "policyType", type: "uint8" },
-      { name: "admin", type: "address" },
-      { name: "supplyCap", type: "uint256" },
-      { name: "paused", type: "bool" },
-    ],
-  },
-] as const;
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
@@ -58,18 +41,13 @@ export async function GET(_req: Request, { params }: Params) {
       });
     }
 
-    // 2. Augment with TIP-403 policy admin — this we always know via direct RPC.
-    //    Renders as POLICY_ADMIN role (the address that controls this stable's
-    //    compliance policy: blacklist additions, supply cap changes, etc.)
+    // 2. Augment with TIP-403 policy admin — this we always know via direct RPC
+    //    by reusing the existing compliance pipeline (which reads token metadata
+    //    to get transferPolicyId, then fetches policyData(policyId) for admin).
     let policyAdmin: string | null = null;
     try {
-      const policy = await tempoClient.readContract({
-        address: TEMPO_ADDRESSES.tip403Registry,
-        abi: TIP403_ABI,
-        functionName: "getPolicy",
-        args: [stable as `0x${string}`],
-      });
-      const admin = (policy as readonly [bigint, number, `0x${string}`, bigint, boolean])[2];
+      const compliance = await getCompliance(stable as `0x${string}`);
+      const admin = compliance.policy_admin;
       if (admin && admin.toLowerCase() !== ZERO_ADDR) {
         policyAdmin = admin.toLowerCase();
         byRole.set("POLICY_ADMIN", [
@@ -78,13 +56,13 @@ export async function GET(_req: Request, { params }: Params) {
             granted_at: null,
             granted_tx_hash: null,
             holder_type: null,
-            label: null,
+            label: compliance.policy_type ? `TIP-403 ${compliance.policy_type} admin` : null,
             source: "tip403_registry",
           },
         ]);
       }
     } catch {
-      // Stable has no TIP-403 policy attached
+      // Compliance read failed — leave POLICY_ADMIN out
     }
 
     // Coverage metadata — be transparent about what data is available.
