@@ -7,9 +7,25 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pelletfi.com"),
   title: "Pellet — Stablecoin Intelligence on Tempo",
   description:
-    "The first payments chain deserves its own stablecoin intelligence. Every peg, every policy, every flow — tracked natively on Tempo.",
+    "The first payments chain has its own stablecoin intelligence. Every peg, every policy, every flow — tracked natively on Tempo.",
+  openGraph: {
+    title: "Pellet — Stablecoin Intelligence on Tempo",
+    description:
+      "Every TIP-20 stablecoin on Tempo monitored: peg, supply, policy, flows, reserves, risk. MPP-native API + MCP server for agents.",
+    url: "https://pelletfi.com",
+    siteName: "Pellet",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pellet — Stablecoin Intelligence on Tempo",
+    description:
+      "Every TIP-20 stablecoin on Tempo monitored: peg, supply, policy, flows, reserves, risk. MPP-native API + MCP server for agents.",
+    site: "@pelletfinance",
+  },
 };
 
 export const viewport: Viewport = {
