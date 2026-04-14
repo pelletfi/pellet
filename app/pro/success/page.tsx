@@ -1,8 +1,13 @@
+import crypto from "node:crypto";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import Link from "next/link";
 import { CopyKey } from "./CopyKey";
+
+function generateApiKey(): string {
+  return `pellet_${crypto.randomBytes(24).toString("hex")}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +31,7 @@ async function resolveApiKey(sessionId: string): Promise<{
       typeof session.customer === "string" ? session.customer : session.customer?.id;
     if (!customerId) return null;
 
-    // Retry briefly because webhook may land moments after the redirect.
+    // Retry briefly because webhook usually lands within ~1s of the redirect.
     // 5 tries × 1s = 5s max.
     for (let i = 0; i < 5; i += 1) {
       const r = await db.execute(sql`
@@ -43,7 +48,41 @@ async function resolveApiKey(sessionId: string): Promise<{
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    return null;
+
+    // Fallback: webhook hasn't landed (network failure, redirect, retry queued, etc.).
+    // We've already verified the session is paid via Stripe, so provision inline
+    // rather than locking the customer out. The webhook handler is idempotent
+    // on (stripe_customer_id) so a later delivery just no-ops.
+    const subscriptionId =
+      typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+    const email = session.customer_details?.email ?? session.customer_email ?? null;
+    if (!subscriptionId || !email) return null;
+
+    const apiKey = generateApiKey();
+    await db.execute(sql`
+      INSERT INTO pellet_pro_subscribers
+        (email, stripe_customer_id, stripe_subscription_id, api_key, status, created_at)
+      VALUES (${email}, ${customerId}, ${subscriptionId}, ${apiKey}, 'active', NOW())
+      ON CONFLICT (stripe_customer_id) DO UPDATE SET
+        stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+        status = 'active',
+        cancelled_at = NULL
+      RETURNING email, api_key
+    `);
+
+    // Re-read so we always return what's actually in the table
+    // (handles the case where the webhook landed between INSERT and now).
+    const after = await db.execute(sql`
+      SELECT email, api_key
+      FROM pellet_pro_subscribers
+      WHERE stripe_customer_id = ${customerId}
+      LIMIT 1
+    `);
+    const afterRows = ((after as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (after as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+    const afterRow = afterRows[0];
+    if (!afterRow) return null;
+    return { email: afterRow.email as string, apiKey: afterRow.api_key as string };
   } catch {
     return null;
   }
