@@ -1,8 +1,9 @@
 import { tempoClient } from "@/lib/rpc";
-import { db } from "@/lib/db";
-import { pegSamples } from "@/lib/db/schema";
+import { neon } from "@neondatabase/serverless";
 import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 import { TEMPO_ADDRESSES } from "@/lib/types";
+
+const sql = neon(process.env.DATABASE_URL!);
 
 // Enshrined DEX quoteSwap ABI fragment
 const DEX_ABI = [
@@ -34,7 +35,14 @@ export async function sampleAllPegs(): Promise<SampleResult> {
   const blockData = await tempoClient.getBlock({ blockNumber: block });
   const sampledAt = new Date(Number(blockData.timestamp) * 1000);
 
-  const rows: Array<typeof pegSamples.$inferInsert> = [];
+  interface Row {
+    stable: string;
+    blockNumber: number;
+    sampledAt: Date;
+    priceVsPathusd: string;
+    spreadBps: string;
+  }
+  const rows: Row[] = [];
   let errors = 0;
 
   // Sample every stable in parallel
@@ -77,10 +85,14 @@ export async function sampleAllPegs(): Promise<SampleResult> {
   const settled = await Promise.all(promises);
   for (const r of settled) if (r) rows.push(r);
 
-  // Neon HTTP driver chokes on multi-row INSERTs with DEFAULT values;
-  // insert rows individually (12 round-trips/minute is negligible).
-  for (const row of rows) {
-    await db.insert(pegSamples).values(row);
+  // Use raw neon tag to avoid Drizzle emitting `DEFAULT` for serial `id` —
+  // the Neon HTTP driver rejects prepared statements that contain unquoted
+  // DEFAULT keywords among their values.
+  for (const r of rows) {
+    await sql`
+      INSERT INTO peg_samples (stable, block_number, sampled_at, price_vs_pathusd, spread_bps)
+      VALUES (${r.stable}, ${r.blockNumber}, ${r.sampledAt}, ${r.priceVsPathusd}, ${r.spreadBps})
+    `;
   }
 
   return {
