@@ -22,8 +22,18 @@ export async function GET(req: Request) {
     }
   }
 
-  const url = new URL(process.env.DATABASE_URL!);
-  results._host = url.host;
+  const raw = process.env.DATABASE_URL ?? "";
+  results._db_url_len = raw.length;
+  results._db_url_prefix = raw.slice(0, 16);
+  results._db_url_suffix = raw.slice(-20);
+  try {
+    const u = new URL(raw);
+    results._parsed_hostname = u.hostname;
+    results._parsed_port = u.port;
+    results._parsed_pathname = u.pathname;
+  } catch (e) {
+    results._parse_error = e instanceof Error ? e.message : String(e);
+  }
 
   return NextResponse.json(results);
 }
