@@ -102,7 +102,9 @@ function AnimatedPipeline() {
     <div
       ref={ref}
       style={{
-        background: "var(--color-bg-subtle)",
+        background: "rgba(255,255,255,0.012)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         border: "1px solid var(--color-border-subtle)",
         borderRadius: 10,
         padding: "32px 32px 28px",
@@ -212,7 +214,7 @@ function ArchDiagram() {
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
   const boxStyle: React.CSSProperties = {
-    background: "var(--color-bg-muted)",
+    background: "rgba(255,255,255,0.012)",
     border: "1px solid var(--color-border-subtle)",
     borderRadius: 6,
     padding: 16,
@@ -226,7 +228,9 @@ function ArchDiagram() {
       animate={inView ? "visible" : "hidden"}
       variants={stagger}
       style={{
-        background: "var(--color-bg-subtle)",
+        background: "rgba(255,255,255,0.012)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         border: "1px solid var(--color-border-subtle)",
         borderRadius: 10,
         padding: "32px 32px 28px",
@@ -840,7 +844,9 @@ export default function AboutPage() {
 
         {/* Code block */}
         <motion.div variants={fadeUp} style={{
-          background: "var(--color-bg-subtle)",
+          background: "rgba(255,255,255,0.012)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           border: "1px solid var(--color-border-subtle)",
           borderRadius: 8,
           padding: "20px 24px",
