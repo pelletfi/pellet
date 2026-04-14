@@ -691,6 +691,9 @@ body {
   .risk-components-grid {
     grid-template-columns: 1fr 1fr !important;
   }
+  .status-metrics {
+    grid-template-columns: 1fr !important;
+  }
 
   /* ── Nav compaction ── */
   .nav-kbd-badge,

@@ -1,0 +1,58 @@
+---
+title: Reserves
+description: Backing breakdown per stablecoin — total USD + per-component sources.
+icon: Vault
+---
+
+Reserve / backing data per stable: total USD backing on Tempo specifically, plus per-component breakdown with attestation source links.
+
+## `GET /v1/stablecoins/{address}/reserves`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/reserves
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "total_backing_usd": 2755712.97,
+  "reserves": [
+    {
+      "reserve_type": "bridged_fiat",
+      "backing_usd": 2755712.97,
+      "attestation_source": "https://www.circle.com/transparency",
+      "attested_at": "2026-04-14T11:12:09.023Z",
+      "verified_by": "pellet_curated",
+      "notes": {
+        "label": "Bridged Circle USDC (via Stargate)",
+        "issuer": "Circle",
+        "backing_model": "Circle reserves: cash + short-duration US Treasury bills."
+      }
+    }
+  ]
+}
+```
+
+## Reserve types
+
+| Type | Examples |
+| --- | --- |
+| `protocol_native` | pathUSD, reUSD |
+| `bridged_fiat` | USDC.e, EURC.e |
+| `fiat_backed` | USDT0, EURAU |
+| `crypto_mixed` | frxUSD |
+| `crypto_backed` | cUSD, rUSD |
+| `yield_wrapper` | stcUSD, wsrUSD |
+| `unknown` | undisclosed issuer |
+
+## What `backing_usd` actually represents
+
+`backing_usd` = `totalSupply` (on Tempo) × current peg price. This is the **Tempo-specific** redeemable amount, not the issuer's worldwide reserves. For bridged stables (USDC.e, EURC.e), this is the slice locked in the Stargate bridge for Tempo. For native (pathUSD), it's the outstanding protocol liability.
+
+If you want the issuer's global attested reserves, follow `attestation_source` to the issuer's transparency page. We don't pull that data into the API because the per-chain slice is more useful for risk decisions on Tempo.
+
+Refreshed every hour from live chain state.

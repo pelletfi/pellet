@@ -14,11 +14,21 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const [block, setBlock] = useState<string | null>(null);
 
+  const [systemStatus, setSystemStatus] = useState<"ok" | "drift" | "fail" | "unknown">("unknown");
   useEffect(() => {
     fetch("/api/v1/health")
       .then((r) => r.json())
       .then((d) => {
         if (d.block) setBlock(Number(d.block).toLocaleString());
+      })
+      .catch(() => {});
+    // Pellet ingestion health (separate from chain health)
+    fetch("/api/v1/system/health")
+      .then((r) => r.json().then((d) => ({ httpOk: r.ok, body: d })))
+      .then(({ body }) => {
+        if (body?.status === "ok" || body?.status === "drift" || body?.status === "fail") {
+          setSystemStatus(body.status);
+        }
       })
       .catch(() => {});
   }, []);
@@ -49,10 +59,12 @@ export function Nav() {
       </div>
 
       <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div className="nav-status" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)" }}>
-          <span className="status-dot" />
-          <span className="nav-status-text">operational</span>
-        </div>
+        <Link href="/status" className="nav-status" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)", textDecoration: "none" }}>
+          <span className="status-dot" style={systemStatus === "drift" || systemStatus === "fail" ? { background: "var(--color-warning)" } : undefined} />
+          <span className="nav-status-text">
+            {systemStatus === "ok" || systemStatus === "unknown" ? "operational" : systemStatus === "drift" ? "drift" : "incident"}
+          </span>
+        </Link>
         {block && (
           <>
             <span className="nav-block-sep" style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />

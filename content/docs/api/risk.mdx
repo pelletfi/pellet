@@ -1,0 +1,53 @@
+---
+title: Risk score
+description: Composite risk score (0–100) with explainable components.
+icon: Gauge
+---
+
+A weighted composite risk score per stablecoin. **Higher = more risk.**
+
+## `GET /v1/stablecoins/{address}/risk`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/risk
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "composite": 6.4,
+  "components": {
+    "peg_risk": 6,
+    "peg_break_risk": 0,
+    "supply_risk": 15,
+    "policy_risk": 10
+  },
+  "computed_at": "2026-04-14T11:07:12.883Z"
+}
+```
+
+## Components
+
+Each component is independently scored 0–100, then combined with these weights:
+
+| Component | Weight | Drives |
+| --- | --- | --- |
+| `peg_risk` | 40% | 24h peg stddev + max deviation |
+| `peg_break_risk` | 30% | Active + recent peg-break events |
+| `supply_risk` | 20% | Headroom against supply cap |
+| `policy_risk` | 10% | TIP-403 policy type + activity |
+
+Score is recomputed every 5 minutes from the latest peg, supply, and policy data.
+
+## Verdict thresholds
+
+These are convention, not part of the API:
+
+- **0 – 15** — low
+- **15 – 35** — moderate
+- **35 – 60** — elevated
+- **60+** — high

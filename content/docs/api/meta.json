@@ -1,4 +1,4 @@
 {
   "title": "REST API",
-  "pages": ["stablecoins", "flows"]
+  "pages": ["stablecoins", "flows", "peg", "peg-events", "risk", "reserves", "flow-anomalies"]
 }
