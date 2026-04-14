@@ -561,7 +561,7 @@ function CyclingWord() {
             right: 0,
             top: 0,
             textAlign: "center",
-            color: "var(--color-text-primary)",
+            color: "var(--color-text-tertiary)",
           }}
         >
           {words[i]}
