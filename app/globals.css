@@ -648,6 +648,26 @@ body {
   .nav-kbd-sep {
     display: none !important;
   }
+
+  /* ── Code block readability ── */
+  .landing-code-block {
+    font-size: 11px !important;
+    line-height: 1.7 !important;
+    padding: 16px 14px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Section padding overrides (landing sections use 0 48px hardcoded) ── */
+  .hero-wrap,
+  section.mobile-pad-tight {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  /* ── Stable header flex wrap (tagline + price + badges) ── */
+  .stable-price > * {
+    min-width: 0;
+  }
 }
 
 

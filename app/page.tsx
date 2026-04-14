@@ -845,7 +845,7 @@ export default function AboutPage() {
         <ArchDiagram />
 
         {/* Code block */}
-        <motion.div variants={fadeUp} style={{
+        <motion.div variants={fadeUp} className="landing-code-block" style={{
           background: "rgba(255,255,255,0.012)",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
