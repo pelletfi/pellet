@@ -423,8 +423,11 @@ body {
   --fd-tocnav-height: 48px !important;
 }
 
-/* Hide theme toggle — site is dark-only by design */
+/* Hide theme toggle and its empty wrapper — site is dark-only by design */
 [data-theme-toggle] {
+  display: none !important;
+}
+#nd-sidebar > div:last-child:has([data-theme-toggle]) {
   display: none !important;
 }
 
