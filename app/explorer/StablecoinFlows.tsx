@@ -52,15 +52,15 @@ function formatUsd(n: number): string {
   return "$0";
 }
 
-// SVG layout constants
+// SVG layout constants — compact diagram within a slightly taller container
 const SVG_W = 500;
-const SVG_H = 170;
-const NODE_W = 72;
-const NODE_H = 26;
-const NODE_R = 4;
-const LEFT_X = 20;
-const RIGHT_X = SVG_W - NODE_W - 20;
-const TOP_Y = 30;
+const SVG_H = 200;
+const NODE_W = 58;
+const NODE_H = 20;
+const NODE_R = 3;
+const LEFT_X = 60;
+const RIGHT_X = SVG_W - NODE_W - 60;
+const TOP_Y = 36;
 
 export function StablecoinFlows() {
   const ref = useRef<HTMLDivElement>(null);
@@ -267,7 +267,7 @@ export function StablecoinFlows() {
                 <rect x={LEFT_X} y={y} width={NODE_W} height={NODE_H} rx={NODE_R} ry={NODE_R}
                   fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
                 <text x={LEFT_X + NODE_W / 2} y={y + NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "rgba(255,255,255,0.63)" }}>
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "rgba(255,255,255,0.63)" }}>
                   {node.symbol}
                 </text>
               </g>
@@ -282,7 +282,7 @@ export function StablecoinFlows() {
                 <rect x={RIGHT_X} y={y} width={NODE_W} height={NODE_H} rx={NODE_R} ry={NODE_R}
                   fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
                 <text x={RIGHT_X + NODE_W / 2} y={y + NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "rgba(255,255,255,0.63)" }}>
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "rgba(255,255,255,0.63)" }}>
                   {node.symbol}
                 </text>
               </g>
