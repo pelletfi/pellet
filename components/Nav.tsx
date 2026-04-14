@@ -34,6 +34,7 @@ export function Nav() {
             color: "var(--color-text-primary)",
             textDecoration: "none",
             letterSpacing: "-0.01em",
+            whiteSpace: "nowrap",
           }}
         >
           Pellet Finance
@@ -47,15 +48,15 @@ export function Nav() {
         </nav>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)" }}>
+      <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="nav-status" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)" }}>
           <span className="status-dot" />
-          <span>operational</span>
+          <span className="nav-status-text">operational</span>
         </div>
         {block && (
           <>
-            <span style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+            <span className="nav-block-sep" style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
+            <span className="nav-block" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
               blk {block}
             </span>
           </>

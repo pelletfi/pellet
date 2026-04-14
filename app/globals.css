@@ -622,15 +622,29 @@ body {
   }
   .explorer-stats {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
   }
   .explorer-stats > div {
-    padding: 14px 10px !important;
+    padding: 18px 12px !important;
   }
   .explorer-stats > div > div:first-child {
-    font-size: 15px !important;
+    font-size: 17px !important;
+    margin-bottom: 6px !important;
   }
   .explorer-graphics {
-    gap: 12px !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  /* Supply distribution — switch to 2-col grid on mobile (3-col is too cramped) */
+  .supply-grid {
+    grid-template-columns: 1fr 1fr !important;
+    height: auto !important;
+    min-height: 180px !important;
+    padding: 2px !important;
+  }
+  /* First tile (pathUSD) no longer spans 2 rows on mobile — too distorted */
+  .supply-grid > *:first-child {
+    grid-row: auto !important;
   }
   /* Tighten stablecoin table horizontal padding on mobile */
   .stablecoin-table-header,
@@ -664,8 +678,14 @@ body {
 
   /* ── Nav compaction ── */
   .nav-kbd-badge,
-  .nav-kbd-sep {
+  .nav-kbd-sep,
+  .nav-status-text,
+  .nav-block,
+  .nav-block-sep {
     display: none !important;
+  }
+  .nav-right {
+    gap: 8px !important;
   }
 
   /* ── Code block readability ── */

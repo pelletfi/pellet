@@ -56,6 +56,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
   return (
     <div
       ref={ref}
+      className="supply-distribution"
       style={{
         border: "1px solid var(--color-border-subtle)",
         borderRadius: 8,
@@ -79,6 +80,7 @@ export function SupplyDistribution({ stablecoins }: SupplyDistributionProps) {
       </div>
 
       <div
+        className="supply-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
