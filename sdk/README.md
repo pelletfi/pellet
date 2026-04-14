@@ -83,6 +83,7 @@ The response `meta.asOf` confirms which frozen slice you got. Risk and reserves 
 | `pellet.stablecoin(addr).pegEvents(limit?)` | Detected peg-break events timeline |
 | `pellet.stablecoin(addr).risk()` | Composite risk score + components |
 | `pellet.stablecoin(addr).reserves()` | Backing breakdown by reserve type |
+| `pellet.stablecoin(addr).rewards()` | TIP-20 reward pool: effective APY, top funders, distributions |
 | `pellet.stablecoin(addr).roles()` | Forensically-derived role holders |
 | `pellet.flows({ hours? })` | Cross-stable flow data |
 | `pellet.flowAnomalies({ limit? })` | Z-score-detected flow anomalies |

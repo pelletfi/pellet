@@ -219,6 +219,38 @@ If either exceeds threshold, status returns `drift` (HTTP 503 on `/api/v1/system
 
 ---
 
+## Rewards & effective yield
+
+Tempo TIP-20 has an **opt-in reward precompile** on every stablecoin. Any address can fund a reward pool via `distribute(amount)`; opted-in holders accrue claimable rewards proportional to their balance. Claiming is explicit (`claim()`) — no rebase.
+
+**Events indexed** (decoded every 5 minutes from the raw `events` table):
+
+| Event | Captures | Stored in |
+| --- | --- | --- |
+| `RewardDistributed(indexed funder, uint256 amount)` | Who funded the pool, how much | `reward_distributions` |
+| `RewardRecipientSet(indexed holder, indexed recipient)` | Opt-in / opt-out / recipient redirect | `reward_recipients` (current state) |
+
+Claims do **not** emit a dedicated event — they appear as `Transfer(token_address → holder, amount)` in the `events` table, inferable but not uniquely identifiable.
+
+**Effective APY formula:**
+
+```
+distributed_7d_tokens = SUM(amount) from reward_distributions, last 7 days
+opted_in_tokens       = optedInSupply() / 10^6  (live read)
+weekly_rate           = distributed_7d_tokens / opted_in_tokens
+effective_apy_pct     = weekly_rate × (365 / 7) × 100
+```
+
+**Caveats:**
+- Only computed for live (non-time-travel) responses — historical queries return null for `effective_apy_pct`.
+- Annualization assumes last 7 days is representative. Early in a pool's life this can swing.
+- If `optedInSupply = 0` or no distributions in last 7d, APY is null.
+- Uses **token units** (6 decimals) not USD — no peg-price adjustment. Since reward amount and balance are denominated in the same stable, the ratio is peg-neutral.
+
+**Redirect pattern:** `RewardRecipientSet` allows a holder to direct their rewards to a different address (fund manager → vault, protocol treasury, etc.). `opt_in.redirected_count` is the number of opt-ins where recipient ≠ holder.
+
+---
+
 ## Time-travel queries (`?as_of=`)
 
 Every time-aware endpoint accepts an `?as_of=` parameter to freeze the response to historical state:

@@ -64,6 +64,7 @@ export class Pellet {
             pegEvents: (opts = {}) => this.request(path(`/peg-events?limit=${opts.limit ?? 20}`), { asOf: opts.asOf }),
             risk: (opts = {}) => this.request(path("/risk"), opts),
             reserves: (opts = {}) => this.request(path("/reserves"), opts),
+            rewards: (opts = {}) => this.request(path("/rewards"), opts),
             roles: () => this.request(path("/roles")),
         };
     }

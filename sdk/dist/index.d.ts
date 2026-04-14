@@ -1,4 +1,4 @@
-import type { Address, AddressLabel, CronRunsResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RiskResponse, RolesResponse, StablecoinSummary, StablecoinsListResponse } from "./types.js";
+import type { Address, AddressLabel, CronRunsResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RewardsResponse, RiskResponse, RolesResponse, StablecoinSummary, StablecoinsListResponse } from "./types.js";
 export * from "./types.js";
 interface PelletConfig {
     /** Base URL — defaults to https://pelletfi.com */
@@ -42,6 +42,9 @@ export declare class Pellet {
         reserves: (opts?: {
             asOf?: AsOf;
         }) => Promise<PelletResponse<ReservesResponse>>;
+        rewards: (opts?: {
+            asOf?: AsOf;
+        }) => Promise<PelletResponse<RewardsResponse>>;
         roles: () => Promise<PelletResponse<RolesResponse>>;
     };
     /** List all tracked TIP-20 stablecoins with risk inline. */

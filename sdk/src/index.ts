@@ -19,6 +19,7 @@ import type {
   PegResponse,
   ReproducibilityMeta,
   ReservesResponse,
+  RewardsResponse,
   RiskResponse,
   RolesResponse,
   StablecoinSummary,
@@ -106,6 +107,7 @@ export class Pellet {
         this.request<PegEventsResponse>(path(`/peg-events?limit=${opts.limit ?? 20}`), { asOf: opts.asOf }),
       risk: (opts: { asOf?: AsOf } = {}) => this.request<RiskResponse>(path("/risk"), opts),
       reserves: (opts: { asOf?: AsOf } = {}) => this.request<ReservesResponse>(path("/reserves"), opts),
+      rewards: (opts: { asOf?: AsOf } = {}) => this.request<RewardsResponse>(path("/rewards"), opts),
       roles: () => this.request<RolesResponse>(path("/roles")),
     };
   }

@@ -185,6 +185,50 @@ export interface FlowAnomaliesResponse {
   anomalies: FlowAnomaly[];
 }
 
+// ── Rewards ──────────────────────────────────────────────────────────────────
+
+export interface RewardTopFunder {
+  address: Address;
+  label: string | null;
+  distribution_count: number;
+  total_amount_tokens: number;
+}
+
+export interface RewardDistribution {
+  funder: Address;
+  funder_label: string | null;
+  amount_tokens: number;
+  block_number: number;
+  block_timestamp: string;
+  tx_hash: string;
+}
+
+export interface RewardsResponse {
+  address: Address;
+  as_of: string | null;
+  /** Annualized APY computed from last 7d distributed / optedInSupply. Null when no live data or no opt-ins. */
+  effective_apy_pct: number | null;
+  /** uint128 opted-in supply as a string (live reads only; null on time-travel) */
+  opted_in_supply: string | null;
+  opted_in_tokens: number | null;
+  /** uint256 global reward accumulator scaled by 1e18 (live reads only) */
+  global_reward_per_token: string | null;
+  distribution_count: number;
+  distributed: {
+    last_24h_tokens: number;
+    last_7d_tokens: number;
+    all_time_tokens: number;
+  };
+  opt_in: {
+    recipient_count: number;
+    distinct_recipients: number;
+    /** Holders whose recipient != themselves (redirect pattern) */
+    redirected_count: number;
+  };
+  top_funders: RewardTopFunder[];
+  recent_distributions: RewardDistribution[];
+}
+
 // ── System health & cron runs ────────────────────────────────────────────────
 
 export interface HealthResponse {

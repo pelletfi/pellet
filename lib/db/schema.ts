@@ -276,6 +276,45 @@ export const reserves = pgTable(
   }),
 );
 
+// RewardDistributed events — one row per funder-adds-to-pool event.
+// PK on (tx_hash, log_index) for idempotent decoder re-runs.
+export const rewardDistributions = pgTable(
+  "reward_distributions",
+  {
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    stable: text("stable").notNull(),
+    funder: text("funder").notNull(),
+    amount: numeric("amount").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+    blockTimestamp: timestamp("block_timestamp", { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.txHash, t.logIndex] }),
+    stableTimeIdx: index("reward_distributions_stable_time_idx").on(t.stable, t.blockTimestamp),
+    funderIdx: index("reward_distributions_funder_idx").on(t.funder),
+  }),
+);
+
+// Current reward recipient per (stable, holder). Updated in place on each
+// RewardRecipientSet event — most recent setting wins.
+export const rewardRecipients = pgTable(
+  "reward_recipients",
+  {
+    stable: text("stable").notNull(),
+    holder: text("holder").notNull(),
+    recipient: text("recipient").notNull(),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull(),
+    txHash: text("tx_hash").notNull(),
+    logIndex: integer("log_index").notNull(),
+    blockNumber: bigint("block_number", { mode: "number" }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.stable, t.holder] }),
+    stableIdx: index("reward_recipients_stable_idx").on(t.stable),
+  }),
+);
+
 // Append-only history of risk_scores snapshots. Written on every cron tick.
 // Enables time-travel (`?as_of=`) queries.
 export const riskScoresHistory = pgTable(
