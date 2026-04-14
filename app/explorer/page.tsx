@@ -45,7 +45,7 @@ export default async function ExplorerPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 64px" }}>
+    <div className="explorer-page" style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px 64px" }}>
       {/* Header */}
       <header style={{ marginBottom: 24 }}>
         <h1
@@ -125,7 +125,7 @@ export default async function ExplorerPage() {
       </div>
 
       {/* Graphics row — Supply distribution + Flow diagram */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+      <div className="explorer-graphics" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         <SupplyDistribution stablecoins={stablecoins} />
         <StablecoinFlows />
       </div>
