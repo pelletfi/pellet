@@ -543,8 +543,6 @@ function CyclingWord() {
         display: "inline-grid",
         gridTemplateColumns: "1fr",
         gridTemplateRows: "1fr",
-        width: 52,
-        textAlign: "center",
       }}
     >
       <AnimatePresence initial={false}>
@@ -613,13 +611,13 @@ export default function AboutPage() {
         >
           <span>MPP Native</span>
           <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
-          <CyclingWord />
-          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             Built on
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.5 }} />
           </span>
+          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
+          <CyclingWord />
         </motion.div>
 
         <motion.h1
