@@ -1,963 +1,618 @@
 "use client";
 
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { motion, useInView, useMotionValue, animate } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-// ── Animation variants ──────────────────────────────────────────────────────
+// ── Count-up stat value ─────────────────────────────────────────────────────
+
+function AnimatedStat({
+  target,
+  format,
+  delay = 0,
+}: {
+  target: number;
+  format: (n: number) => string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.4 });
+  const count = useMotionValue(0);
+  const [display, setDisplay] = useState(format(0));
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(count, target, {
+      duration: 1.2,
+      delay,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (latest) => setDisplay(format(latest)),
+    });
+    return () => controls.stop();
+  }, [inView, target, count, format, delay]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+// ── Motion variants ─────────────────────────────────────────────────────────
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const },
+  },
 };
 
 const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-const fadeIn = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.6 } },
-};
+// ── Peg chart (FIG. 01 — pathUSD, 90-day rolling) ──────────────────────────
 
-// ── Scroll-triggered section wrapper ────────────────────────────────────────
-
-function Section({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  return (
-    <motion.section
-      ref={ref}
-      initial="hidden"
-      animate={inView ? "visible" : "hidden"}
-      variants={stagger}
-      className={className}
-      style={style}
-    >
-      {children}
-    </motion.section>
-  );
-}
-
-// ── Animated arc lines ──────────────────────────────────────────────────────
-
-function ArcDivider() {
-  const arcs = [
-    { o: 0.07, speed: 8, offset: 0 },
-    { o: 0.04, speed: 10, offset: 2 },
-    { o: 0.09, speed: 12, offset: 4 },
+function PegChart() {
+  // 26 samples across 90 days. Mostly flat at $1.0000 with a gentle plateau
+  // around D-60 → D-40. Matches the Paper V3 reference shape.
+  const pegData = [
+    1.0000, 1.0000, 1.0001, 1.0000, 0.9999,
+    1.0000, 1.0002, 1.0003, 1.0004, 1.0005,
+    1.0005, 1.0005, 1.0004, 1.0004, 1.0003,
+    1.0002, 1.0001, 1.0000, 1.0000, 1.0000,
+    0.9999, 1.0000, 1.0001, 1.0000, 1.0000,
+    1.0000,
   ];
 
+  const W = 620;
+  const H = 140;
+  const padL = 0; // y-axis labels live outside the SVG
+  const padR = 0;
+  const padT = 10;
+  const padB = 10;
+
+  const yMin = 0.9990;
+  const yMax = 1.0010;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  const xFor = (i: number) =>
+    padL + (i / (pegData.length - 1)) * innerW;
+  const yFor = (v: number) =>
+    padT + ((yMax - v) / (yMax - yMin)) * innerH;
+
+  const yGrid = [1.0008, 1.0004, 1.0000, 0.9996, 0.9992];
+
+  // Step-like path matching Paper's plateau aesthetic
+  const path = pegData
+    .map((v, i) => {
+      const x = xFor(i);
+      const y = yFor(v);
+      if (i === 0) return `M ${x.toFixed(2)} ${y.toFixed(2)}`;
+      const prevX = xFor(i - 1);
+      return `L ${prevX.toFixed(2)} ${y.toFixed(2)} L ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+
   return (
-    <div style={{ width: "100%", height: 120, overflow: "hidden", position: "relative" }}>
-      <svg
-        viewBox="0 0 1200 120"
-        preserveAspectRatio="none"
-        fill="none"
-        style={{ width: "100%", height: "100%" }}
+    <div style={{ display: "flex", gap: 8 }}>
+      {/* y-axis labels */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          paddingTop: padT,
+          paddingBottom: padB,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--color-text-quaternary)",
+          letterSpacing: "0.02em",
+          minWidth: 46,
+          textAlign: "right",
+          fontVariantNumeric: "tabular-nums",
+        }}
       >
-        {arcs.map((arc, i) => (
-          <path
-            key={i}
-            stroke={`rgba(255,255,255,${arc.o})`}
-            strokeWidth="1"
-            fill="none"
-          >
-            <animate
-              attributeName="d"
-              dur={`${arc.speed}s`}
-              repeatCount="indefinite"
-              begin={`${arc.offset}s`}
-              values={[
-                "M0 80 Q300 20 600 60 Q900 100 1200 40",
-                "M0 60 Q300 90 600 40 Q900 20 1200 70",
-                "M0 50 Q300 30 600 80 Q900 50 1200 30",
-                "M0 80 Q300 20 600 60 Q900 100 1200 40",
-              ].join(";")}
-            />
-          </path>
+        {yGrid.map((v) => (
+          <span key={v}>{v.toFixed(4)}</span>
         ))}
-      </svg>
+      </div>
+
+      <div style={{ flex: 1 }}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width="100%"
+          height={H}
+          style={{ display: "block", overflow: "visible" }}
+        >
+          {/* grid */}
+          {yGrid.map((v) => (
+            <line
+              key={v}
+              x1={0}
+              x2={W}
+              y1={yFor(v)}
+              y2={yFor(v)}
+              stroke="rgba(255,255,255,0.04)"
+              strokeWidth={1}
+            />
+          ))}
+
+          {/* y-axis rule (left edge) */}
+          <line
+            x1={0}
+            x2={0}
+            y1={padT}
+            y2={H - padB}
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth={1}
+          />
+
+          {/* x-axis rule (bottom edge) */}
+          <line
+            x1={0}
+            x2={W}
+            y1={H - padB}
+            y2={H - padB}
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth={1}
+          />
+
+          {/* x-axis tick marks at each labeled position */}
+          {[0, 20 / 90, 40 / 90, 60 / 90, 80 / 90, 89 / 90, 1].map((f, i) => (
+            <line
+              key={i}
+              x1={f * W}
+              x2={f * W}
+              y1={H - padB}
+              y2={H - padB + 4}
+              stroke="rgba(255,255,255,0.28)"
+              strokeWidth={1}
+            />
+          ))}
+
+          {/* baseline marker at 1.0000 — faint drifting dashes */}
+          <motion.line
+            x1={0}
+            x2={W}
+            y1={yFor(1.0)}
+            y2={yFor(1.0)}
+            stroke="rgba(255,255,255,0.08)"
+            strokeDasharray="2 4"
+            strokeWidth={1}
+            initial={{ strokeDashoffset: 0 }}
+            animate={{ strokeDashoffset: -12 }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+          />
+
+          {/* peg line + NOW indicator — breathes subtly (±1.5px) like a live peg */}
+          <motion.g
+            initial={{ y: 0 }}
+            animate={{ y: [0, -1.5, 0.8, -0.6, 1.2, 0] }}
+            transition={{
+              duration: 9,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1.8,
+            }}
+          >
+            <motion.path
+              d={path}
+              fill="none"
+              stroke="rgba(255,255,255,0.65)"
+              strokeWidth={1.25}
+              strokeLinecap="square"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] as const, delay: 0.3 }}
+            />
+
+            {/* NOW indicator — expanding ring */}
+            <motion.circle
+              cx={xFor(pegData.length - 1)}
+              cy={yFor(pegData[pegData.length - 1])}
+              fill="none"
+              stroke="rgba(255,255,255,0.5)"
+              strokeWidth={1}
+              initial={{ r: 2, opacity: 0 }}
+              animate={{ r: [2, 12, 12], opacity: [0.55, 0, 0] }}
+              transition={{
+                duration: 2.6,
+                repeat: Infinity,
+                ease: "easeOut",
+                delay: 1.6,
+              }}
+            />
+
+            {/* NOW indicator — core pulse */}
+            <motion.circle
+              cx={xFor(pegData.length - 1)}
+              cy={yFor(pegData[pegData.length - 1])}
+              fill="rgba(255,255,255,0.95)"
+              initial={{ r: 0, opacity: 0 }}
+              animate={{
+                r: [2, 3, 2],
+                opacity: [0.95, 0.5, 0.95],
+              }}
+              transition={{
+                duration: 2.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1.6,
+              }}
+            />
+          </motion.g>
+        </svg>
+
+        {/* x-axis */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: 8,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-text-quaternary)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {["D-90", "D-70", "D-50", "D-30", "D-10", "D-1", "NOW"].map((t) => (
+            <span key={t}>{t}</span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Animated pipeline ───────────────────────────────────────────────────────
+// ── Page ────────────────────────────────────────────────────────────────────
 
-const pipelineSteps = [
-  { num: "1", label: "Peg", desc: "Native DEX quote swap" },
-  { num: "2", label: "Supply", desc: "TIP-20 totalSupply / cap" },
-  { num: "3", label: "Policy", desc: "TIP-403 compliance state" },
-  { num: "4", label: "Flows", desc: "Cross-pair event replay" },
-  { num: "5", label: "Backing", desc: "Issuer + reserve context" },
-  { num: "6", label: "Risk", desc: "Peg, policy, role analysis" },
-  { num: "7", label: "Report", desc: "Editorial synthesis" },
-];
-
-function AnimatedPipeline() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-
+export default function LandingPage() {
   return (
     <div
-      ref={ref}
+      className="landing-root"
       style={{
-        background: "rgba(255,255,255,0.012)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        border: "1px solid var(--color-border-subtle)",
-        borderRadius: 10,
-        padding: "32px 32px 28px",
-        margin: "40px 0",
-        overflow: "hidden",
-        position: "relative" as const,
+        minHeight: "calc(100vh - 48px)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <ScanLine />
-      <div style={{
-        fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500,
-        textTransform: "uppercase" as const, letterSpacing: "0.06em",
-        color: "var(--color-text-quaternary)", marginBottom: 20,
-      }}>
-        Analysis Pipeline
-      </div>
-
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-        {pipelineSteps.map((step, i) => (
-          <motion.div
-            key={step.num}
-            initial={{ opacity: 0, x: -8 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.3, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] as const }}
-            style={{ display: "flex", alignItems: "center", gap: 8 }}
-          >
-            {i > 0 && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity: 1 } : {}}
-                transition={{ delay: i * 0.12 + 0.1 }}
-                style={{ color: "var(--color-text-quaternary)", fontSize: 12, flexShrink: 0 }}
-              >
-                →
-              </motion.span>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={inView ? { scale: 1 } : {}}
-                transition={{ delay: i * 0.12 + 0.05, type: "spring", stiffness: 400, damping: 15 }}
-                style={{
-                  width: 24, height: 24, borderRadius: "50%",
-                  background: "var(--color-text-primary)", color: "var(--color-bg-base)",
-                  fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}
-              >
-                {step.num}
-              </motion.span>
-              <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-secondary)" }}>
-                  {step.label}
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>
-                  {step.desc}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Pixel grid decoration ───────────────────────────────────────────────────
-
-function PixelGrid({ rows = 4, cols = 16 }: { rows?: number; cols?: number }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-
-  return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 2, margin: "40px 0" }}>
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} style={{ display: "flex", gap: 2 }}>
-          {Array.from({ length: cols }).map((_, c) => {
-            const dist = Math.abs(c - cols / 2) + Math.abs(r - rows / 2);
-            const opacity = Math.max(0.02, 0.12 - dist * 0.008);
-            const bg = `rgba(255,255,255,${opacity})`;
-            return (
-              <motion.div
-                key={c}
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity } : {}}
-                transition={{ delay: (r * cols + c) * 0.01, duration: 0.3 }}
-                style={{
-                  width: 6, height: 6, borderRadius: 1,
-                  background: bg,
-                }}
-              />
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Architecture diagram (animated) ─────────────────────────────────────────
-
-function ArchDiagram() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-
-  const boxStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.012)",
-    border: "1px solid var(--color-border-subtle)",
-    borderRadius: 6,
-    padding: 16,
-    textAlign: "center",
-  };
-
-  return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={inView ? "visible" : "hidden"}
-      variants={stagger}
-      style={{
-        background: "rgba(255,255,255,0.012)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        border: "1px solid var(--color-border-subtle)",
-        borderRadius: 10,
-        padding: "32px 32px 28px",
-        margin: "40px 0",
-      }}
-    >
-      <div style={{
-        fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500,
-        textTransform: "uppercase" as const, letterSpacing: "0.06em",
-        color: "var(--color-text-quaternary)", marginBottom: 20,
-      }}>
-        Distribution Surfaces
-      </div>
-
-      <div className="arch-row-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-        {[
-          { label: "pelletfi.com", desc: "Web explorer" },
-          { label: "REST API", desc: "GET /v1/stablecoins/*" },
-          { label: "MCP Server", desc: "@pelletfi/mcp" },
-        ].map((box) => (
-          <motion.div key={box.label} variants={fadeUp} style={boxStyle}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>{box.label}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>{box.desc}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div variants={fadeIn} style={{ display: "flex", justifyContent: "center", padding: "10px 0", color: "var(--color-text-quaternary)", fontSize: 16 }}>↑</motion.div>
-
-      <motion.div variants={fadeUp} style={{ ...boxStyle, marginBottom: 0 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>Pellet Pipeline</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>Peg → Supply → Policy → Flows → Backing → Risk → Report</div>
-      </motion.div>
-
-      <motion.div variants={fadeIn} style={{ display: "flex", justifyContent: "center", padding: "10px 0", color: "var(--color-text-quaternary)", fontSize: 16 }}>↑</motion.div>
-
-      <div className="arch-row-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-        {[
-          { label: "TIP-20 Precompile", desc: "Supply · Roles · Rewards" },
-          { label: "TIP-403 Registry", desc: "Policies · Admins" },
-          { label: "Enshrined DEX", desc: "Quote swaps · Orderbook" },
-        ].map((box) => (
-          <motion.div key={box.label} variants={fadeUp} style={boxStyle}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 4 }}>{box.label}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)" }}>{box.desc}</div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ── Floating particles behind hero ──────────────────────────────────────────
-
-function HeroParticles() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-
-  const particles = Array.from({ length: 30 }, (_, i) => {
-    const seed = (i * 2654435761 + 374761393) >>> 0;
-    const s2 = (seed * 2246822519 + 3266489917) >>> 0;
-    const s3 = (s2 * 668265263 + 374761393) >>> 0;
-    return {
-      id: i,
-      x: (seed % 10000) / 100,
-      y: (s2 % 10000) / 100,
-      size: (s3 % 200) / 100 + 1.5,
-      duration: (seed % 1500) / 100 + 18,
-      delay: (s2 % 500) / 100,
-      opacity: (s3 % 80) / 1000 + 0.06,
-    };
-  });
-
-  return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, p.opacity, p.opacity * 1.8, p.opacity, 0],
-            y: [0, -20, -40],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          style={{
-            position: "absolute",
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.7)",
-            boxShadow: `0 0 ${p.size * 3}px rgba(255,255,255,0.15)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Animated scan line effect for sections ──────────────────────────────────
-
-function ScanLine() {
-  return (
-    <motion.div
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        height: 1,
-        background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
-        pointerEvents: "none",
-      }}
-      initial={{ top: 0, opacity: 0 }}
-      animate={{ top: "100%", opacity: [0, 1, 1, 0] }}
-      transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: "linear" }}
-    />
-  );
-}
-
-// ── Animated counter ────────────────────────────────────────────────────────
-
-function AnimatedNumber({ value, prefix = "" }: { value: string; prefix?: string }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  const [display, setDisplay] = useState(prefix + "0");
-
-  useEffect(() => {
-    if (!inView) return;
-    const numMatch = value.match(/[\d.]+/);
-    if (!numMatch) { setDisplay(value); return; }
-    const target = parseFloat(numMatch[0]);
-    const suffix = value.replace(numMatch[0], "").replace(prefix, "");
-    const duration = 800;
-    const start = Date.now();
-
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = target * eased;
-      const formatted = target >= 100 ? Math.round(current).toString() : current.toFixed(target < 10 ? 0 : 1);
-      setDisplay(prefix + formatted + suffix);
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [inView, value, prefix]);
-
-  return <span ref={ref}>{display}</span>;
-}
-
-// ── Glowing network node visualization ──────────────────────────────────────
-
-function NetworkViz() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
-
-  const nodes = [
-    { x: 80, y: 70, label: "TIP-20", size: 7, color: "rgba(255,255,255,0.5)" },
-    { x: 220, y: 35, label: "DEX", size: 6, color: "rgba(255,255,255,0.5)" },
-    { x: 160, y: 120, label: "TIP-403", size: 6, color: "rgba(255,255,255,0.4)" },
-    { x: 340, y: 80, label: "MPP", size: 7, color: "rgba(255,255,255,0.5)" },
-    { x: 440, y: 45, label: "pathUSD", size: 6, color: "rgba(255,255,255,0.6)" },
-    { x: 280, y: 130, label: "Pellet", size: 9, color: "rgba(255,255,255,0.93)" },
-  ];
-
-  const edges: [number, number][] = [
-    [0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4],
-  ];
-
-  // Build path for the traveling orb — visits all nodes via edges
-  const orbPath = [5, 0, 1, 3, 4, 3, 2, 0, 5, 3, 2, 5];
-  const orbXValues = orbPath.map((idx) => nodes[idx].x);
-  const orbYValues = orbPath.map((idx) => nodes[idx].y);
-
-  return (
-    <div ref={ref} style={{ position: "relative", height: 180, margin: "40px 0", overflow: "visible" }}>
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 520 180"
-        fill="none"
-        style={{ overflow: "visible" }}
-      >
-        {/* Edges */}
-        {edges.map(([a, b], i) => (
-          <motion.line
-            key={`edge-${i}`}
-            x1={nodes[a].x} y1={nodes[a].y}
-            x2={nodes[b].x} y2={nodes[b].y}
-            stroke={
-              hoveredNode !== null && (hoveredNode === a || hoveredNode === b)
-                ? "rgba(255,255,255,0.12)"
-                : "rgba(255,255,255,0.05)"
-            }
-            strokeWidth="1"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.8, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] as const }}
-            style={{ transition: "stroke 0.3s ease" }}
-          />
-        ))}
-
-        {/* Blur filter for orb */}
-        <defs>
-          <filter id="orb-blur" x="-200%" y="-200%" width="500%" height="500%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
-          </filter>
-        </defs>
-
-        {/* Traveling orb — single group so all layers move together */}
-        {inView && (
-          <motion.g
-            animate={{ x: orbXValues, y: orbYValues }}
-            transition={{ duration: 12, repeat: Infinity, ease: "linear", delay: 1 }}
-          >
-            {/* Soft glow */}
-            <circle r={14} fill="#ffffff" opacity={0.04} filter="url(#orb-blur)" />
-            {/* Blurred body */}
-            <circle r={5} fill="#ffffff" opacity={0.35} filter="url(#orb-blur)">
-              <animate attributeName="opacity" values="0.2;0.4;0.2" dur="2s" repeatCount="indefinite" />
-            </circle>
-            {/* Core */}
-            <circle r={1.5} fill="#ffffff" opacity={0.8} />
-          </motion.g>
-        )}
-
-        {/* Nodes */}
-        {nodes.map((node, i) => (
-          <motion.g
-            key={`node-${i}`}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.2 + i * 0.08, type: "spring", stiffness: 300, damping: 20 }}
-            onHoverStart={() => setHoveredNode(i)}
-            onHoverEnd={() => setHoveredNode(null)}
-            style={{ cursor: "pointer" }}
-          >
-            {/* Pulse ring */}
-            <motion.circle
-              cx={node.x} cy={node.y}
-              r={node.size + 6}
-              fill="none"
-              stroke={node.color}
-              strokeWidth={0.5}
-              opacity={hoveredNode === i ? 0.3 : 0.08}
-              animate={{
-                r: [node.size + 6, node.size + 12, node.size + 6],
-                opacity: hoveredNode === i ? [0.3, 0.1, 0.3] : [0.08, 0.02, 0.08],
-              }}
-              transition={{ duration: 3, repeat: Infinity, delay: i * 0.4 }}
-            />
-            {/* Glow */}
-            <circle
-              cx={node.x} cy={node.y}
-              r={node.size + 3}
-              fill={node.color}
-              opacity={hoveredNode === i ? 0.15 : 0.06}
-              style={{ transition: "opacity 0.3s ease" }}
-            />
-            {/* Core */}
-            <circle
-              cx={node.x} cy={node.y}
-              r={node.size}
-              fill={node.color}
-              opacity={hoveredNode === i ? 0.8 : 0.5}
-              style={{ transition: "opacity 0.3s ease" }}
-            />
-            {/* Center dot */}
-            <circle
-              cx={node.x} cy={node.y}
-              r={node.size * 0.35}
-              fill={node.color}
-              opacity={0.9}
-            />
-            {/* Label */}
-            <text
-              x={node.x} y={node.y + node.size + 16}
-              textAnchor="middle"
-              fill={hoveredNode === i ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
-              fontSize="9"
-              fontFamily="var(--font-mono)"
-              style={{ transition: "fill 0.3s ease" }}
-            >
-              {node.label}
-            </text>
-          </motion.g>
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-// ── Cycling word for hero eyebrow ──────────────────────────────────────────
-
-function CyclingWord({ size = 15, italic = true }: { size?: number; italic?: boolean } = {}) {
-  const words = ["Peg", "Policy", "Flow"];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % words.length), 3500);
-    return () => clearInterval(id);
-  }, [words.length]);
-
-  const word = words[i];
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        fontFamily: "'Instrument Serif', Georgia, serif",
-        fontStyle: italic ? "italic" : "normal",
-        fontSize: size,
-        textTransform: "none",
-        letterSpacing: "-0.01em",
-        lineHeight: 1,
-        perspective: 400,
-      }}
-    >
-      <AnimatePresence mode="popLayout" initial={false}>
-        {word.split("").map((char, idx) => (
-          <motion.span
-            key={`${word}-${idx}`}
-            initial={{ rotateX: -90, opacity: 0 }}
-            animate={{ rotateX: 0, opacity: 1 }}
-            exit={{ rotateX: 90, opacity: 0 }}
-            transition={{
-              duration: 0.7,
-              delay: idx * 0.09,
-              ease: [0.22, 1, 0.36, 1] as const,
-            }}
-            style={{
-              display: "inline-block",
-              transformOrigin: "50% 50%",
-              willChange: "transform, opacity",
-            }}
-          >
-            {char}
-          </motion.span>
-        ))}
-      </AnimatePresence>
-    </span>
-  );
-}
-
-// ── Section rule divider ───────────────────────────────────────────────────
-
-function SectionRule() {
-  return (
-    <div style={{
-      height: 1,
-      background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)",
-      margin: "0 0 40px",
-    }} />
-  );
-}
-
-// ── Main page ───────────────────────────────────────────────────────────────
-
-export default function AboutPage() {
-  return (
-    <div>
       <style>{`
-        @keyframes shimmer {
-          0%, 100% { background-position: 100% 50%; }
-          50% { background-position: 0% 50%; }
+        .landing-root {
+          position: relative;
         }
-        @keyframes callout-pulse {
-          0%, 100% { border-left-color: rgba(255,255,255,0.2); }
-          50% { border-left-color: rgba(255,255,255,0.55); }
+        .landing-root > * {
+          position: relative;
+          z-index: 1;
+        }
+        .landing-inner {
+          max-width: 1080px;
+          margin: 0 auto;
+          width: 100%;
+          padding: 20px 48px 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 16px;
+          flex: 1;
+        }
+        .landing-hero-grid {
+          display: grid;
+          grid-template-columns: 1.05fr 1fr;
+          gap: 56px;
+          align-items: start;
+        }
+        .landing-hero-h1 {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 52px;
+          font-weight: 400;
+          line-height: 1.02;
+          letter-spacing: -0.025em;
+          margin: 0 0 18px;
+          text-shadow: 0 0 40px rgba(255,255,255,0.08);
+        }
+        .landing-hero-sub {
+          font-family: var(--font-sans);
+          font-size: 14.5px;
+          line-height: 1.6;
+          color: var(--color-text-secondary);
+          max-width: 500px;
+          margin: 0 0 22px;
+        }
+        .landing-hero-links {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .landing-hero-links a {
+          position: relative;
+          color: var(--color-text-primary);
+          text-decoration: none;
+          padding-bottom: 4px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          overflow: hidden;
+        }
+        .landing-hero-links a::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: 1px;
+          width: 100%;
+          background: var(--color-text-primary);
+          transform-origin: left;
+          transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-hero-links a:hover::after {
+          transform: scaleX(1.08);
+        }
+        .landing-hero-links a .arrow {
+          display: inline-block;
+          width: 0;
+          opacity: 0;
+          transform: translateX(-6px);
+          transition: width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+                      opacity 260ms ease,
+                      transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-hero-links a:hover .arrow {
+          width: 12px;
+          opacity: 0.85;
+          transform: translateX(0);
+        }
+        .landing-hero-links .secondary {
+          color: var(--color-text-quaternary);
+        }
+        .fig-method-link {
+          color: var(--color-text-quaternary);
+          text-decoration: none;
+          transition: color 200ms ease;
+        }
+        .fig-method-link:hover {
+          color: var(--color-text-secondary);
+        }
+        .fig-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 12px;
+          margin-bottom: 16px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.04em;
+          color: var(--color-text-tertiary);
+        }
+        .fig-value {
+          color: var(--color-text-primary);
+          font-variant-numeric: tabular-nums;
+          white-space: nowrap;
+        }
+        .fig-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 16px;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.04em;
+          color: var(--color-text-quaternary);
+          text-transform: uppercase;
+        }
+        .stats-strip {
+          border-top: 1px solid var(--color-border-subtle);
+          padding-top: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 24px;
+        }
+        .stats-row {
+          display: flex;
+          gap: 48px;
+        }
+        .stat {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .stat-label {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--color-text-quaternary);
+        }
+        .stat-value {
+          font-family: var(--font-mono);
+          font-size: 22px;
+          font-weight: 500;
+          font-variant-numeric: tabular-nums;
+          letter-spacing: -0.01em;
+          color: var(--color-text-primary);
+        }
+        .stats-version {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--color-text-quaternary);
+        }
+        @media (max-width: 960px) {
+          .landing-hero-grid { grid-template-columns: 1fr; gap: 40px; }
+          .stats-strip { flex-direction: column; align-items: stretch; gap: 14px; }
+          .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px 12px;
+            width: 100%;
+          }
+          .stat-value { font-size: 18px; }
+        }
+        @media (max-width: 960px) {
+          .landing-root { min-height: 0 !important; }
+        }
+        @media (max-width: 560px) {
+          .landing-inner { padding: 20px 16px; }
+          .landing-hero-h1 { font-size: 38px; }
+          .landing-hero-sub { font-size: 14px; }
+          .fig-header {
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+          }
+          .fig-footer {
+            flex-direction: column;
+            gap: 4px;
+          }
+          .stat-label { font-size: 9px; letter-spacing: 0.08em; }
+          .stat-value { font-size: 15px; letter-spacing: -0.02em; }
+          .stats-row { gap: 12px 10px; }
+          .stats-version { font-size: 9px; }
         }
       `}</style>
-      {/* ═══ HERO ═══ */}
-      <div style={{ position: "relative" }}>
-        <HeroParticles />
+
       <motion.div
         initial="hidden"
         animate="visible"
         variants={stagger}
-        className="hero-wrap"
-        style={{ maxWidth: 800, margin: "0 auto", padding: "120px 48px 60px", position: "relative" }}
+        className="landing-inner"
       >
+        {/* Folio rule */}
         <motion.div
           variants={fadeUp}
-          className="hero-eyebrow"
           style={{
-            fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 500,
-            textTransform: "uppercase" as const, letterSpacing: "0.06em",
-            color: "var(--color-text-tertiary)", marginBottom: 32,
-            display: "flex", alignItems: "center", gap: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--color-text-quaternary)",
           }}
         >
           <span>MPP-Native</span>
-          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            Built for
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.5 }} />
-          </span>
-          <span style={{ color: "var(--color-text-quaternary)" }}>·</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>
-            <CyclingWord />
-          </span>
+          <motion.span
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
+            style={{
+              flex: 1,
+              height: 1,
+              background: "var(--color-border-default)",
+              transformOrigin: "left",
+            }}
+          />
+          <span>Tempo-Native</span>
         </motion.div>
 
-        <motion.h1
-          variants={fadeUp}
-          className="hero-h1"
-          style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
-            fontSize: 48, fontWeight: 400, lineHeight: 1.15,
-            letterSpacing: "-0.02em", marginBottom: 24,
-            textShadow: "0 0 40px rgba(255,255,255,0.1)",
-          }}
-        >
-          The first payments chain{" "}
-          <br />
-          now has <em style={{
-            color: "var(--color-text-secondary)",
-            backgroundImage: "linear-gradient(90deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.8) 48%, rgba(255,255,255,0.8) 52%, rgba(255,255,255,0.45) 65%, rgba(255,255,255,0.45) 100%)",
-            backgroundSize: "250% 100%",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            animation: "shimmer 10s ease-in-out infinite",
-          }}>stablecoin intelligence.</em>
-        </motion.h1>
+        {/* Hero grid */}
+        <div className="landing-hero-grid">
+          {/* LEFT: headline + subhead + inline links */}
+          <div>
+            <motion.h1 variants={fadeUp} className="landing-hero-h1">
+              The stablecoin observatory for{" "}
+              <em style={{ fontStyle: "italic", color: "var(--color-text-primary)" }}>
+                Tempo.
+              </em>
+            </motion.h1>
 
-        <motion.p
-          variants={fadeUp}
-          className="hero-subhead"
-          style={{
-            fontSize: 18, lineHeight: 1.7, color: "var(--color-text-secondary)",
-            maxWidth: 600, marginBottom: 0,
-          }}
-        >
-          Tempo introduced TIP-20 stablecoins with enshrined compliance, native
-          DEX routing, and the Micropayment Protocol. Pellet tracks every peg,
-          every policy, every flow — the intelligence layer Tempo's stablecoins
-          deserve.
-        </motion.p>
-      </motion.div>
-      </div>
+            <motion.p variants={fadeUp} className="landing-hero-sub">
+              Tempo introduced TIP-20 stablecoins with enshrined compliance,
+              native DEX routing, and the Micropayment Protocol. Pellet tracks
+              every peg, every policy, every flow.
+            </motion.p>
 
-      {/* ═══ ARC DIVIDER ═══ */}
-      <ArcDivider />
+            <motion.div variants={fadeUp} className="landing-hero-links">
+              <Link href="/explorer">
+                Open Explorer
+                <span className="arrow" aria-hidden>→</span>
+              </Link>
+              <span className="secondary">SDK · MCP · API</span>
+            </motion.div>
+          </div>
 
-      {/* ═══ STAT BREAKER ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto 80px", padding: "0 48px" }}>
-        <motion.div
-          variants={fadeUp}
-          className="landing-stats"
-          style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
-          }}
-        >
-          {[
-            { value: "12", label: "Stablecoins", prefix: "" },
-            { value: "172K", label: "24h Volume", prefix: "$" },
-            { value: "2.8M", label: "Total Supply", prefix: "$" },
-            { value: "1.85M", label: "Block Height", prefix: "" },
-          ].map((stat) => (
-            <div key={stat.label} style={{
-              border: "1px solid var(--color-border-subtle)",
-              borderRadius: 8,
-              padding: "28px 24px",
-              textAlign: "center",
-              background: "transparent",
-            }}>
-              <div style={{
-                fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 600,
-                fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginBottom: 6,
-              }}>
-                <AnimatedNumber value={stat.value} prefix={stat.prefix} />
-              </div>
-              <div style={{
-                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500,
-                textTransform: "uppercase" as const, letterSpacing: "0.06em",
-                color: "var(--color-text-quaternary)",
-              }}>
-                {stat.label}
-              </div>
+          {/* RIGHT: FIG. 01 peg chart */}
+          <motion.div variants={fadeUp}>
+            <div className="fig-header">
+              <span>Fig. 01 → pathUSD peg, 90-day rolling</span>
+              <span className="fig-value">$1.0000 ± 0.0004</span>
             </div>
-          ))}
-        </motion.div>
-      </Section>
 
-      {/* ═══ NETWORK VISUALIZATION ═══ */}
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px" }}>
-        <NetworkViz />
-      </div>
+            <PegChart />
 
-      {/* ═══ 01: WHY TEMPO ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
-        <SectionRule />
-        <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
-          color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
-          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
-        }}>01</motion.div>
-        <motion.h2 variants={fadeUp} style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 32, fontWeight: 400, lineHeight: 1.2, marginBottom: 20,
-        }}>Why Tempo matters</motion.h2>
-        <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
-          <p style={{ marginBottom: 20 }}>
-            Most chains optimize for speed or cost. Tempo optimizes for <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>payments</strong>. That means enshrined stablecoin standards, built-in compliance policies, and a micropayment protocol that lets machines pay machines at the HTTP layer.
-          </p>
-          <p style={{ marginBottom: 0 }}>
-            12 stablecoins already live — pathUSD at the root, USDC.e and EURC.e bridged through Stargate, USDT0 deployed natively, plus frxUSD, cUSD, rUSD, EURAU, reUSD and more. Each with TIP-20 compliance policies, supply caps, and native DEX routing. Data structures no other chain has.
-          </p>
-        </motion.div>
+            <div className="fig-footer">
+              <span>σ = 0.0002 · drift 0 · deviation events 0</span>
+              <Link
+                href="/docs/methodology"
+                className="fig-method-link"
+              >
+                continuously reproducible
+                <motion.span
+                  aria-hidden
+                  style={{ display: "inline-block", marginLeft: 4 }}
+                  animate={{ y: [0, -1.5, 0], x: [0, 1.5, 0] }}
+                  transition={{
+                    duration: 2.6,
+                    repeat: Infinity,
+                    repeatDelay: 1.8,
+                    ease: "easeInOut",
+                  }}
+                >
+                  ↗
+                </motion.span>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
 
-        {/* Comparison */}
-        <motion.div variants={fadeUp} className="landing-compare" style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr",
-          border: "1px solid var(--color-border-subtle)",
-          borderRadius: 8,
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          background: "rgba(255,255,255,0.012)",
-          overflow: "hidden",
-          margin: "40px 0 0",
-        }}>
-          <div className="landing-compare-cell" style={{ padding: 24, borderRight: "1px solid var(--color-border-subtle)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Other Chains</div>
-            {["Generic ERC-20 stablecoins", "External DEX routing", "No native compliance", "Gas token for fees", "Fragmented peg tracking"].map((item) => (
-              <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-tertiary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-quaternary)", flexShrink: 0 }} />
-                {item}
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: 24 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "var(--color-text-quaternary)", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--color-border-subtle)" }}>Tempo</div>
-            {["TIP-20 stablecoins (enshrined)", "Native DEX with orderbook", "TIP-403 compliance policies", "Fees paid in any stablecoin", "Unified peg monitoring"].map((item) => (
-              <div key={item} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--color-text-primary)", padding: "6px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-primary)", flexShrink: 0 }} />
-                {item}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </Section>
-
-      {/* ═══ PIXEL GRID ═══ */}
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px" }}>
-        <PixelGrid rows={3} cols={24} />
-      </div>
-
-      {/* ═══ 02: WHAT PELLET DOES ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
-        <SectionRule />
-        <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
-          color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
-          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
-        }}>02</motion.div>
-        <motion.h2 variants={fadeUp} style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 32, fontWeight: 400, lineHeight: 1.2, marginBottom: 20,
-        }}>What Pellet does</motion.h2>
-        <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
-          <p style={{ marginBottom: 20 }}>
-            We monitor every TIP-20 stablecoin on Tempo — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, backing structure. Every stable gets its own editorial analysis: origin story, issuer context, risk assessment. Every flow between stables is tracked natively.
-          </p>
-          <p style={{ marginBottom: 0 }}>
-            Not a generic analytics tool bolted onto another chain. Built specifically for Tempo&apos;s TIP-20 architecture — reading enshrined DEX quotes, TIP-403 policy state, and supply cap events directly from the protocol.
-          </p>
-        </motion.div>
-
-        {/* Callout */}
-        <motion.div variants={fadeUp} style={{
-          borderLeft: "2px solid rgba(255,255,255,0.3)",
-          padding: "20px 24px",
-          margin: "32px 0",
-          background: "rgba(255,255,255,0.025)",
-          borderRadius: "0 8px 8px 0",
-          animation: "callout-pulse 3s ease-in-out infinite",
-        }}>
-          <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--color-text-primary)", fontWeight: 500, margin: 0 }}>
-            The briefing aggregates. The assay separates. Pellet is the analytical layer Tempo deserves.
-          </p>
-        </motion.div>
-
-        <AnimatedPipeline />
-      </Section>
-
-      {/* ═══ 03: HOW IT'S BUILT ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
-        <SectionRule />
-        <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
-          color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
-          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
-        }}>03</motion.div>
-        <motion.h2 variants={fadeUp} style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 32, fontWeight: 400, lineHeight: 1.2, marginBottom: 20,
-        }}>How it&apos;s built</motion.h2>
-        <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
-          <p style={{ marginBottom: 20 }}>
-            Everything runs natively on Tempo. No external indexers, no subgraphs. Direct RPC calls to TIP-20 precompiles for supply and policy data, DEX quote swaps for real-time peg pricing, event log replay for flow analysis.
-          </p>
-          <p style={{ marginBottom: 0 }}>
-            Deep stablecoin analysis is paid via MPP — $0.05 in pathUSD, settled at the protocol layer. No accounts, no API keys. Just a payment and a report. Available as an API, an MCP server for AI agents, and this site.
-          </p>
-        </motion.div>
-
-        <ArchDiagram />
-
-        {/* Code block */}
-        <motion.div variants={fadeUp} className="landing-code-block" style={{
-          background: "rgba(255,255,255,0.012)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          border: "1px solid var(--color-border-subtle)",
-          borderRadius: 8,
-          padding: "20px 24px",
-          margin: "24px 0 0",
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          lineHeight: 1.8,
-          color: "var(--color-text-secondary)",
-          overflowX: "auto" as const,
-          position: "relative" as const,
-        }}>
-          {/* Copy button */}
-          <div style={{
-            position: "absolute", top: 12, right: 12,
-            width: 28, height: 28, borderRadius: 6,
-            border: "1px solid var(--color-border-subtle)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "var(--color-text-quaternary)",
-            transition: "color 0.2s ease, border-color 0.2s ease",
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-            </svg>
-          </div>
-          <div style={{ display: "table" }}>
+        {/* Stats strip */}
+        <motion.div variants={fadeUp} className="stats-strip">
+          <div className="stats-row">
             {[
-              <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a stablecoin via MPP</span></>,
-              <><span style={{ color: "rgba(255,255,255,0.93)" }}>$</span> mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000</>,
-              <>&nbsp;</>,
-              <><span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span></>,
-              <><span style={{ color: "rgba(255,255,255,0.93)" }}>{'{'}</span></>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;symbol&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;pathUSD&quot;</span>,</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;peg&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;price&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>1.0000</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;spread_bps&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>0</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;supply&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;current&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;1.09M&quot;</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;cap&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;uncapped&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;policy&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;type&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;blacklist&quot;</span> {'}'},</>,
-              <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;backing&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;protocol-native&quot;</span></>,
-              <><span style={{ color: "rgba(255,255,255,0.93)" }}>{'}'}</span></>,
-            ].map((line, i) => (
-              <div key={i} style={{ display: "table-row" }}>
-                <span style={{
-                  display: "table-cell", paddingRight: 16, textAlign: "right",
-                  color: "var(--color-text-quaternary)", userSelect: "none", fontSize: 11, opacity: 0.5,
-                }}>{i + 1}</span>
-                <span style={{ display: "table-cell" }}>{line}</span>
+              {
+                label: "Stablecoins",
+                target: 12,
+                format: (n: number) => Math.round(n).toString(),
+                delay: 0,
+              },
+              {
+                label: "24h Volume",
+                target: 172,
+                format: (n: number) => `$${Math.round(n)}K`,
+                delay: 0.08,
+              },
+              {
+                label: "Total Supply",
+                target: 2.81,
+                format: (n: number) => `$${n.toFixed(2)}M`,
+                delay: 0.16,
+              },
+              {
+                label: "Block Height",
+                target: 1.85,
+                format: (n: number) => `${n.toFixed(2)}M`,
+                delay: 0.24,
+              },
+            ].map((s) => (
+              <div key={s.label} className="stat">
+                <span className="stat-label">{s.label}</span>
+                <span className="stat-value">
+                  <AnimatedStat target={s.target} format={s.format} delay={s.delay} />
+                </span>
               </div>
             ))}
           </div>
+          <span className="stats-version">
+            Pellet · v1.3.0 · Methodology v1.0
+          </span>
         </motion.div>
-      </Section>
-
-      {/* ═══ PIXEL GRID ═══ */}
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px" }}>
-        <PixelGrid rows={2} cols={24} />
-      </div>
-
-      {/* ═══ 04: BUILT FROM DAY ONE ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "0 48px 80px" }}>
-        <SectionRule />
-        <motion.div variants={fadeUp} style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 500,
-          color: "var(--color-text-quaternary)", letterSpacing: "0.06em", marginBottom: 12,
-          borderBottom: "1px solid var(--color-border-subtle)", paddingBottom: 6, display: "inline-block",
-        }}>04</motion.div>
-        <motion.h2 variants={fadeUp} style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 32, fontWeight: 400, lineHeight: 1.2, marginBottom: 20,
-        }}>Built from day one</motion.h2>
-        <motion.div variants={fadeUp} style={{ fontSize: 16, lineHeight: 1.75, color: "var(--color-text-secondary)", maxWidth: 640 }}>
-          <p style={{ marginBottom: 20 }}>
-            We didn&apos;t wait for the ecosystem to mature. Pellet was tracking Tempo from the first block. When the chain has 12 stables, we analyze all 12. When it has 100, we&apos;ll analyze all 100.
-          </p>
-          <p style={{ margin: 0 }}>
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>First mover. Native builder. The stablecoin intelligence layer for Tempo. Here to stay.</strong>
-          </p>
-        </motion.div>
-      </Section>
-
-      {/* ═══ CTA ═══ */}
-      <Section style={{ maxWidth: 800, margin: "0 auto", padding: "80px 48px", borderTop: "1px solid var(--color-border-subtle)", textAlign: "center" as const, position: "relative" as const }}>
-        <div style={{
-          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
-          width: 320, height: 120,
-          background: "radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        <motion.h3 variants={fadeUp} style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 28, fontWeight: 400, marginBottom: 16,
-          position: "relative" as const,
-        }}>Start exploring</motion.h3>
-        <motion.p variants={fadeUp} style={{
-          fontSize: 15, color: "var(--color-text-secondary)", marginBottom: 32,
-          maxWidth: 480, marginLeft: "auto", marginRight: "auto", lineHeight: 1.7,
-        }}>
-          Every stablecoin examined. Every peg tracked. Every flow mapped. Built natively for Tempo.
-        </motion.p>
-        <motion.div variants={fadeUp} style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-          <Link href="/explorer" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
-            Open Explorer
-          </Link>
-          <Link href="/services" className="btn-secondary" style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", fontSize: 13, fontWeight: 500, borderRadius: 6, textDecoration: "none" }}>
-            View API
-          </Link>
-        </motion.div>
-      </Section>
-
-      {/* ═══ FOOTER WAVE DIVIDER ═══ */}
-      <ArcDivider />
+      </motion.div>
     </div>
   );
 }

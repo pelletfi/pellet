@@ -23,6 +23,9 @@ export function Footer() {
       style={{
         borderTop: "1px solid var(--color-border-subtle)",
         marginTop: 64,
+        background: "var(--color-bg-base)",
+        position: "relative",
+        zIndex: 2,
       }}
     >
       <div className="footer-inner">
@@ -75,8 +78,9 @@ function FooterColumn({
   links: { label: string; href: string }[];
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="footer-col">
       <span
+        className="footer-col-title"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,

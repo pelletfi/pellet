@@ -2,13 +2,32 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { PelletMark } from "@/components/PelletMark";
 
 const navLinks = [
   { label: "Explorer", href: "/explorer" },
   { label: "Fee economics", href: "/fee-economics" },
+  { label: "Studies", href: "/studies" },
   { label: "Pricing", href: "/pricing" },
   { label: "Docs", href: "/docs" },
 ];
+
+function Logo() {
+  // v3a — paired mark (italic "P." + whoosh), from Paper artboard 1Z0-0.
+  return (
+    <Link
+      href="/"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        textDecoration: "none",
+      }}
+      aria-label="Pellet"
+    >
+      <PelletMark height={32} />
+    </Link>
+  );
+}
 
 export function Nav() {
   const [open, setOpen] = useState(false);
@@ -22,7 +41,6 @@ export function Nav() {
         if (d.block) setBlock(Number(d.block).toLocaleString());
       })
       .catch(() => {});
-    // Pellet ingestion health (separate from chain health)
     fetch("/api/v1/system/health")
       .then((r) => r.json().then((d) => ({ httpOk: r.ok, body: d })))
       .then(({ body }) => {
@@ -35,20 +53,9 @@ export function Nav() {
 
   return (
     <header className="nav-header">
+      <div className="nav-inner">
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-        <Link
-          href="/"
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--color-text-primary)",
-            textDecoration: "none",
-            letterSpacing: "-0.01em",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Pellet
-        </Link>
+        <Logo />
         <nav className="nav-links">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="nav-link">
@@ -107,6 +114,7 @@ export function Nav() {
           ))}
         </nav>
       )}
+      </div>
     </header>
   );
 }
