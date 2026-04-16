@@ -417,9 +417,10 @@ const spec = {
     "/api/v1/tokens/{address}/briefing": {
       get: {
         operationId: "getBriefing",
-        summary: "Full Pellet Briefing — paid endpoint",
+        summary:
+          "Deep briefing for any Tempo TIP-20 stablecoin — peg, policy, reserves, rewards, risk, flows, role holders, on-chain measured",
         description:
-          "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
+          "Runs the full Pellet Open-Ledger Intelligence (OLI) pipeline for any Tempo TIP-20 stablecoin and returns a structured briefing document covering: live peg spread vs pathUSD (direct on-chain DEX measurement, not oracle estimate), TIP-403 policy enforcement (allowlist / blocklist / compound, pause state, supply cap headroom), reserve and backing breakdown with attestation source, TIP-20 reward attribution and effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk), DEX flow topology and cross-stable flow anomalies, role-holder enumeration (admin / minter / burner), peg-break event history, and a natural-language evaluation. Every numeric value is a direct on-chain measurement — null when unmeasured, never a synthetic estimate. Requires an MPP payment of 0.05 USDC.e on Tempo mainnet.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
