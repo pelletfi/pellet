@@ -542,48 +542,6 @@ const spec = {
   },
 };
 
-// ── Mark free routes as $0 MPP-compatible ───────────────────────────────────
-// MPPScan's directory only lists routes that carry x-payment-info. To expose
-// Pellet's full OLI suite in the directory (not just the paid /briefing), tag
-// every free route with price: "0" and protocols: ["x402"] — the SIWX-style
-// convention from https://www.mppscan.com/discovery for free/identity-only
-// endpoints. Clients still call these without any challenge handshake; the
-// price: 0 tag just makes them discoverable alongside the paid endpoint.
-const FREE_ROUTES = [
-  "/api/v1/tokens",
-  "/api/v1/tokens/{address}",
-  "/api/v1/stablecoins",
-  "/api/v1/stablecoins/flows",
-  "/api/v1/stablecoins/{address}",
-  "/api/v1/stablecoins/{address}/peg",
-  "/api/v1/stablecoins/{address}/peg-events",
-  "/api/v1/stablecoins/{address}/risk",
-  "/api/v1/stablecoins/{address}/reserves",
-  "/api/v1/stablecoins/{address}/roles",
-  "/api/v1/stablecoins/flow-anomalies",
-  "/api/v1/system/health",
-  "/api/v1/health",
-] as const;
-
-for (const path of FREE_ROUTES) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const op = (spec.paths as any)[path]?.get;
-  if (!op) continue;
-  op["x-payment-info"] = {
-    authMode: "free",
-    price: "0",
-    protocols: ["x402"],
-    description: "Free endpoint — no payment required.",
-  };
-  op.responses = op.responses ?? {};
-  if (!("402" in op.responses)) {
-    op.responses["402"] = {
-      description:
-        "Not returned — endpoint is free (price: 0). Listed for MPP discovery-spec compatibility.",
-    };
-  }
-}
-
 export async function GET() {
   return NextResponse.json(spec, {
     headers: {
