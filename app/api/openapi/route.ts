@@ -413,16 +413,21 @@ const spec = {
           "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
-          authMode: "paid",
-          price: "0.05",
-          minPrice: "0.05",
-          maxPrice: "0.05",
-          amount: "50000",
-          currency: USDC_E,
-          protocols: ["x402"],
-          intent: "charge",
-          method: "tempo",
-          network: "tempo",
+          price: {
+            mode: "fixed",
+            amount: "50000",
+            currency: USDC_E,
+          },
+          protocols: [
+            { x402: {} },
+            {
+              mpp: {
+                method: "tempo",
+                intent: "charge",
+                currency: USDC_E,
+              },
+            },
+          ],
           description: "Pellet deep briefing — 8 aggregators + model synthesis",
         },
         parameters: [
