@@ -714,6 +714,227 @@ export const spec = {
         },
       },
     },
+    // ── MPP mirror routes ──────────────────────────────────────────────────
+    // Zero-charge MPP wrappers around the most useful free endpoints. Agents
+    // that go through the 402 challenge (proving wallet identity via a signed
+    // voucher — no USDC.e transferred) get the same response as the free
+    // `/api/v1/*` version. Declared at `authMode: "paid"` with `price:
+    // "0.000000"` so MPPScan's activity indexer surfaces them in the
+    // directory UI with a "FREE" tag (ecosystem convention). The `/api/v1/*`
+    // variants remain available for plain-HTTP consumers.
+    "/api/mpp/stablecoins": {
+      get: {
+        operationId: "mppListStablecoins",
+        summary: "MPP (free, identity-only) · Full Tempo stablecoin matrix",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins. Same response shape; client proves wallet identity via a signed $0 voucher. Use this when you want the call to appear in your agent's MPP ledger or when consuming through an MPP-aware client.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          minPrice: "0.000000",
+          maxPrice: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        responses: {
+          "200": {
+            description: "Stablecoin matrix (same shape as /api/v1/stablecoins)",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    stablecoins: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/StablecoinData" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/flows": {
+      get: {
+        operationId: "mppGetStablecoinFlows",
+        summary: "MPP (free, identity-only) · Stablecoin DEX flow topology",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/flows. Hourly net flow data between stablecoins routed through the enshrined Tempo DEX precompile.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          {
+            name: "hours",
+            in: "query",
+            required: false,
+            description: "Lookback window in hours (default 24, max 168)",
+            schema: { type: "integer", minimum: 1, maximum: 168, default: 24, example: 24 },
+          },
+        ],
+        responses: {
+          "200": { description: "Flow data" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/flow-anomalies": {
+      get: {
+        operationId: "mppGetFlowAnomalies",
+        summary: "MPP (free, identity-only) · Cross-stable flow anomalies (≥3σ)",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/flow-anomalies. 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3 standard deviations.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 } },
+        ],
+        responses: {
+          "200": { description: "Anomalies" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/{address}/peg": {
+      get: {
+        operationId: "mppGetStablecoinPeg",
+        summary: "MPP (free, identity-only) · Peg + 1h/24h/7d aggregates",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/peg. Current peg sample + rolling-window stats. Supports historical snapshots via `?as_of=`.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "24h" } },
+        ],
+        responses: {
+          "200": { description: "Peg statistics" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/{address}/risk": {
+      get: {
+        operationId: "mppGetStablecoinRisk",
+        summary: "MPP (free, identity-only) · Composite risk score 0–100",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/risk. Composite risk score with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk). Supports historical snapshots via `?as_of=`.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "7d" } },
+        ],
+        responses: {
+          "200": { description: "Risk score" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/{address}/reserves": {
+      get: {
+        operationId: "mppGetStablecoinReserves",
+        summary: "MPP (free, identity-only) · Reserve / backing breakdown",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/reserves. Total backing + per-reserve-type entries with attestation source and issuer. Supports historical snapshots via `?as_of=`.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "30d" } },
+        ],
+        responses: {
+          "200": { description: "Reserve breakdown" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/stablecoins/{address}/rewards": {
+      get: {
+        operationId: "mppGetStablecoinRewards",
+        summary: "MPP (free, identity-only) · TIP-20 reward attribution + APY",
+        description:
+          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/rewards. On-chain reward data via the TIP-20 reward precompile: opted-in supply, global reward-per-token, funder attribution, effective APY. First-mover category. Supports historical snapshots via `?as_of=`.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route — MPP identity challenge, no charge",
+        },
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "7d" } },
+        ],
+        responses: {
+          "200": { description: "Reward data" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
     "/api/v1/tokens/{address}/briefing": {
       get: {
         operationId: "getBriefing",

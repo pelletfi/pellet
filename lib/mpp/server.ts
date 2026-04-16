@@ -73,27 +73,41 @@ function getMppx(): any {
 
 // ── Route handler types ────────────────────────────────────────────────────────
 
-type RouteContext = { params: Promise<Record<string, string>> };
-
-type MppHandler = (
+// Generic over context so route handlers with specific param shapes (e.g.
+// { params: Promise<{ address: string }> }) can be wrapped without TS complaining.
+// Next.js's route-context object is always supplied by the framework, so we
+// just pass it through unchanged.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MppHandler<TContext = any> = (
   request: NextRequest,
-  context: RouteContext
+  context: TContext
 ) => Promise<Response>;
 
 // ── briefingCharge ─────────────────────────────────────────────────────────────
 
 /**
- * Wraps a Next.js route handler with $0.05 pathUSD payment gating via MPP.
+ * Wraps a Next.js route handler with an MPP charge at the specified amount.
  *
  * - If payment credentials are absent or invalid, returns a 402 challenge so
  *   the MPP client knows the amount, currency, and recipient to pay.
- * - If payment is verified, runs the handler and attaches a Payment-Receipt
- *   header to the response.
+ * - If payment is verified (even at amount=0, this acts as an identity proof),
+ *   runs the handler and attaches a Payment-Receipt header to the response.
  * - If MPP_RECIPIENT or MPP_SECRET_KEY are not set (dev mode), the handler
  *   runs without payment enforcement — a warning is logged.
+ *
+ * Amount semantics:
+ *   - "0" or "0.00"   → identity/challenge-only route. The client signs an
+ *     MPP voucher but transfers no USDC.e. Useful for mirroring free endpoints
+ *     under /api/mpp/* so MPPScan indexes and displays them alongside paid
+ *     routes — the ecosystem convention popularized by GovLaws and others.
+ *   - any positive     → actual payment.
  */
-export function briefingCharge(handler: MppHandler): MppHandler {
-  return async (request: NextRequest, context: RouteContext) => {
+export function mppCharge(
+  amount: string,
+  description: string
+) {
+  return <TContext>(handler: MppHandler<TContext>): MppHandler<TContext> =>
+    async (request: NextRequest, context: TContext) => {
     // Dev fallback: skip payment when env vars are missing
     if (!process.env.MPP_RECIPIENT || !process.env.MPP_SECRET_KEY) {
       console.warn(
@@ -108,8 +122,8 @@ export function briefingCharge(handler: MppHandler): MppHandler {
     // Run the MPP charge flow: verifies the Authorization header credential
     // against the challenge we previously issued for this endpoint.
     const result = await mppx.charge({
-      amount: "0.05",
-      description: "Pellet deep briefing",
+      amount,
+      description,
     })(request);
 
     if (result.status === 402) {
@@ -123,6 +137,23 @@ export function briefingCharge(handler: MppHandler): MppHandler {
     return result.withReceipt(handlerResponse);
   };
 }
+
+/**
+ * $0.05 MPP charge — the paid /briefing route.
+ */
+export const briefingCharge = mppCharge("0.05", "Pellet deep briefing");
+
+/**
+ * $0 MPP charge — mirrors free endpoints under /api/mpp/* so they appear in
+ * the MPPScan directory alongside paid routes. Clients still go through the
+ * 402 challenge flow (identity proof via wallet signature) but transfer no
+ * USDC.e. Matches the pattern used by GovLaws, StableEnrich, and others
+ * whose free routes show up with a "FREE" tag in the MPPScan UI.
+ */
+export const identityCharge = mppCharge(
+  "0",
+  "Pellet free route — MPP identity challenge, no charge"
+);
 
 // Re-export for callers that need the raw mppx instance (e.g. session endpoints)
 export { getMppx as mppx };
