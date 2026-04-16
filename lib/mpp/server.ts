@@ -108,34 +108,57 @@ export function mppCharge(
 ) {
   return <TContext>(handler: MppHandler<TContext>): MppHandler<TContext> =>
     async (request: NextRequest, context: TContext) => {
-    // Dev fallback: skip payment when env vars are missing
-    if (!process.env.MPP_RECIPIENT || !process.env.MPP_SECRET_KEY) {
-      console.warn(
-        "[mpp] MPP_RECIPIENT or MPP_SECRET_KEY not set — payment gating DISABLED. " +
-          "Set both env vars in production."
-      );
-      return handler(request, context);
-    }
+      // Dev fallback: skip payment when env vars are missing
+      if (!process.env.MPP_RECIPIENT || !process.env.MPP_SECRET_KEY) {
+        console.warn(
+          "[mpp] MPP_RECIPIENT or MPP_SECRET_KEY not set — payment gating DISABLED. " +
+            "Set both env vars in production."
+        );
+        return handler(request, context);
+      }
 
-    const mppx = getMppx();
+      try {
+        const mppx = getMppx();
 
-    // Run the MPP charge flow: verifies the Authorization header credential
-    // against the challenge we previously issued for this endpoint.
-    const result = await mppx.charge({
-      amount,
-      description,
-    })(request);
+        // Run the MPP charge flow: verifies the Authorization header credential
+        // against the challenge we previously issued for this endpoint.
+        const result = await mppx.charge({
+          amount,
+          description,
+        })(request);
 
-    if (result.status === 402) {
-      // No valid payment credential — return the challenge response.
-      // The MPP client reads WWW-Authenticate headers to know how much to pay.
-      return result.challenge as Response;
-    }
+        if (result.status === 402) {
+          // No valid payment credential — return the challenge response.
+          // The MPP client reads WWW-Authenticate headers to know how much to pay.
+          return result.challenge as Response;
+        }
 
-    // Payment verified — run the handler and attach the receipt header.
-    const handlerResponse = await handler(request, context);
-    return result.withReceipt(handlerResponse);
-  };
+        // Payment verified — run the handler and attach the receipt header.
+        const handlerResponse = await handler(request, context);
+        return result.withReceipt(handlerResponse);
+      } catch (err) {
+        // Diagnostic surface: we've been seeing opaque 500s on the zero-amount
+        // mirror routes. Returning the error body lets us see what's failing
+        // without having to tail runtime logs.
+        console.error("[mpp-wrapper]", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        const stack = err instanceof Error ? err.stack : undefined;
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: "MPP_WRAPPER_ERROR",
+              message: msg,
+              stack: stack?.split("\n").slice(0, 8).join("\n"),
+              amount,
+            },
+          }),
+          {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          }
+        );
+      }
+    };
 }
 
 /**
