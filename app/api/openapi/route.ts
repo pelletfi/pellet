@@ -9,7 +9,7 @@ const spec = {
     title: "Pellet API",
     version: "1.0.0",
     description:
-      "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles. Payment-gated deep briefings via MPP in USDC.e.",
+      "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles. Read it before you hold, swap, or integrate. Payment-gated deep briefings via MPP in USDC.e.",
     contact: {
       url: "https://pelletfi.com",
     },
