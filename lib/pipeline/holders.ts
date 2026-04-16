@@ -119,12 +119,11 @@ export async function getHolders(
   const balances = new Map<string, bigint>();
   let creatorAddress: string | null = null;
 
-  for (const log of logs) {
-    const { from, to, amount } = log.args as {
-      from: string;
-      to: string;
-      amount: bigint;
-    };
+  // Narrow the log shape — fetchAllTransferLogs returns the viem union type.
+  type TransferLog = { args: { from: string; to: string; amount: bigint } };
+
+  for (const log of logs as unknown as TransferLog[]) {
+    const { from, to, amount } = log.args;
 
     const fromNorm = from.toLowerCase();
     const toNorm = to.toLowerCase();
