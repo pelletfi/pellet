@@ -1,6 +1,6 @@
 # @pelletfi/sdk
 
-Typed TypeScript client for the [Pellet API](https://pelletfi.com) — stablecoin intelligence on Tempo.
+Typed TypeScript client for the [Pellet API](https://pelletfi.com) — open-ledger intelligence on Tempo.
 
 ```bash
 npm install @pelletfi/sdk

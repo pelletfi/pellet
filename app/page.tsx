@@ -516,7 +516,7 @@ export default function LandingPage() {
           {/* LEFT: headline + subhead + inline links */}
           <div>
             <motion.h1 variants={fadeUp} className="landing-hero-h1">
-              The stablecoin observatory for{" "}
+              Open-ledger intelligence on{" "}
               <em style={{ fontStyle: "italic", color: "var(--color-text-primary)" }}>
                 Tempo.
               </em>

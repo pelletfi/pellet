@@ -1,6 +1,6 @@
 # @pelletfi/mcp
 
-Pellet's MCP server — gives AI agents access to live stablecoin intelligence on the Tempo blockchain.
+Pellet's MCP server — gives AI agents access to live open-ledger intelligence on the Tempo blockchain.
 
 ```bash
 npm install -g @pelletfi/mcp

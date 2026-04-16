@@ -15,7 +15,7 @@ URL: https://tempo.xyz/contact
 
 Hi team,
 
-I'm Jake, building Pellet — a stablecoin intelligence layer for Tempo.
+I'm Jake, building Pellet — open-ledger intelligence on Tempo.
 
 We monitor every TIP-20 stablecoin end-to-end: peg health, supply dynamics, policy state, cross-stable flow anomalies, reserves, and role holders. Free public API, MCP server for AI agents, MPP-paid deep briefings.
 
