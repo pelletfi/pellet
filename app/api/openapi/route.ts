@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-// Pellet accepts two payment currencies on Tempo:
-//   pathUSD — Tempo's enshrined, native stablecoin (no bridge, no Circle)
-//   USDC.e  — bridged Circle USDC (ecosystem-standard in MPP tooling)
-// mppx offers both as options in the 402 challenge; the client picks.
-const PATH_USD = "0x20c0000000000000000000000000000000000000";
+// USDC.e: ecosystem-standard MPP payment currency on Tempo (see tempoxyz/mpp)
 const USDC_E = "0x20c000000000000000000000b9537d11c60e8b50";
 
 const spec = {
@@ -13,13 +9,13 @@ const spec = {
     title: "Pellet API",
     version: "1.0.0",
     description:
-      "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles. Read it before you hold, swap, or integrate. Payment-gated deep briefings via MPP in pathUSD or USDC.e.",
+      "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles. Read it before you hold, swap, or integrate. Payment-gated deep briefings via MPP in USDC.e.",
     contact: {
       url: "https://pelletfi.com",
     },
     "x-guidance": [
       "All endpoints return JSON. CORS is open. No API key needed for free endpoints.",
-      "Paid endpoints accept MPP payments in either pathUSD (0x20c0000000000000000000000000000000000000) or USDC.e (0x20c000000000000000000000b9537d11c60e8b50) on Tempo. Standard MPP clients (mppx, tempo-request CLI) auto-handle the 402 challenge and pick whichever currency the wallet holds.",
+      "Paid endpoints require an MPP payment in USDC.e on Tempo (currency 0x20c000000000000000000000b9537d11c60e8b50). Standard MPP clients (mppx, tempo-request CLI) auto-handle the 402 challenge and payment voucher exchange. Clients funded only in pathUSD can swap via Tempo's enshrined DEX before calling.",
       "Addresses are 0x-prefixed 42-char hex. Stablecoin addresses on Tempo start with 0x20c0... (TIP-20 factory pattern).",
       "For peg, risk, and reserves endpoints, ?as_of=<ISO8601|epoch|relative> returns historical snapshots. See /docs/methodology#time-travel for format.",
       "Every numeric value is a direct on-chain measurement, not an estimate. When a measurement is unavailable, the field returns null with an explanatory note — never a synthetic estimate.",
@@ -414,7 +410,7 @@ const spec = {
         operationId: "getBriefing",
         summary: "Full Pellet Briefing — paid endpoint",
         description:
-          "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 pathUSD or USDC.e on Tempo — the client's mppx wallet picks whichever currency is funded.",
+          "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
@@ -423,7 +419,6 @@ const spec = {
           maxPrice: "0.05",
           amount: "50000",
           currency: USDC_E,
-          currencies: [PATH_USD, USDC_E],
           protocols: ["x402"],
           intent: "charge",
           method: "tempo",
