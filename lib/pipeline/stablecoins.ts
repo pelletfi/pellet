@@ -255,10 +255,11 @@ export async function getStablecoinMetadata(
   if (bidOk && askOk) {
     // quoteIn: sell 1 unit of stablecoin → get X pathUSD (6 decimals)
     const bidAmount = Number(quoteInRes.value) / 1_000_000; // pathUSD has 6 decimals
-    // quoteOut: sell 1_000_000 pathUSD units → get Y stablecoin units
-    // price (ask) = 1_000_000 / quoteOut (in stablecoin units) then normalize
+    // quoteOut: sell 1_000_000 pathUSD units (= 1 whole pathUSD) → get Y stablecoin units
+    // Ask price (pathUSD per whole stable) = oneUnit / askUnits
+    // e.g. if askUnits=999,700 and oneUnit=10^6, ask = 1.0003 pathUSD per stable
     const askUnits = Number(quoteOutRes.value);
-    const askPrice = askUnits > 0 ? oneUnit / (askUnits / 1_000_000) : 0;
+    const askPrice = askUnits > 0 ? oneUnit / askUnits : 0;
 
     // Mid-price approximation: average bid and ask
     priceVsPathusd = bidAmount; // bid is the more intuitive "price per token"
