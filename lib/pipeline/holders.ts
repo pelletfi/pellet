@@ -24,16 +24,56 @@ const BLOCK_CHUNK = 10_000n;
 const PARALLEL_CHUNKS = 6;
 
 /** Detect whether an RPC error indicates a limit overflow we can recover from
- * by bisecting the block range. Covers both documented Tempo error strings. */
-function isLimitOverflow(detail: string): boolean {
-  const s = detail.toLowerCase();
+ * by bisecting the block range. viem nests error details across `cause`,
+ * `details`, `shortMessage`, and `message`, so we stringify-and-search all of
+ * them rather than guessing the "right" field. */
+function isLimitOverflow(err: unknown): boolean {
+  const parts: string[] = [];
+  const pushIfStr = (v: unknown) => {
+    if (typeof v === "string") parts.push(v);
+  };
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    pushIfStr(e.message);
+    pushIfStr(e.shortMessage);
+    pushIfStr(e.details);
+    if (e.cause && typeof e.cause === "object") {
+      const c = e.cause as Record<string, unknown>;
+      pushIfStr(c.message);
+      pushIfStr(c.shortMessage);
+      pushIfStr(c.details);
+    }
+  }
+  const haystack = parts.join(" | ").toLowerCase();
   return (
-    s.includes("max block range") ||
-    s.includes("exceeds defined limit") ||
-    s.includes("request exceeds") ||
-    s.includes("too many results") ||
-    s.includes("exceed") // conservative fallback — any overflow-like message
+    haystack.includes("max block range") ||
+    haystack.includes("exceeds defined limit") ||
+    haystack.includes("request exceeds") ||
+    haystack.includes("too many results") ||
+    haystack.includes("limit exceeded") ||
+    haystack.includes("exceed")
   );
+}
+
+/** Extract the "retry with range X-Y" hint from any string field in the error. */
+function extractRetryHint(err: unknown): { to: bigint } | null {
+  const parts: string[] = [];
+  const pushIfStr = (v: unknown) => {
+    if (typeof v === "string") parts.push(v);
+  };
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    pushIfStr(e.message);
+    pushIfStr(e.details);
+    if (e.cause && typeof e.cause === "object") {
+      const c = e.cause as Record<string, unknown>;
+      pushIfStr(c.message);
+      pushIfStr(c.details);
+    }
+  }
+  const haystack = parts.join(" | ");
+  const m = /retry with the range (\d+)-(\d+)/i.exec(haystack);
+  return m ? { to: BigInt(m[2]) } : null;
 }
 
 /** Fetch Transfer events for a single block range, shrinking adaptively if
@@ -53,24 +93,18 @@ async function fetchRange(
       toBlock: to,
     });
   } catch (err) {
-    // Parse the RPC's hint, e.g. "retry with the range 10100000-10104417"
-    const detail =
-      // @ts-expect-error viem error shape
-      err?.cause?.message ?? err?.details ?? (err instanceof Error ? err.message : "");
-    const detailStr = String(detail);
-
     // Explicit RPC hint — honor it precisely.
-    const hint = /retry with the range (\d+)-(\d+)/.exec(detailStr);
+    const hint = extractRetryHint(err);
     if (hint) {
-      const newTo = BigInt(hint[2]);
-      const head = await fetchRange(address, from, newTo);
-      const tail = newTo + 1n <= to ? await fetchRange(address, newTo + 1n, to) : [];
+      const head = await fetchRange(address, from, hint.to);
+      const tail =
+        hint.to + 1n <= to ? await fetchRange(address, hint.to + 1n, to) : [];
       return [...head, ...tail];
     }
 
     // Generic limit overflow (block-range OR result-count) — bisect and retry.
     // Floor at 1-block ranges to prevent infinite recursion on a single hot block.
-    if (isLimitOverflow(detailStr) && to > from) {
+    if (isLimitOverflow(err) && to > from) {
       const mid = from + (to - from) / 2n;
       const head = await fetchRange(address, from, mid);
       const tail = await fetchRange(address, mid + 1n, to);
