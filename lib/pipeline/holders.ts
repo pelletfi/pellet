@@ -18,13 +18,27 @@ const TRANSFER_ABI = [
 
 // Tempo RPC enforces two limits per eth_getLogs call:
 //   1. Max block range: 100,000 blocks
-//   2. Max results: 20,000 logs
-// Start with a comfortable chunk and adaptively shrink on overflow.
+//   2. Max results: 20,000 logs (error: "Request exceeds defined limit")
+// Start with a modest chunk and adaptively shrink on EITHER overflow.
 const BLOCK_CHUNK = 10_000n;
 const PARALLEL_CHUNKS = 6;
 
+/** Detect whether an RPC error indicates a limit overflow we can recover from
+ * by bisecting the block range. Covers both documented Tempo error strings. */
+function isLimitOverflow(detail: string): boolean {
+  const s = detail.toLowerCase();
+  return (
+    s.includes("max block range") ||
+    s.includes("exceeds defined limit") ||
+    s.includes("request exceeds") ||
+    s.includes("too many results") ||
+    s.includes("exceed") // conservative fallback — any overflow-like message
+  );
+}
+
 /** Fetch Transfer events for a single block range, shrinking adaptively if
- * Tempo rejects for either limit. Uses RPC-suggested ranges when available. */
+ * Tempo rejects for either limit. Uses RPC-suggested ranges when available,
+ * otherwise bisects. Floor of 1 block prevents infinite recursion. */
 async function fetchRange(
   address: `0x${string}`,
   from: bigint,
@@ -43,20 +57,26 @@ async function fetchRange(
     const detail =
       // @ts-expect-error viem error shape
       err?.cause?.message ?? err?.details ?? (err instanceof Error ? err.message : "");
-    const hint = /retry with the range (\d+)-(\d+)/.exec(String(detail));
+    const detailStr = String(detail);
+
+    // Explicit RPC hint — honor it precisely.
+    const hint = /retry with the range (\d+)-(\d+)/.exec(detailStr);
     if (hint) {
       const newTo = BigInt(hint[2]);
       const head = await fetchRange(address, from, newTo);
       const tail = newTo + 1n <= to ? await fetchRange(address, newTo + 1n, to) : [];
       return [...head, ...tail];
     }
-    // Block-range overflow — split in half and retry.
-    if (String(detail).includes("max block range") && to > from) {
+
+    // Generic limit overflow (block-range OR result-count) — bisect and retry.
+    // Floor at 1-block ranges to prevent infinite recursion on a single hot block.
+    if (isLimitOverflow(detailStr) && to > from) {
       const mid = from + (to - from) / 2n;
       const head = await fetchRange(address, from, mid);
       const tail = await fetchRange(address, mid + 1n, to);
       return [...head, ...tail];
     }
+
     throw err;
   }
 }
