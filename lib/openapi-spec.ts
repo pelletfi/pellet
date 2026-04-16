@@ -7,7 +7,7 @@ export const spec = {
     title: "Pellet API",
     version: "1.0.0",
     description:
-      "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles. Read it before you hold, swap, or integrate. Payment-gated deep briefings via MPP in USDC.e.",
+      "Open-Ledger Intelligence (OLI) on Tempo. Direct on-chain measurement for every TIP-20 stablecoin — peg spread vs pathUSD, TIP-403 policy enforcement (allowlist / blocklist / compound), supply cap + headroom, reserve composition + attestation, TIP-20 reward attribution + effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores, DEX flow topology, cross-stable flow anomalies (z-score thresholds), peg-break events, role-holder enumeration, and historical time-travel via ?as_of=. Every numeric value is a measurement, not an estimate; null means unmeasured (never inferred as zero). 14 free endpoints + one $0.05 MPP-paid deep briefing. Aggregator-grade data without the aggregator layer — built for agents that care about the difference between a bridged token's actual peg and an oracle's idea of it.",
     contact: {
       url: "https://pelletfi.com",
     },
@@ -124,8 +124,8 @@ export const spec = {
             name: "address",
             in: "path",
             required: true,
-            description: "Token contract address (0x…)",
-            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" },
+            description: "Token contract address (0x-prefixed, 42 hex chars)",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
           },
         ],
         responses: {
@@ -281,8 +281,8 @@ export const spec = {
             name: "address",
             in: "path",
             required: true,
-            description: "Stablecoin contract address (0x…)",
-            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" },
+            description: "Stablecoin contract address (0x-prefixed, 42 hex chars). Tempo stablecoins are deployed via the TIP-20 factory and share a 0x20c0… prefix.",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
           },
         ],
         responses: {
@@ -301,77 +301,379 @@ export const spec = {
     "/api/v1/stablecoins/{address}/peg": {
       get: {
         operationId: "getStablecoinPeg",
-        summary: "Current peg + 1h/24h/7d aggregates",
+        summary: "Current peg + 1h/24h/7d rolling aggregates vs pathUSD",
         description:
-          "Returns the most recent peg sample and rolling-window stats: mean price, standard deviation, max deviation in basis points, and time spent outside ±10bps and ±50bps thresholds.",
+          "Most recent on-chain peg sample (direct DEX measurement via the enshrined pathUSD pool) plus rolling-window stats over 1h, 24h, and 7d: mean price, stddev, max deviation in basis points, and seconds spent outside the ±10bps and ±50bps bands. Supports historical snapshots via `?as_of=<ISO8601|epoch|relative>`.",
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp. ISO8601, epoch seconds, or relative (e.g. '1h', '24h', '7d').",
+            schema: { type: "string", example: "24h" },
+          },
         ],
-        responses: { "200": { description: "Peg statistics", content: { "application/json": { schema: { type: "object" } } } } },
+        responses: {
+          "200": {
+            description: "Peg statistics",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    current: {
+                      type: "object",
+                      properties: {
+                        price_vs_pathusd: { type: "number", description: "Current price vs pathUSD (1.0 = exact peg)" },
+                        spread_bps: { type: "integer", description: "Deviation in basis points; positive = above peg" },
+                        block_number: { type: "integer" },
+                        sampled_at: { type: "string", format: "date-time" },
+                      },
+                    },
+                    windows: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          window: { type: "string", enum: ["1h", "24h", "7d"] },
+                          computed_at: { type: "string", format: "date-time" },
+                          sample_count: { type: "integer" },
+                          mean_price: { type: "number" },
+                          stddev_price: { type: "number", description: "In decimal (not bps)" },
+                          max_deviation_bps: { type: "number" },
+                          seconds_outside_10bps: { type: "integer" },
+                          seconds_outside_50bps: { type: "integer" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": { description: "Stablecoin not tracked" },
+        },
       },
     },
     "/api/v1/stablecoins/{address}/peg-events": {
       get: {
         operationId: "getStablecoinPegEvents",
-        summary: "Detected peg-break events",
+        summary: "Detected peg-break events with severity and duration",
         description:
-          "Timeline of detected peg-break events for the stablecoin. Severity is `mild` (>10bps for ≥5min) or `severe` (>50bps for ≥1min). Ongoing events have `ended_at: null`.",
+          "Timeline of detected peg-break events for the stablecoin. Severity is `mild` (>10bps for ≥5min) or `severe` (>50bps for ≥1min). Ongoing events have `ended_at: null`. Supports historical windows via `?as_of=`.",
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
-          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 } },
         ],
-        responses: { "200": { description: "Peg events", content: { "application/json": { schema: { type: "object" } } } } },
+        responses: {
+          "200": {
+            description: "Peg events",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    events: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          severity: { type: "string", enum: ["mild", "severe"] },
+                          started_at: { type: "string", format: "date-time" },
+                          ended_at: { type: ["string", "null"], format: "date-time" },
+                          duration_seconds: { type: ["integer", "null"] },
+                          max_deviation_bps: { type: "number" },
+                          started_block: { type: "integer" },
+                          ended_block: { type: ["integer", "null"] },
+                          ongoing: { type: "boolean" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     "/api/v1/stablecoins/{address}/risk": {
       get: {
         operationId: "getStablecoinRisk",
-        summary: "Composite risk score (0–100)",
+        summary: "Composite risk score (0–100) with explainable sub-scores",
         description:
-          "Weighted composite risk score with explainable components (peg_risk, peg_break_risk, supply_risk, policy_risk). Higher = more risk.",
+          "Weighted composite risk score (0–100, higher = more risk) with explainable components: peg_risk (24h peg deviation behaviour), peg_break_risk (severity + frequency of recent peg-break events), supply_risk (headroom against cap + recent mint velocity), policy_risk (active pause + policy-admin concentration). Supports historical snapshots via `?as_of=`.",
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "7d" },
+          },
         ],
         responses: {
-          "200": { description: "Risk score", content: { "application/json": { schema: { type: "object" } } } },
-          "404": { description: "Score not yet computed" },
+          "200": {
+            description: "Risk score",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    composite: { type: "number", minimum: 0, maximum: 100 },
+                    components: {
+                      type: "object",
+                      properties: {
+                        peg_risk: { type: "number" },
+                        peg_break_risk: { type: "number" },
+                        supply_risk: { type: "number" },
+                        policy_risk: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": { description: "Score not yet computed — check /api/v1/system/health for pipeline status" },
         },
       },
     },
     "/api/v1/stablecoins/{address}/reserves": {
       get: {
         operationId: "getStablecoinReserves",
-        summary: "Reserve / backing breakdown",
+        summary: "Reserve / backing breakdown with attestation provenance",
         description:
-          "Returns total backing in USD plus per-reserve-type entries with attestation source, issuer, and backing model.",
+          "Total Tempo-side backing in USD + per-reserve-type entries. Each entry cites `attestation_source` (URL to issuer attestation), issuer, and backing model. Curated — only populated for stables Pellet actively tracks; returns empty entries for others. Supports historical snapshots via `?as_of=`.",
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "30d" },
+          },
         ],
-        responses: { "200": { description: "Reserves", content: { "application/json": { schema: { type: "object" } } } } },
+        responses: {
+          "200": {
+            description: "Reserve breakdown",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    total_backing_usd: { type: ["number", "null"] },
+                    reserves: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          reserve_type: { type: "string", description: "e.g. 'fiat', 'treasury', 'crypto-collateral'" },
+                          backing_usd: { type: ["number", "null"] },
+                          attestation_source: { type: ["string", "null"], format: "uri" },
+                          attested_at: { type: ["string", "null"], format: "date-time" },
+                          notes: {
+                            type: "object",
+                            properties: {
+                              issuer: { type: "string" },
+                              backing_model: { type: "string" },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     "/api/v1/stablecoins/{address}/roles": {
       get: {
         operationId: "getStablecoinRoles",
-        summary: "Role holders",
+        summary: "Role holders (forensic derivation from on-chain action)",
         description:
-          "Current role membership (admin, minter, burner, etc.) for a stablecoin. May return empty if Tempo's TIP-20 implementation does not expose role enumeration.",
+          "Current role membership (DEFAULT_ADMIN_ROLE, ISSUER_ROLE, PAUSE_ROLE, UNPAUSE_ROLE, BURN_BLOCKED_ROLE) for a TIP-20 stablecoin. Derivation is forensic: every mint/burn/burnBlocked transaction is inspected and the calling address verified via hasRole() — so holders only appear here once they've actually exercised a role on-chain. Returns coverage status so agents can distinguish 'no role actions yet' from 'role enumeration unsupported'.",
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" } },
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
         ],
-        responses: { "200": { description: "Role holders grouped by role", content: { "application/json": { schema: { type: "object" } } } } },
+        responses: {
+          "200": {
+            description: "Role holders grouped by role",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    coverage: {
+                      type: "object",
+                      properties: {
+                        status: { type: "string", enum: ["partial", "deriving"] },
+                        message: { type: "string" },
+                        roles_tracked: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              powers: { type: "string" },
+                            },
+                          },
+                        },
+                        derivation: { type: "string" },
+                      },
+                    },
+                    roles: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          role_name: { type: "string" },
+                          role_hash: { type: ["string", "null"] },
+                          holder_count: { type: "integer" },
+                          holders: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                holder: { type: "string" },
+                                holder_label: { type: ["string", "null"] },
+                                holder_category: { type: ["string", "null"] },
+                                granted_at: { type: ["string", "null"], format: "date-time" },
+                                granted_tx_hash: { type: ["string", "null"] },
+                                source: { type: "string" },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/v1/stablecoins/{address}/rewards": {
+      get: {
+        operationId: "getStablecoinRewards",
+        summary: "TIP-20 reward distribution + effective APY",
+        description:
+          "On-chain reward data for a TIP-20 stablecoin using the reward precompile: total opted-in supply, global reward-per-token accumulator, recent distribution events with funder attribution, and annualized effective APY computed from observed emissions over opted-in supply. Null fields when not applicable (e.g., non-incentivized stables). First-mover category — no competitor currently tracks Tempo-native reward attribution at this granularity. Supports historical snapshots via `?as_of=`.",
+        parameters: [
+          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "7d" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Reward data",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    opted_in_supply: { type: "string", description: "Raw uint256 — divide by decimals for human form" },
+                    global_reward_per_token: { type: ["string", "null"] },
+                    effective_apy: { type: ["number", "null"], description: "Annualized yield on opted-in supply, or null if no emissions in window" },
+                    funders: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          address: { type: "string" },
+                          label: { type: ["string", "null"] },
+                          total_funded: { type: "string" },
+                        },
+                      },
+                    },
+                    recent_distributions: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          tx_hash: { type: "string" },
+                          block_number: { type: "integer" },
+                          amount: { type: "string" },
+                          funder: { type: "string" },
+                          timestamp: { type: "string", format: "date-time" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": { description: "Stablecoin not tracked or has no reward precompile" },
+        },
       },
     },
     "/api/v1/stablecoins/flow-anomalies": {
       get: {
         operationId: "getFlowAnomalies",
-        summary: "Recent cross-stable flow anomalies",
+        summary: "Cross-stable flow anomalies (≥3σ vs 7-day baseline)",
         description:
-          "Returns 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3σ. Sorted most recent / largest deviation first.",
+          "15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3 standard deviations. Sorted most recent / largest deviation first. Useful as an early signal before peg breaks or as a trigger for other on-chain investigation.",
         parameters: [
-          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
+          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 } },
         ],
-        responses: { "200": { description: "Anomalies", content: { "application/json": { schema: { type: "object" } } } } },
+        responses: {
+          "200": {
+            description: "Anomalies",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    as_of: { type: "string", format: "date-time" },
+                    anomalies: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          from_token: { type: "string" },
+                          to_token: { type: "string" },
+                          window_start: { type: "string", format: "date-time" },
+                          window_end: { type: "string", format: "date-time" },
+                          observed_flow_usd: { type: "number" },
+                          baseline_mean_usd: { type: "number" },
+                          baseline_stddev_usd: { type: "number" },
+                          z_score: { type: "number" },
+                          tx_count: { type: "integer" },
+                          detected_at: { type: "string", format: "date-time" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     "/api/v1/system/health": {

@@ -23,7 +23,7 @@ const server = new McpServer({
 
 server.tool(
   "search_token",
-  "Search for tokens on Tempo by symbol or address",
+  "Free · Search Tempo tokens by symbol, name, or 0x address. Returns top matches with address + on-chain name/symbol. Read before lookup_token if you only have a fragment.",
   { query: z.string().describe("Token symbol, name, or address to search for") },
   async ({ query }) => {
     const result = await searchTokens(query);
@@ -33,7 +33,7 @@ server.tool(
 
 server.tool(
   "lookup_token",
-  "Get market data, safety flags, and compliance for a Tempo token",
+  "Free · Market data, safety flags, TIP-20 compliance state, and holder-concentration for any Tempo token. Lighter-weight than analyze_token — no paid pipeline, no LLM synthesis. Fields are nullable when a measurement is unavailable (OLI discipline: null ≠ zero).",
   { address: z.string().describe("Token contract address (0x...)") },
   async ({ address }) => {
     const result = await lookupToken(address);
@@ -43,7 +43,7 @@ server.tool(
 
 server.tool(
   "analyze_token",
-  "Deep briefing: origin, holders, compliance, analyst note ($0.05 pathUSD)",
+  "Paid · $0.05 USDC.e on Tempo (MPP 402 challenge, mppx handles automatically). Deep briefing for any Tempo TIP-20 stablecoin: peg spread vs pathUSD, TIP-403 policy posture, reserves + attestation, TIP-20 reward APY, fee economics, composite risk score with explainable sub-scores, DEX flow topology, role-holder enumeration, and a Claude-synthesized analyst note. Every numeric field is a direct on-chain measurement; null when unmeasured.",
   { address: z.string().describe("Token contract address (0x...)") },
   async ({ address }) => {
     const result = await analyzeToken(address);
@@ -53,7 +53,7 @@ server.tool(
 
 server.tool(
   "get_stablecoins",
-  "Full Tempo stablecoin matrix",
+  "Free · Full matrix of every tracked Tempo stablecoin: supply, policy state, spread vs pathUSD, opted-in supply, and (when available) composite risk score. Each row includes a coverage field — complete/partial/unavailable — so you can tell measured values from missing ones.",
   {},
   async () => {
     const result = await getStablecoins();
@@ -63,7 +63,7 @@ server.tool(
 
 server.tool(
   "get_stablecoin_flows",
-  "Net directional flows between Tempo stablecoins",
+  "Free · Net directional flows between tracked Tempo stablecoins, routed via the enshrined DEX precompile. Hourly granularity, window up to 7 days. Useful for detecting capital rotation between stables and as an early signal before peg breaks.",
   {
     hours: z
       .number()
@@ -79,7 +79,7 @@ server.tool(
 
 server.tool(
   "get_peg_stats",
-  "Current peg price + 1h/24h/7d aggregates (mean, stddev, max deviation, time outside peg) for a stablecoin",
+  "Free · Current peg price vs pathUSD + 1h/24h/7d rolling aggregates (mean, stddev, max deviation in bps, seconds outside the 10bps/50bps bands) for a stablecoin. Supports historical time-travel via ?as_of=<ISO8601|epoch|relative>.",
   { address: z.string().describe("Stablecoin contract address (0x...)") },
   async ({ address }) => {
     const result = await getPegStats(address);
@@ -89,7 +89,7 @@ server.tool(
 
 server.tool(
   "get_peg_events",
-  "Timeline of detected peg-break events (mild >10bps for 5min, severe >50bps for 1min)",
+  "Free · Timeline of detected peg-break events (severity: mild = >10bps for ≥5min, severe = >50bps for ≥1min) with duration, block range, and ongoing flag. Supports historical time-travel.",
   {
     address: z.string().describe("Stablecoin contract address (0x...)"),
     limit: z
@@ -106,7 +106,7 @@ server.tool(
 
 server.tool(
   "get_risk_score",
-  "Composite risk score (0-100, higher = more risk) with explainable components: peg_risk, peg_break_risk, supply_risk, policy_risk",
+  "Free · Composite risk score (0–100, higher = more risk) with explainable sub-scores: peg_risk, peg_break_risk, supply_risk, policy_risk. Each sub-score cites its input measurements. Supports historical time-travel via ?as_of=.",
   { address: z.string().describe("Stablecoin contract address (0x...)") },
   async ({ address }) => {
     const result = await getRiskScore(address);
@@ -116,7 +116,7 @@ server.tool(
 
 server.tool(
   "get_reserves",
-  "Reserve / backing data: total backing USD + per-component breakdown (reserve type, attestation source, issuer)",
+  "Free · Reserve / backing data: total Tempo-side backing in USD + per-entry breakdown (reserve_type, attestation_source, issuer, backing_model). Curated for tracked stables only; returns empty for others. Supports historical time-travel.",
   { address: z.string().describe("Stablecoin contract address (0x...)") },
   async ({ address }) => {
     const result = await getReserves(address);
