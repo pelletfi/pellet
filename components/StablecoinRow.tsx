@@ -83,7 +83,7 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
           color: "var(--color-text-tertiary)",
         }}
       >
-        {token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
+        {token.spread_bps != null && token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
       </span>
 
       {/* Policy type */}
@@ -142,11 +142,11 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.yield_rate > 0 ? "var(--color-text-secondary)" : "var(--color-text-tertiary)",
+          color: token.yield_rate != null && token.yield_rate > 0 ? "var(--color-text-secondary)" : "var(--color-text-tertiary)",
           textAlign: "right",
         }}
       >
-        {token.yield_rate > 0 ? `${(token.yield_rate * 100).toFixed(2)}%` : "—"}
+        {token.yield_rate != null && token.yield_rate > 0 ? `${(token.yield_rate * 100).toFixed(2)}%` : "—"}
       </span>
     </Link>
   );

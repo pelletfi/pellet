@@ -5,6 +5,15 @@ export interface TokenMarketData {
   fdv_usd: number | null;
   price_change_24h: number | null;
   pools: PoolData[];
+  /**
+   * Coverage of the market data fetch:
+   *   "complete"    — GeckoTerminal returned pool + token data for this address
+   *   "unavailable" — GeckoTerminal fetch failed or returned no pools; price/
+   *                   volume/liquidity fields should be treated as missing,
+   *                   not as "zero market activity"
+   */
+  coverage: "complete" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface PoolData {
@@ -24,21 +33,35 @@ export interface SafetyResult {
   warnings: string[];
   can_buy: boolean;
   can_sell: boolean;
-  buy_tax_pct: number;
-  sell_tax_pct: number;
+  /**
+   * Buy / sell tax percentages. null means NOT MEASURED (eth_call simulation
+   * does not report taxes today). Consumers must NOT interpret null as "0%".
+   * When measurement becomes available these will become non-null.
+   */
+  buy_tax_pct: number | null;
+  sell_tax_pct: number | null;
   honeypot: boolean;
 }
 
 export interface ComplianceResult {
-  token_type: "tip20" | "erc20";
+  token_type: "tip20" | "erc20" | "unknown";
   policy_id: number | null;
   policy_type: "whitelist" | "blacklist" | "compound" | null;
   policy_admin: string | null;
-  paused: boolean;
+  paused: boolean | null;
   supply_cap: string | null;
-  current_supply: string;
+  current_supply: string | null;
   headroom_pct: number | null;
   roles: { issuer: string[]; pause: string[]; burn_blocked: string[] };
+  /**
+   * Coverage of the compliance fetch:
+   *   "complete"    — on-chain reads succeeded; policy/supply/paused reflect state
+   *   "partial"     — token classified but some fields failed to resolve
+   *                   (e.g., TIP-20 detected but getPolicy returned no data)
+   *   "unavailable" — RPC failure, token classification itself failed
+   */
+  coverage: "complete" | "partial" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface HolderData {
@@ -102,15 +125,34 @@ export interface StablecoinData {
   current_supply: string;
   headroom_pct: number;
   price_vs_pathusd: number;
-  spread_bps: number;
+  /**
+   * DEX spread in basis points vs pathUSD. null means NOT MEASURED
+   * (RPC quote call failed, or pathUSD endpoint where spread=0 is trivial).
+   * Consumers MUST NOT interpret null as "zero spread".
+   */
+  spread_bps: number | null;
   volume_24h: number;
-  yield_rate: number;
+  /**
+   * Effective APY if opting into reward distribution. null means yield
+   * measurement is not yet wired up for this stablecoin — do NOT interpret
+   * as "zero yield".
+   */
+  yield_rate: number | null;
   opted_in_supply: string;
   risk?: {
     composite: number;
     components: Record<string, number>;
     computed_at: string;
   } | null;
+  /**
+   * Coverage of this stablecoin record:
+   *   "complete"    — full matrix populated from on-chain reads
+   *   "partial"     — some fields failed; non-null fields are authoritative
+   *   "unavailable" — metadata fetch failed; all numeric fields should be
+   *                   treated as missing
+   */
+  coverage?: "complete" | "partial" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface StablecoinFlow {

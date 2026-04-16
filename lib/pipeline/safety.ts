@@ -298,8 +298,12 @@ export async function scanSafety(
     warnings,
     can_buy: liquidityFlag !== "NO_LIQUIDITY" && liquidityFlag !== "UNTRADEABLE",
     can_sell: canSell,
-    buy_tax_pct: 0,  // eth_call simulation doesn't give us tax percentages; left for future
-    sell_tax_pct: 0,
+    // null = NOT MEASURED. Our eth_call simulation path does not report tax
+    // percentages, so we explicitly decline to report 0 (which would be
+    // indistinguishable from "we measured zero tax"). When a dedicated tax
+    // probe ships, these will become non-null.
+    buy_tax_pct: null,
+    sell_tax_pct: null,
     honeypot,
   };
 }

@@ -191,19 +191,28 @@ function formatReserves(r: { total_backing_usd: number | null; entries: ReserveE
 }
 
 function formatMarketData(market: TokenMarketData): string {
+  if (market.coverage === "unavailable") {
+    return `
+COVERAGE: UNAVAILABLE
+Note: ${market.coverage_note ?? "GeckoTerminal market-data fetch failed."}
+Price, volume, liquidity, and pool data are not available for this token. The numeric fields below are defaults for a missing response, not measurements.`;
+  }
+
   const poolCount = market.pools.length;
   const topPool = market.pools[0];
+  // Pool endpoints don't populate symbol — only show quote pair if we have an
+  // address. (Empty-string symbol is "unmeasured", not "real empty symbol".)
   const topPoolInfo = topPool
-    ? `${topPool.dex} (${topPool.quote_token.symbol} pair)`
+    ? `${topPool.dex}${topPool.quote_token.address ? ` via ${topPool.quote_token.address.slice(0, 12)}…` : ""}`
     : "N/A";
 
   return `
-COVERAGE: ${market.pools.length > 0 ? "COMPLETE" : "UNAVAILABLE (no pools indexed)"}
+COVERAGE: COMPLETE
 Price: $${market.price_usd.toFixed(8)}
 24h Volume: $${formatNumber(market.volume_24h)}
 Liquidity: $${formatNumber(market.liquidity_usd)}
 FDV: ${market.fdv_usd ? `$${formatNumber(market.fdv_usd)}` : "N/A"}
-24h Change: ${market.price_change_24h !== null ? `${market.price_change_24h.toFixed(2)}%` : "N/A"}
+24h Change: ${market.price_change_24h !== null ? `${market.price_change_24h.toFixed(2)}%` : "[unmeasured — GeckoTerminal token endpoint doesn't expose 24h change for Tempo]"}
 Pools: ${poolCount} (primary: ${topPoolInfo})`;
 }
 
@@ -212,46 +221,61 @@ function formatSafetyData(safety: SafetyResult): string {
     safety.flags.length > 0 ? safety.flags.join("; ") : "None detected";
   const warningList =
     safety.warnings.length > 0 ? safety.warnings.join("; ") : "None";
+  // Tax fields are null when not measured — do NOT render as "0%" to the LLM.
+  const buyTax =
+    safety.buy_tax_pct !== null ? `${safety.buy_tax_pct}%` : "[not measured]";
+  const sellTax =
+    safety.sell_tax_pct !== null ? `${safety.sell_tax_pct}%` : "[not measured]";
 
   return `
 Verdict: ${safety.verdict}
 Score: ${safety.score}/100
 Can Buy: ${safety.can_buy}
 Can Sell: ${safety.can_sell}
-Buy Tax: ${safety.buy_tax_pct}%
-Sell Tax: ${safety.sell_tax_pct}%
+Buy Tax: ${buyTax}
+Sell Tax: ${sellTax}
 Honeypot: ${safety.honeypot ? "Yes" : "No"}
 Flags: ${flagList}
 Warnings: ${warningList}`;
 }
 
 function formatComplianceData(compliance: ComplianceResult): string {
-  // TIP-20 with null policy data is a coverage gap, not "no policy"
-  const tip20PolicyUnavailable =
-    compliance.token_type === "tip20" &&
-    compliance.policy_id === null &&
-    compliance.policy_type === null;
+  if (compliance.coverage === "unavailable") {
+    return `
+COVERAGE: UNAVAILABLE
+Note: ${compliance.coverage_note ?? "Compliance read failed."}
+Policy state, supply, and pause status are not available. Do not infer absence.`;
+  }
 
-  const coverageLine = tip20PolicyUnavailable
-    ? "COVERAGE: UNAVAILABLE (TIP-403 registry lookup returned no policy data)"
+  const coverageLine = compliance.coverage === "partial"
+    ? `COVERAGE: PARTIAL — ${compliance.coverage_note ?? "policy lookup did not resolve"}`
     : "COVERAGE: COMPLETE";
 
+  const currentSupplyNum =
+    compliance.current_supply !== null ? parseFloat(compliance.current_supply) : null;
   const supplyInfo = compliance.supply_cap
-    ? `Current: ${formatNumber(parseFloat(compliance.current_supply))} / Cap: ${formatNumber(parseFloat(compliance.supply_cap))} (${compliance.headroom_pct?.toFixed(1)}% headroom)`
-    : `Current: ${formatNumber(parseFloat(compliance.current_supply))} (no cap)`;
+    ? `Current: ${currentSupplyNum !== null ? formatNumber(currentSupplyNum) : "[unmeasured]"} / Cap: ${formatNumber(parseFloat(compliance.supply_cap))} (${compliance.headroom_pct?.toFixed(1) ?? "?"}% headroom)`
+    : `Current: ${currentSupplyNum !== null ? formatNumber(currentSupplyNum) : "[unmeasured]"} (no cap)`;
+
+  const pausedLine =
+    compliance.paused === null
+      ? "Paused: [unmeasured]"
+      : `Paused: ${compliance.paused ? "Yes" : "No"}`;
 
   const policyLine =
-    tip20PolicyUnavailable
-      ? "Policy: [unavailable — TIP-403 not indexed]"
-      : `Policy: ${compliance.policy_type || "None"} ${compliance.policy_id !== null ? `(ID: ${compliance.policy_id})` : ""}`;
+    compliance.policy_id !== null || compliance.policy_type !== null
+      ? `Policy: ${compliance.policy_type || "None"} ${compliance.policy_id !== null ? `(ID: ${compliance.policy_id})` : ""}`
+      : "Policy: [not registered in TIP-403 / lookup unavailable]";
 
   const adminLine =
-    tip20PolicyUnavailable ? "Admin: [unavailable]" : `Admin: ${compliance.policy_admin || "N/A"}`;
+    compliance.policy_admin
+      ? `Admin: ${compliance.policy_admin}`
+      : "Admin: [not resolved]";
 
   return `
 ${coverageLine}
 Type: ${compliance.token_type}
-Paused: ${compliance.paused ? "Yes" : "No"}
+${pausedLine}
 Supply: ${supplyInfo}
 ${policyLine}
 ${adminLine}`;
@@ -324,10 +348,10 @@ Deployer identity, tx count, age, and funding source cannot be reported. This is
   return `
 COVERAGE: COMPLETE
 Deployer: ${deployerLabel}
-Deployer Age: ${origin.deployer_age_days ?? "N/A"} days
-Deployer TX Count: ${origin.deployer_tx_count ?? "N/A"}
+Deployer Age: ${origin.deployer_age_days !== null ? `${origin.deployer_age_days} days` : "[not measured — block-to-timestamp lookup not wired up]"}
+Deployer TX Count: ${origin.deployer_tx_count !== null ? origin.deployer_tx_count.toLocaleString() : "[RPC read failed]"}
 Funding Source: ${fundingLabel}
-Prior Tokens: ${priorTokensInfo}`;
+Prior Tokens: ${priorTokensInfo}${origin.coverage_note ? `\nNote: ${origin.coverage_note}` : ""}`;
 }
 
 function formatNumber(num: number): string {

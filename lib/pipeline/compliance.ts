@@ -75,7 +75,6 @@ export async function getCompliance(
     ]);
 
     const meta = metaResult.status === "fulfilled" ? metaResult.value : null;
-    const totalSupply = meta?.totalSupply ?? 0n;
 
     let policyId: number | null = null;
     let policyType: ComplianceResult["policy_type"] = null;
@@ -83,7 +82,7 @@ export async function getCompliance(
     // Prefer registry's supplyCap and paused — it's the compliance source of truth.
     // Fall back to metadata values if the registry call fails.
     let supplyCap: bigint | null = meta?.supplyCap ?? null;
-    let paused: boolean = meta?.paused ?? false;
+    let paused: boolean | null = meta?.paused ?? null;
 
     if (policyResult.status === "fulfilled" && policyResult.value) {
       const [pid, ptype, admin, cap, regPaused] = policyResult.value as [
@@ -100,9 +99,27 @@ export async function getCompliance(
       paused = regPaused;
     }
 
+    // Determine coverage: complete if policy read succeeded; partial if TIP-20
+    // detected but policy didn't resolve; unavailable if metadata failed too.
+    let coverage: ComplianceResult["coverage"] = "complete";
+    let coverage_note: string | null = null;
+    const policyRead = policyResult.status === "fulfilled" && policyResult.value !== null;
+    const metaRead = meta !== null;
+
+    if (!metaRead && !policyRead) {
+      coverage = "unavailable";
+      coverage_note =
+        "TIP-20 token but both precompile metadata read and TIP-403 registry read failed.";
+    } else if (!policyRead) {
+      coverage = "partial";
+      coverage_note =
+        "TIP-20 metadata read succeeded but TIP-403 registry lookup returned no policy data — token may have been deployed outside the standard registration flow (common for bridged tokens) or registry indexing is lagging.";
+    }
+
     // headroom_pct: how much mint capacity remains
     let headroom_pct: number | null = null;
-    if (supplyCap !== null && supplyCap > 0n) {
+    const totalSupply: bigint | null = meta?.totalSupply ?? null;
+    if (supplyCap !== null && supplyCap > 0n && totalSupply !== null) {
       const remaining = supplyCap - totalSupply;
       headroom_pct = Number((remaining * 10000n) / supplyCap) / 100;
       if (headroom_pct < 0) headroom_pct = 0;
@@ -115,12 +132,14 @@ export async function getCompliance(
       policy_admin: policyAdmin,
       paused,
       supply_cap: supplyCap !== null ? supplyCap.toString() : null,
-      current_supply: totalSupply.toString(),
+      current_supply: totalSupply !== null ? totalSupply.toString() : null,
       headroom_pct,
       // Role enumeration is not supported on-chain without events; return empty arrays.
       // The forensic-derivation pipeline (/api/v1/stablecoins/{address}/roles) fills
       // this for tracked stables via event scanning + hasRole probes.
       roles: { issuer: [], pause: [], burn_blocked: [] },
+      coverage,
+      coverage_note,
     };
   }
 
@@ -142,31 +161,49 @@ export async function getCompliance(
     },
   ] as const;
 
-  const totalSupplyResult = await tempoClient
-    .readContract({
+  // Track whether each read succeeded so we can set coverage honestly.
+  let supplyValue: bigint | null = null;
+  try {
+    supplyValue = await tempoClient.readContract({
       address,
       abi: erc20Abi,
       functionName: "totalSupply",
-    })
-    .catch(() => 0n);
+    });
+  } catch {
+    supplyValue = null;
+  }
 
-  const pausedResult = await tempoClient
-    .readContract({
+  let pausedValue: boolean | null;
+  try {
+    pausedValue = await tempoClient.readContract({
       address,
       abi: erc20Abi,
       functionName: "paused",
-    })
-    .catch(() => false);
+    });
+  } catch {
+    // paused() not implemented on most ERC-20s — this is expected, not a
+    // coverage gap. Treat as "no pause mechanism exists" = false.
+    pausedValue = false;
+  }
+
+  const coverage: ComplianceResult["coverage"] =
+    supplyValue === null ? "unavailable" : "complete";
+  const coverage_note =
+    supplyValue === null
+      ? "ERC-20 totalSupply() RPC read failed; token state unknown."
+      : null;
 
   return {
     token_type: "erc20",
     policy_id: null,
     policy_type: null,
     policy_admin: null,
-    paused: pausedResult,
+    paused: pausedValue,
     supply_cap: null,
-    current_supply: totalSupplyResult.toString(),
+    current_supply: supplyValue !== null ? supplyValue.toString() : null,
     headroom_pct: null,
     roles: { issuer: [], pause: [], burn_blocked: [] },
+    coverage,
+    coverage_note,
   };
 }

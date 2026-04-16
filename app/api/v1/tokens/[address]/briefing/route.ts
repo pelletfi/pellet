@@ -188,20 +188,24 @@ async function handler(
           fdv_usd: null,
           price_change_24h: null,
           pools: [],
+          coverage: "unavailable" as const,
+          coverage_note: err instanceof Error ? err.message.slice(0, 140) : "unknown error",
         };
       }),
       getCompliance(checksumAddress).catch((err) => {
         console.error("[briefing/compliance]", err);
         return {
-          token_type: "erc20" as const,
+          token_type: "unknown" as const,
           policy_id: null,
           policy_type: null,
           policy_admin: null,
-          paused: false,
+          paused: null,
           supply_cap: null,
-          current_supply: "0",
+          current_supply: null,
           headroom_pct: null,
           roles: { issuer: [], pause: [], burn_blocked: [] },
+          coverage: "unavailable" as const,
+          coverage_note: err instanceof Error ? err.message.slice(0, 140) : "unknown error",
         };
       }),
       getHolders(checksumAddress, decimals, knownSupply).catch((err) => {
@@ -249,8 +253,8 @@ async function handler(
           warnings: [],
           can_buy: false,
           can_sell: false,
-          buy_tax_pct: 0,
-          sell_tax_pct: 0,
+          buy_tax_pct: null,
+          sell_tax_pct: null,
           honeypot: false,
         };
       }),

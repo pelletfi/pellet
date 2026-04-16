@@ -146,11 +146,13 @@ export async function getStablecoinMetadata(
       supply_cap: "0",
       current_supply: totalSupply,
       headroom_pct: -1, // no cap
-      price_vs_pathusd: 1,
-      spread_bps: 0,
+      price_vs_pathusd: 1, // pathUSD is the quote currency — 1:1 by definition
+      spread_bps: 0, // trivially zero — pathUSD is the quote currency
       volume_24h: 0,
-      yield_rate: 0,
+      yield_rate: null, // reward-pipeline read not yet wired into this endpoint
       opted_in_supply: optedIn,
+      coverage: "complete",
+      coverage_note: null,
     };
   }
 
@@ -273,6 +275,15 @@ export async function getStablecoinMetadata(
     priceVsPathusd = Number(quoteInRes.value) / 1_000_000;
   }
 
+  // Coverage: partial if the TIP-403 policy read failed (we still have
+  // supply/quote data from on-chain), complete when everything resolved.
+  const coverage: StablecoinData["coverage"] = policyRes.status === "fulfilled"
+    ? "complete"
+    : "partial";
+  const coverage_note = policyRes.status === "fulfilled"
+    ? null
+    : "TIP-403 registry getPolicy() call failed — policy fields reflect defaults, not on-chain state.";
+
   return {
     address,
     name,
@@ -287,8 +298,10 @@ export async function getStablecoinMetadata(
     price_vs_pathusd: priceVsPathusd,
     spread_bps: spreadBps,
     volume_24h: 0, // populated by getStablecoinFlows if needed
-    yield_rate: 0, // yield_rate requires external oracle — left as 0 for now
+    yield_rate: null, // external oracle / reward-pipeline hookup not yet wired — null ≠ "0% yield"
     opted_in_supply: optedIn,
+    coverage,
+    coverage_note,
   };
 }
 
@@ -301,7 +314,10 @@ export async function getAllStablecoins(): Promise<StablecoinData[]> {
     KNOWN_STABLECOINS.map(({ address, name, symbol }) =>
       getStablecoinMetadata(address, name, symbol).catch((err) => {
         console.error(`[stablecoins] failed to fetch ${symbol}:`, err);
-        // Return a minimal fallback so the UI doesn't break on a single failure
+        // Fallback stays in the response shape so the UI doesn't break, but
+        // EVERY numeric field is null and coverage is explicitly "unavailable".
+        // This prevents the matrix from silently reporting a 1:1-pegged
+        // stable with "0 supply / 0 spread / 0 yield" when the fetch failed.
         return {
           address,
           name,
@@ -313,11 +329,15 @@ export async function getAllStablecoins(): Promise<StablecoinData[]> {
           supply_cap: "0",
           current_supply: "0",
           headroom_pct: -1,
-          price_vs_pathusd: 1,
-          spread_bps: 0,
+          price_vs_pathusd: 0,
+          spread_bps: null,
           volume_24h: 0,
-          yield_rate: 0,
+          yield_rate: null,
           opted_in_supply: "0",
+          coverage: "unavailable",
+          coverage_note: `Metadata fetch failed: ${
+            err instanceof Error ? err.message.slice(0, 140) : "unknown error"
+          }`,
         } satisfies StablecoinData;
       })
     )

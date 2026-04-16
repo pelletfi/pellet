@@ -19,9 +19,18 @@ const TRANSFER_ABI = [
 // Tempo RPC enforces two limits per eth_getLogs call:
 //   1. Max block range: 100,000 blocks
 //   2. Max results: 20,000 logs (error: "Request exceeds defined limit")
-// Start with a modest chunk and adaptively shrink on EITHER overflow.
-const BLOCK_CHUNK = 10_000n;
-const PARALLEL_CHUNKS = 6;
+// Start SMALL enough to avoid the 20k-results cap on most reasonable tokens,
+// and adaptively shrink further on either overflow. Hot tokens like USDC.e
+// with dense transfer activity needed smaller initial chunks to avoid a
+// thundering-herd of bisected retries.
+const BLOCK_CHUNK = 2_000n;
+const PARALLEL_CHUNKS = 3;
+
+// Total wall-time budget for the entire log enumeration. If exceeded, we
+// return coverage:"partial" (or "unavailable" if zero logs collected) with
+// whatever we've gathered so far — prevents the briefing from eating its
+// entire function budget on a single hot token.
+const WALL_TIME_BUDGET_MS = 45_000;
 
 /** Detect whether an RPC error indicates a limit overflow we can recover from
  * by bisecting the block range. viem nests error details across `cause`,
@@ -115,9 +124,18 @@ async function fetchRange(
   }
 }
 
+interface FetchAllResult {
+  logs: Awaited<ReturnType<typeof tempoClient.getContractEvents>>;
+  /** true if we stopped because we ran out of wall-time budget */
+  truncated: boolean;
+  rangesProcessed: number;
+  rangesTotal: number;
+}
+
 /** Paginate across the full chain — parallel at the outer loop, adaptive at
- * each range. Safe for Tempo's 100k-block / 20k-result caps. */
-async function fetchAllTransferLogs(address: `0x${string}`) {
+ * each range. Safe for Tempo's 100k-block / 20k-result caps. Enforces a
+ * wall-time budget so hot tokens can't blow the entire function timeout. */
+async function fetchAllTransferLogs(address: `0x${string}`): Promise<FetchAllResult> {
   const latest = await getBlockNumber(tempoClient);
   const ranges: Array<{ from: bigint; to: bigint }> = [];
   for (let start = 0n; start <= latest; start += BLOCK_CHUNK) {
@@ -125,13 +143,22 @@ async function fetchAllTransferLogs(address: `0x${string}`) {
     ranges.push({ from: start, to: end });
   }
 
+  const startedAt = Date.now();
   const out: Awaited<ReturnType<typeof tempoClient.getContractEvents>> = [];
+  let rangesProcessed = 0;
+  let truncated = false;
+
   for (let i = 0; i < ranges.length; i += PARALLEL_CHUNKS) {
+    if (Date.now() - startedAt > WALL_TIME_BUDGET_MS) {
+      truncated = true;
+      break;
+    }
     const batch = ranges.slice(i, i + PARALLEL_CHUNKS);
     const results = await Promise.all(batch.map((r) => fetchRange(address, r.from, r.to)));
     for (const logs of results) out.push(...logs);
+    rangesProcessed += batch.length;
   }
-  return out;
+  return { logs: out, truncated, rangesProcessed, rangesTotal: ranges.length };
 }
 
 // Addresses to exclude from holder lists (burn sinks, not real holders)
@@ -189,21 +216,26 @@ export async function getHolders(
   knownSupply?: bigint
 ): Promise<HolderData> {
   // Fetch all Transfer events from genesis to latest (paginated — Tempo RPC
-  // rejects >100k block ranges per call).
-  let logs: Awaited<ReturnType<typeof fetchAllTransferLogs>>;
+  // rejects >100k block ranges per call). Wall-time budget prevents a single
+  // hot token from starving the rest of the briefing pipeline.
+  let fetched: FetchAllResult;
   try {
-    logs = await fetchAllTransferLogs(address);
+    fetched = await fetchAllTransferLogs(address);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return unavailable(`Transfer-event enumeration failed: ${msg.slice(0, 140)}`);
   }
+  const logs = fetched.logs;
 
   // Contradiction check: zero logs for a token with known supply > 0 means
-  // enumeration silently failed (e.g., RPC returned empty ranges). Don't
-  // claim zero holders — return unavailable.
+  // enumeration either timed out before finding any, or the Transfer event
+  // shape doesn't match. Don't claim zero holders — return unavailable.
   if (logs.length === 0 && knownSupply !== undefined && knownSupply > 0n) {
+    const suffix = fetched.truncated
+      ? ` Wall-time budget exhausted after processing ${fetched.rangesProcessed}/${fetched.rangesTotal} block ranges.`
+      : "";
     return unavailable(
-      `No Transfer events returned despite known supply of ${knownSupply.toString()}. RPC enumeration likely failed.`
+      `No Transfer events returned despite known supply of ${knownSupply.toString()}. RPC enumeration likely failed.${suffix}`
     );
   }
 
@@ -249,8 +281,15 @@ export async function getHolders(
   const totalSupply = holders.reduce((sum, [, bal]) => sum + bal, 0n);
 
   // Second contradiction check: logs present but reconstructed supply is zero.
-  // Rare but indicates a Transfer shape we didn't parse (e.g., wrong event sig).
+  // If enumeration was truncated by the wall-time budget this just means we
+  // didn't scan deep enough — partial, not broken. Otherwise it indicates a
+  // Transfer shape we didn't parse (e.g., wrong event sig).
   if (holders.length === 0 && knownSupply !== undefined && knownSupply > 0n) {
+    if (fetched.truncated) {
+      return unavailable(
+        `Wall-time budget exhausted after ${fetched.rangesProcessed}/${fetched.rangesTotal} block ranges; no holder balances reconstructed in that window. Enumeration is infeasible at request-time for this token — recommend caching via background cron.`
+      );
+    }
     return unavailable(
       `Replayed ${logs.length} Transfer events but reconstructed zero positive balances; Transfer event shape may not match TIP-20 precompile emission.`
     );
@@ -301,11 +340,16 @@ export async function getHolders(
     }
   }
 
-  // Coverage: if we know supply and our reconstructed supply matches within
-  // a reasonable tolerance, it's complete; otherwise partial.
+  // Coverage: default to complete, downgrade to partial if (a) we hit the
+  // wall-time budget, or (b) reconstructed supply doesn't match known supply
+  // within tolerance.
   let coverage: HolderData["coverage"] = "complete";
   let coverage_note: string | null = null;
-  if (knownSupply !== undefined && knownSupply > 0n) {
+
+  if (fetched.truncated) {
+    coverage = "partial";
+    coverage_note = `Wall-time budget exhausted after processing ${fetched.rangesProcessed}/${fetched.rangesTotal} block ranges (~${Math.round((fetched.rangesProcessed / fetched.rangesTotal) * 100)}% of chain history). Holder counts reflect partial history — treat as lower bound.`;
+  } else if (knownSupply !== undefined && knownSupply > 0n) {
     const diff =
       totalSupply > knownSupply ? totalSupply - knownSupply : knownSupply - totalSupply;
     // Allow 1% skew for rounding + pending transfers in the latest block

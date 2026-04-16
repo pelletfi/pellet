@@ -5,12 +5,19 @@ import type { TokenMarketData, PoolData } from "@/lib/types";
  * Aggregate market data from GeckoTerminal.
  * Fetches token info and all pools in parallel, then maps to our market data type.
  * Uses the highest-liquidity pool for price, sums volume and liquidity across all pools.
+ *
+ * Coverage discipline: if BOTH the token fetch AND the pools fetch fail,
+ * we return coverage:"unavailable" so downstream consumers don't confuse
+ * "GeckoTerminal is down" with "token has zero market activity".
  */
 export async function getMarketData(address: string): Promise<TokenMarketData> {
-  const [tokenRes, poolsRes] = await Promise.all([
-    getToken(address).catch(() => null),
-    getTokenPools(address).catch(() => ({ data: [] })),
+  const [tokenResSettled, poolsResSettled] = await Promise.allSettled([
+    getToken(address),
+    getTokenPools(address),
   ]);
+
+  const tokenRes = tokenResSettled.status === "fulfilled" ? tokenResSettled.value : null;
+  const poolsRes = poolsResSettled.status === "fulfilled" ? poolsResSettled.value : { data: [] };
 
   // Extract token attributes, with safe fallbacks
   const tokenAttrs = tokenRes?.data?.attributes;
@@ -40,11 +47,14 @@ export async function getMarketData(address: string): Promise<TokenMarketData> {
         dex,
         base_token: {
           address: pool.relationships?.base_token?.data?.id || address,
-          symbol: "", // GeckoTerminal doesn't include symbol in pool data, left blank
+          // GeckoTerminal's pool endpoint doesn't populate symbol; leave blank
+          // rather than invent one. Agent-facing consumers should not read
+          // empty string as a real symbol.
+          symbol: "",
         },
         quote_token: {
           address: pool.relationships?.quote_token?.data?.id || "",
-          symbol: "", // GeckoTerminal doesn't include symbol in pool data, left blank
+          symbol: "",
         },
         reserve_usd: reserve,
         volume_24h: volume,
@@ -60,13 +70,17 @@ export async function getMarketData(address: string): Promise<TokenMarketData> {
   const totalVolume = pools.reduce((sum, pool) => sum + pool.volume_24h, 0);
   const totalLiquidity = pools.reduce((sum, pool) => sum + pool.reserve_usd, 0);
 
-  // Calculate 24h price change if available
-  const priceChange24h = tokenAttrs?.price_usd
-    ? parseFloat(
-        // fallback to null if no change data available
-        "0" // GeckoTerminal token endpoint doesn't return price_change_percentage
-      ) || null
-    : null;
+  // 24h price change is not populated by the GeckoTerminal token endpoint
+  // we currently use. Return null (NOT MEASURED) rather than inventing zero.
+  const priceChange24h: number | null = null;
+
+  // Coverage: complete if either fetch returned actual data, unavailable if
+  // both failed (returns look identical to "no activity" without this flag).
+  const anyDataReturned = tokenRes !== null || (poolsRes.data && poolsRes.data.length > 0);
+  const coverage: TokenMarketData["coverage"] = anyDataReturned ? "complete" : "unavailable";
+  const coverage_note = anyDataReturned
+    ? null
+    : "Both GeckoTerminal token lookup and pool lookup failed. Price/volume/liquidity fields are not measurements — they are defaults for a missing response.";
 
   return {
     price_usd: bestPoolPrice,
@@ -75,5 +89,7 @@ export async function getMarketData(address: string): Promise<TokenMarketData> {
     fdv_usd: fdv,
     price_change_24h: priceChange24h,
     pools,
+    coverage,
+    coverage_note,
   };
 }

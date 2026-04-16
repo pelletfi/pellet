@@ -36,18 +36,30 @@ export async function getOrigin(
 
   const deployer = creatorAddress as `0x${string}`;
 
-  // Fetch deployer tx count
-  const txCount = await tempoClient
-    .getTransactionCount({ address: deployer })
-    .catch(() => 0);
+  // Fetch deployer tx count — distinguish "RPC read failed" from "truly zero".
+  // Zero would be bizarre for an account that deployed a token, so we return
+  // null on failure and let consumers surface it as unmeasured.
+  let txCount: number | null;
+  try {
+    txCount = await tempoClient.getTransactionCount({ address: deployer });
+  } catch {
+    txCount = null;
+  }
 
   // Scan early Transfer events TO the deployer to find the funding source
   // (first inbound transfer from block 0 → 10000 is a reasonable heuristic)
   const fundingSource = await findFundingSource(deployer);
 
-  // Deployer age: estimate from first tx block number if available
-  // We don't have a block-to-timestamp lookup here, so default to 0
-  const deployerAgeDays = 0;
+  // Deployer age: we don't yet have a block-to-timestamp lookup path wired up
+  // in this pipeline. Report null (NOT MEASURED) rather than 0 (which would
+  // be indistinguishable from "deployer account is brand new" — exactly the
+  // kind of silent-zero bug we're eliminating elsewhere).
+  const deployerAgeDays: number | null = null;
+
+  const coverage_note =
+    txCount === null
+      ? "Deployer tx-count RPC read failed. Other deployer fields may be stale."
+      : "Deployer age not measured — block-to-timestamp lookup not yet implemented in this pipeline.";
 
   return {
     deployer: creatorAddress,
@@ -58,7 +70,7 @@ export async function getOrigin(
     funding_hops: fundingSource ? 1 : 0,
     prior_tokens: [],
     coverage: "complete",
-    coverage_note: null,
+    coverage_note,
   };
 }
 

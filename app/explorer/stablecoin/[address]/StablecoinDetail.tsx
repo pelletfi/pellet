@@ -1194,7 +1194,7 @@ export default function StablecoinDetail({
     },
     {
       label: "Spread",
-      value: token.spread_bps > 0 ? `${token.spread_bps} bps` : "—",
+      value: token.spread_bps != null && token.spread_bps > 0 ? `${token.spread_bps} bps` : "—",
       color: "var(--color-text-primary)",
     },
     {
@@ -1209,9 +1209,9 @@ export default function StablecoinDetail({
     },
     {
       label: "Yield",
-      value: token.yield_rate > 0 ? `${(token.yield_rate * 100).toFixed(2)}%` : "—",
+      value: token.yield_rate != null && token.yield_rate > 0 ? `${(token.yield_rate * 100).toFixed(2)}%` : "—",
       color:
-        token.yield_rate > 0 ? "var(--color-success)" : "var(--color-text-primary)",
+        token.yield_rate != null && token.yield_rate > 0 ? "var(--color-success)" : "var(--color-text-primary)",
     },
     {
       label: "Currency",
@@ -1565,7 +1565,7 @@ export default function StablecoinDetail({
                 <strong
                   style={{ color: "var(--color-text-primary)", fontWeight: 500 }}
                 >
-                  {token.spread_bps > 0 ? `${token.spread_bps} bps` : "tight"}
+                  {token.spread_bps != null && token.spread_bps > 0 ? `${token.spread_bps} bps` : "tight"}
                 </strong>
                 .
               </>
@@ -1642,7 +1642,7 @@ export default function StablecoinDetail({
                   fontWeight: 500,
                 }}
               >
-                {token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
+                {token.spread_bps != null && token.spread_bps > 0 ? `${token.spread_bps} bps` : "—"}
               </div>
             </div>
             <div>
