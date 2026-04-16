@@ -6,7 +6,15 @@ icon: BookOpen
 
 Pellet is open-ledger intelligence on Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
 
-## Why Tempo needs its own intelligence layer
+## What is Open-Ledger Intelligence (OLI)?
+
+**OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 precompile queries, issuance and flow topology from mainnet events — measured directly, not estimated from oracle aggregators.
+
+OLI has explicit scope. Zone-internal activity (private parallel ledgers introduced in [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo)) is by design outside OLI's lens. The mainnet/zone boundary — where funds lock, where compliance policies are enforced, where proofs are committed — is squarely within it.
+
+When a Pellet endpoint returns a number, that number is a measurement. Not an estimate. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
+
+## Why Tempo needs Open-Ledger Intelligence
 
 Tempo isn't another general-purpose L1. It's a payments chain with enshrined stablecoin standards (TIP-20), native compliance policies (TIP-403), an enshrined DEX, and the Micropayment Protocol (MPP) for machine-to-machine payments at the HTTP layer.
 

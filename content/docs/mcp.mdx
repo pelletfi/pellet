@@ -6,6 +6,8 @@ icon: Bot
 
 Pellet ships an MCP (Model Context Protocol) server as `@pelletfi/mcp` on npm. Install it once, and your agent gets tools for every Pellet endpoint — list stables, inspect peg, fetch flows, request editorial briefings.
 
+Every value the MCP server exposes is an **Open-Ledger Intelligence (OLI)** measurement — read directly from Tempo's public ledger, never aggregated from off-chain oracles. An agent calling Pellet's MCP is practicing OLI on your behalf. See [What is OLI?](/docs/oli).
+
 ## Install
 
 ```bash

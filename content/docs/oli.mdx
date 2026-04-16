@@ -1,0 +1,91 @@
+---
+title: Open-Ledger Intelligence (OLI)
+description: The discipline of producing rigorous analysis from publicly verifiable on-chain data. What Pellet practices on Tempo.
+icon: Telescope
+---
+
+**Open-Ledger Intelligence (OLI)** is the discipline of producing rigorous analysis from publicly verifiable on-chain data.
+
+Pellet practices OLI on Tempo. That's not a marketing line — it's a statement about method and scope, and it constrains what every Pellet endpoint can and cannot claim.
+
+## The three tenets
+
+### 1. Public-ledger primacy
+
+Pellet's source of truth is the public Tempo ledger itself. We read the chain directly:
+
+- **Peg** comes from `quoteSwapExactAmountIn` against the enshrined DEX — the actual swap rate a transaction would receive, measured live.
+- **Compliance** comes from `getPolicy()` against the TIP-403 precompile — the authoritative policy state every TIP-20 transfer is evaluated against.
+- **Issuance, burns, transfers** come from decoded TIP-20 events on the chain.
+- **Fee-token elections** come from the fee manager precompile directly.
+- **Rewards** come from the reward precompile events.
+
+Nothing is sourced from off-chain oracle aggregators, price feeds, or third-party indexers. When an aggregator is uncertain about a Tempo stable's peg, they mark it `confidence: null`. Pellet has an answer because Pellet read the pool.
+
+### 2. Scope honesty
+
+OLI is explicit about what it does and does not cover. **The public ledger is the lens; everything else is acknowledged as outside it.**
+
+- **In scope:** every event, balance, price, policy, and attestation that lands on the public Tempo mainnet.
+- **In scope:** the boundary between Tempo mainnet and Tempo Zones — fund locks into zone contracts, cross-zone settlements, committed proofs of zone state. These are mainnet-visible and therefore OLI-readable.
+- **Out of scope:** zone-internal activity. When Tempo Zones host private parallel ledgers for enterprise stablecoin use, the transfers *inside* those zones are by design private. Only the zone operator and individual users can see them. OLI does not claim to.
+- **Out of scope:** off-chain issuer operations, private counterparty agreements, anything that never touches the public ledger.
+
+When a number is outside OLI's lens, Pellet says so. Scope honesty is not a caveat — it's a feature of the discipline.
+
+### 3. Measurement over inference
+
+Every metric Pellet publishes is a **measurement**, not an estimate.
+
+- `spread_bps` is the difference between the bid and ask side of an actual DEX quote call. Not a triangulation through USD.
+- `composite_risk` is a weighted combination of measurements — peg deviation, peg-break history, supply headroom, policy type — each of which is itself a direct read.
+- `effective_apy_pct` is computed from distributed reward amounts and opted-in supply, both read directly.
+- `backing_usd` is `totalSupply × current_peg_price` — two direct reads, composed.
+
+If a value cannot be measured, it is returned as `null` with an explanatory note in the response. Pellet never invents a number to fill a gap.
+
+## OLI vs. the alternatives
+
+| Approach | Source | Scope claim | When it fails |
+|---|---|---|---|
+| **Observation** | "We watch the chain" | Implicit: everything | Silently wrong when something becomes private |
+| **Oracle aggregation** | Off-chain price feeds | "The token is worth $X" | Stale, lagged, `confidence: null` when pools are new |
+| **Generic indexing** | RPC logs, generic patterns | "Tokens, transfers" | Misses TIP-20 / TIP-403 / precompile semantics |
+| **OLI** | Direct on-chain reads | "What's publicly verifiable on Tempo" | Only what's genuinely private |
+
+## Worked example
+
+On 2026-04-16 morning, a worked comparison:
+
+- **Codex** (off-chain oracle aggregator, multi-chain) priced USDC.e at $0.998044 with `confidence: null`. pathUSD at $1.00029, also `confidence: null`. Implied USDC.e/pathUSD spread: 22 basis points.
+- **Pellet** (direct enshrined-DEX read) measured USDC.e/pathUSD at 0.9997 — 3 basis points below peg.
+
+An agent swapping $1,000 based on Codex's implied rate would have mispriced the trade by ~$19. On Tempo-local pricing, the Codex answer wasn't just less precise — it was *wrong*.
+
+This is why the distinction matters. Pellet's peg number is not "another provider's price." It's the price that would *actually settle* on the enshrined DEX at that block. OLI is the discipline that holds you to that standard.
+
+## Why this matters now
+
+In April 2026, Tempo announced **Zones** — private parallel ledgers for enterprise stablecoin use. Enterprise payroll, B2B invoicing, and treasury operations can now run on Tempo without their internal transactions being public.
+
+This narrows the observable surface. It also *sharpens* what remains visible:
+
+- Every **issuance** and **burn** still happens on mainnet.
+- Every **TIP-403 policy** still applies, cross-zone, and every policy change is mainnet-visible.
+- Every **zone deposit and withdrawal** — the boundary between public and private — is a mainnet event.
+- Every **validity proof** a zone commits is a mainnet artifact.
+
+The public ledger becomes scarcer in volume and richer in signal per unit. OLI is the discipline that knows the difference.
+
+## How OLI shows up in Pellet's product surfaces
+
+- **[REST API](/docs/api)** — every endpoint is OLI-sourced. The methodology doc specifies exactly how each value is read.
+- **[MCP Server](/docs/mcp)** — exposes OLI measurements to agents as typed tools. An agent calling Pellet's MCP is doing OLI on your behalf.
+- **[Methodology](/docs/methodology)** — the full formula reference. The OLI bible.
+- **[Explorer](/explorer)** — OLI values rendered for human readers.
+
+## Further reading
+
+- [Methodology](/docs/methodology) — every formula OLI uses
+- [API Reference](/docs/api) — the endpoints that expose OLI measurements
+- [Tempo Primer](/docs/tempo-primer) — background on the primitives OLI reads (TIP-20, TIP-403, enshrined DEX, MPP)

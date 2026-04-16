@@ -8,6 +8,21 @@ This document specifies how every metric Pellet exposes is computed. Versioned s
 
 **Methodology version: 1.0** *(2026-04-14)*
 
+> This is the reference specification for Pellet's **Open-Ledger Intelligence (OLI)** methodology on Tempo. Every formula, threshold, and derivation below is a direct measurement primitive OLI promises — nothing is interpolated, inferred, or sourced from third-party oracles. See [What is OLI?](/docs/oli) for the discipline-level framing.
+
+---
+
+## Scope
+
+OLI's lens is **the public Tempo ledger**. This methodology applies to:
+
+- **In scope:** every TIP-20 stablecoin on Tempo mainnet — peg, supply, policy, reserves, role holders, flows, fee-token economics, reward distributions.
+- **In scope:** the **mainnet/zone boundary** — fund locks into zone contracts, cross-zone settlements, committed validity proofs from [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo). These surface as mainnet events and are OLI-readable.
+- **Out of scope:** zone-internal transfers and balances. By design, zones host private ledgers. Only the zone operator and individual participants see them. Pellet does not infer, estimate, or claim visibility into zone-internal activity.
+- **Out of scope:** off-chain issuer operations, private counterparty agreements, any data not on the public Tempo ledger.
+
+Where a metric cannot be measured under this scope, responses return `null` with an explanatory note — never a fabricated estimate.
+
 ---
 
 ## Peg sampling
