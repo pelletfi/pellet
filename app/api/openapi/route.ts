@@ -53,12 +53,11 @@ const spec = {
       description: "Production",
     },
   ],
+  security: [],
   paths: {
     "/api/v1/tokens": {
       get: {
         operationId: "listTokens",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "List or search Tempo tokens",
         description:
           "Returns top tokens by 24h volume, or search results when `?q=` is provided.",
@@ -110,8 +109,6 @@ const spec = {
     "/api/v1/tokens/{address}": {
       get: {
         operationId: "getToken",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Token detail — market, safety, compliance, holders",
         description:
           "Aggregates market data (GeckoTerminal), safety scan (bytecode + simulation), TIP-20 compliance metadata, and holder concentration for any Tempo token address.",
@@ -200,8 +197,6 @@ const spec = {
     "/api/v1/stablecoins": {
       get: {
         operationId: "listStablecoins",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Stablecoin matrix — all tracked Tempo stablecoins",
         description:
           "Returns live data for all known Tempo stablecoins: supply, headroom, policy, DEX spread, and opted-in supply.",
@@ -228,8 +223,6 @@ const spec = {
     "/api/v1/stablecoins/flows": {
       get: {
         operationId: "getStablecoinFlows",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Stablecoin DEX flow data",
         description:
           "Returns hourly net flow data between stablecoins routed through the enshrined Tempo DEX precompile.",
@@ -275,8 +268,6 @@ const spec = {
     "/api/v1/stablecoins/{address}": {
       get: {
         operationId: "getStablecoin",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Single stablecoin detail",
         parameters: [
           {
@@ -303,8 +294,6 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg": {
       get: {
         operationId: "getStablecoinPeg",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Current peg + 1h/24h/7d aggregates",
         description:
           "Returns the most recent peg sample and rolling-window stats: mean price, standard deviation, max deviation in basis points, and time spent outside ±10bps and ±50bps thresholds.",
@@ -317,8 +306,6 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg-events": {
       get: {
         operationId: "getStablecoinPegEvents",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Detected peg-break events",
         description:
           "Timeline of detected peg-break events for the stablecoin. Severity is `mild` (>10bps for ≥5min) or `severe` (>50bps for ≥1min). Ongoing events have `ended_at: null`.",
@@ -332,8 +319,6 @@ const spec = {
     "/api/v1/stablecoins/{address}/risk": {
       get: {
         operationId: "getStablecoinRisk",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Composite risk score (0–100)",
         description:
           "Weighted composite risk score with explainable components (peg_risk, peg_break_risk, supply_risk, policy_risk). Higher = more risk.",
@@ -349,8 +334,6 @@ const spec = {
     "/api/v1/stablecoins/{address}/reserves": {
       get: {
         operationId: "getStablecoinReserves",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Reserve / backing breakdown",
         description:
           "Returns total backing in USD plus per-reserve-type entries with attestation source, issuer, and backing model.",
@@ -363,8 +346,6 @@ const spec = {
     "/api/v1/stablecoins/{address}/roles": {
       get: {
         operationId: "getStablecoinRoles",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Role holders",
         description:
           "Current role membership (admin, minter, burner, etc.) for a stablecoin. May return empty if Tempo's TIP-20 implementation does not expose role enumeration.",
@@ -377,8 +358,6 @@ const spec = {
     "/api/v1/stablecoins/flow-anomalies": {
       get: {
         operationId: "getFlowAnomalies",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Recent cross-stable flow anomalies",
         description:
           "Returns 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3σ. Sorted most recent / largest deviation first.",
@@ -391,8 +370,6 @@ const spec = {
     "/api/v1/system/health": {
       get: {
         operationId: "getSystemHealth",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Pellet ingestion + cron health",
         description:
           "Public health endpoint backed by the heartbeat monitor. Returns 200 if ok, 503 if cursor lag or peg sample staleness exceeds threshold. Suitable as an uptime probe.",
@@ -405,8 +382,6 @@ const spec = {
     "/api/v1/health": {
       get: {
         operationId: "health",
-        "x-payment-info": { authMode: "free" },
-        security: [],
         summary: "Health check",
         description: "Returns Tempo RPC connectivity status and latest block number.",
         responses: {
@@ -439,10 +414,15 @@ const spec = {
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
+          price: "0.05",
+          minPrice: "0.05",
+          maxPrice: "0.05",
           amount: "50000",
           currency: USDC_E,
+          protocols: ["x402"],
           intent: "charge",
           method: "tempo",
+          network: "tempo",
           description: "Pellet deep briefing — 8 aggregators + model synthesis",
         },
         parameters: [
