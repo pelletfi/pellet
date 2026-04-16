@@ -1,6 +1,11 @@
 import { Abis } from "viem/tempo";
 import { tempoClient } from "@/lib/rpc";
-import type { SafetyResult, PoolData } from "@/lib/types";
+import type {
+  SafetyResult,
+  PoolData,
+  ComplianceResult,
+  HolderData,
+} from "@/lib/types";
 
 // ─── Opcode / selector constants ───────────────────────────────────────────
 
@@ -91,9 +96,9 @@ interface SimulateResult {
 
 /**
  * Simulate an ERC-20 transfer via eth_call to detect honeypot-style restrictions.
- * Uses a trivially small amount so the simulation doesn't require the from address
- * to actually hold tokens (the node will revert with insufficient balance, not a
- * custom revert — we distinguish those cases below).
+ * For reliability, pick a `from` that actually holds the token if available —
+ * a zero-address `from` trips legitimate compliance checks in almost every
+ * real stablecoin and produces false-positive honeypot signals.
  */
 export async function simulateTransfer(
   token: string,
@@ -153,95 +158,125 @@ function getLiquidityFlag(
 /**
  * Run the full safety scan for a token.
  *
+ * For TIP-20 tokens we derive honeypot/can_sell from compliance state
+ * (pause + policy) rather than running a bytecode or transfer simulation —
+ * TIP-20 is a precompile, so bytecode inspection is meaningless, and
+ * simulating a transfer from the zero address trips legitimate compliance
+ * guards in every real stablecoin, producing spurious HONEYPOT flags.
+ *
+ * For ERC-20 tokens we keep the bytecode + transfer-simulation path, but
+ * use a real holder from `holders.top_holders` as the simulation `from`
+ * whenever one is available — dramatically reduces the false-positive rate
+ * relative to the old zero→zero simulation.
+ *
  * @param address    - Token contract address
- * @param isTip20   - Whether the token is a native TIP-20 (affects scoring)
+ * @param isTip20    - Whether the token is a native TIP-20 (affects scoring)
  * @param pools      - Pool data already fetched by the market scanner
+ * @param compliance - Compliance record (used to read paused / policy for TIP-20)
+ * @param holders    - Holder data (used to pick a realistic `from` for ERC-20 sim)
  */
 export async function scanSafety(
   address: string,
   isTip20: boolean,
-  pools: PoolData[]
+  pools: PoolData[],
+  compliance: ComplianceResult,
+  holders: HolderData
 ): Promise<SafetyResult> {
   const totalLiquidity = pools.reduce((s, p) => s + p.reserve_usd, 0);
   const liquidityFlag = getLiquidityFlag(pools, totalLiquidity);
 
-  // ── Bytecode analysis (ERC-20 only; TIP-20 precompiles are skipped inside) ──
-  const bytecode = isTip20
-    ? ({
-        is_proxy: false,
-        has_selfdestruct: false,
-        has_delegatecall: false,
-        has_blacklist: false,
-        has_hidden_mint: false,
-        has_pause: false,
-        has_transfer_ownership: false,
-        skipped: true,
-      } as BytecodePatterns)
-    : await checkBytecodePatterns(address);
-
-  // ── Transfer simulation ─────────────────────────────────────────────────
-  // Use a dummy from/to pair; the node will catch balance issues (not honeypot)
-  const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
-  const sim = await simulateTransfer(
-    address,
-    ZERO_ADDR,
-    ZERO_ADDR,
-    BigInt(1)
-  );
-
-  // ── Flag & warning collection ───────────────────────────────────────────
   const flags: string[] = [];
   const warnings: string[] = [];
+  let score = 0;
 
+  // ── Liquidity-tier flags ───────────────────────────────────────────────
   if (liquidityFlag === "NO_LIQUIDITY") flags.push("NO_LIQUIDITY");
   if (liquidityFlag === "UNTRADEABLE") flags.push("UNTRADEABLE");
   if (liquidityFlag === "LOW_LIQUIDITY_CRITICAL") flags.push("LOW_LIQUIDITY");
   if (liquidityFlag === "LOW_LIQUIDITY") flags.push("LOW_LIQUIDITY");
 
-  if (!bytecode.skipped) {
-    if (bytecode.is_proxy) flags.push("IS_PROXY");
-    if (bytecode.has_selfdestruct) flags.push("HAS_SELFDESTRUCT");
-    if (bytecode.has_blacklist) flags.push("HAS_BLACKLIST");
-    if (bytecode.has_hidden_mint) flags.push("HAS_HIDDEN_MINT");
-    if (bytecode.has_pause) warnings.push("CAN_PAUSE");
-    if (bytecode.has_transfer_ownership) warnings.push("OWNERSHIP_TRANSFERABLE");
-    if (bytecode.has_delegatecall) warnings.push("HAS_DELEGATECALL");
-  }
-
-  const honeypot = !sim.success;
-  if (honeypot) flags.push("HONEYPOT");
-  else if (!sim.success) flags.push("TRANSFER_RESTRICTED");
-
-  // ── Risk score calculation ──────────────────────────────────────────────
-  let score = 0;
-
-  // Liquidity penalties
+  // Liquidity-based score
   if (liquidityFlag === "NO_LIQUIDITY") score += 25;
   else if (liquidityFlag === "UNTRADEABLE") score += 25;
   else if (liquidityFlag === "LOW_LIQUIDITY_CRITICAL") score += 15;
   else if (liquidityFlag === "LOW_LIQUIDITY") score += 10;
 
-  // Bytecode penalties
-  if (bytecode.is_proxy) score += 18;
-  if (bytecode.has_selfdestruct) score += 25;
-  if (bytecode.has_blacklist) score += 8;
-  if (bytecode.has_hidden_mint) score += 12;
+  let honeypot = false;
 
-  // Transfer simulation
-  if (honeypot) {
-    score += 35;
-  } else if (!sim.success) {
-    score += 12; // TRANSFER_RESTRICTED but not full honeypot
+  if (isTip20) {
+    // ── TIP-20 path: derive signals from compliance state ────────────────
+    // No bytecode — TIP-20 is a precompile with 1-byte code 0xef.
+    // No transfer simulation — compliance rules are the authoritative source.
+
+    if (compliance.paused) {
+      flags.push("PAUSED");
+      score += 30;
+    }
+
+    if (compliance.policy_type === "whitelist") {
+      warnings.push("ALLOWLIST_GATED");
+      score += 5;
+    } else if (
+      compliance.policy_type === "blacklist" ||
+      compliance.policy_type === "compound"
+    ) {
+      warnings.push("BLOCKLIST_ENFORCED");
+      score += 3;
+    }
+
+    if (compliance.headroom_pct !== null && compliance.headroom_pct < 5) {
+      warnings.push("SUPPLY_CAP_NEAR");
+      score += 2;
+    }
+
+    // TIP-20 is a first-class asset on Tempo; slight confidence bonus.
+    score -= 3;
+  } else {
+    // ── ERC-20 path: bytecode scan + transfer simulation ─────────────────
+    const bytecode = await checkBytecodePatterns(address);
+
+    if (!bytecode.skipped) {
+      if (bytecode.is_proxy) flags.push("IS_PROXY");
+      if (bytecode.has_selfdestruct) flags.push("HAS_SELFDESTRUCT");
+      if (bytecode.has_blacklist) flags.push("HAS_BLACKLIST");
+      if (bytecode.has_hidden_mint) flags.push("HAS_HIDDEN_MINT");
+      if (bytecode.has_pause) warnings.push("CAN_PAUSE");
+      if (bytecode.has_transfer_ownership) warnings.push("OWNERSHIP_TRANSFERABLE");
+      if (bytecode.has_delegatecall) warnings.push("HAS_DELEGATECALL");
+
+      if (bytecode.is_proxy) score += 18;
+      if (bytecode.has_selfdestruct) score += 25;
+      if (bytecode.has_blacklist) score += 8;
+      if (bytecode.has_hidden_mint) score += 12;
+    }
+
+    // Use a real holder as the simulation `from` when available. Avoids the
+    // zero-address false-positive class (any compliance-aware token reverts
+    // on `0x000…` because it's a forbidden mint/burn path, not a trap).
+    const realFrom =
+      holders.top_holders.find(
+        (h) =>
+          h.address !== "0x0000000000000000000000000000000000000000" &&
+          h.address !== "0x000000000000000000000000000000000000dead"
+      )?.address ?? "0x0000000000000000000000000000000000000001";
+    const realTo = "0x0000000000000000000000000000000000000002";
+
+    const sim = await simulateTransfer(address, realFrom, realTo, 1n);
+
+    honeypot = !sim.success;
+    if (honeypot) {
+      flags.push("HONEYPOT");
+      score += 35;
+    }
   }
 
-  // Bonuses (score reducers)
-  if (isTip20) score -= 3;
+  // ── Bonuses ────────────────────────────────────────────────────────────
   if (totalLiquidity >= 50_000) score -= 3;
 
   // Clamp to [0, 100]
   score = Math.max(0, Math.min(100, score));
 
-  // ── Verdict ─────────────────────────────────────────────────────────────
+  // ── Verdict ────────────────────────────────────────────────────────────
   type Verdict = SafetyResult["verdict"];
   let verdict: Verdict;
   if (score <= 15) verdict = "LOW_RISK";
@@ -250,13 +285,19 @@ export async function scanSafety(
   else if (score <= 80) verdict = "HIGH_RISK";
   else verdict = "CRITICAL";
 
+  const canSell =
+    !honeypot &&
+    !compliance.paused &&
+    liquidityFlag !== "NO_LIQUIDITY" &&
+    liquidityFlag !== "UNTRADEABLE";
+
   return {
     score,
     verdict,
     flags,
     warnings,
     can_buy: liquidityFlag !== "NO_LIQUIDITY" && liquidityFlag !== "UNTRADEABLE",
-    can_sell: !honeypot,
+    can_sell: canSell,
     buy_tax_pct: 0,  // eth_call simulation doesn't give us tax percentages; left for future
     sell_tax_pct: 0,
     honeypot,

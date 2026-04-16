@@ -345,12 +345,31 @@ function DistributionSection({ holders }: { holders: HolderData }) {
 }
 
 function OriginSection({ origin }: { origin: OriginResult }) {
+  // Coverage-aware: when origin analysis was unavailable (creator address
+  // couldn't be identified upstream), show the measurement gap explicitly
+  // rather than rendering "unknown" / "0 days" / "0 tx" as if those were
+  // observed values. Missing data is not adverse data.
+  if (origin.coverage === "unavailable") {
+    return (
+      <section style={{ marginBottom: "28px" }}>
+        <SectionHeader n="05" title="Origin" source="transfer event log" />
+        <PendingRow label="Deployer" />
+        {origin.coverage_note && (
+          <DataRow label="Note" value={origin.coverage_note} />
+        )}
+      </section>
+    );
+  }
+
   return (
     <section style={{ marginBottom: "28px" }}>
       <SectionHeader n="05" title="Origin" source="transfer event log" />
-      <DataRow label="Deployer" value={truncate(origin.deployer)} />
-      <DataRow label="Deployer age" value={`${origin.deployer_age_days}d`} />
-      <DataRow label="Deployer tx count" value={origin.deployer_tx_count.toLocaleString()} />
+      <DataRow label="Deployer" value={origin.deployer ? truncate(origin.deployer) : "—"} />
+      <DataRow label="Deployer age" value={origin.deployer_age_days !== null ? `${origin.deployer_age_days}d` : "—"} />
+      <DataRow
+        label="Deployer tx count"
+        value={origin.deployer_tx_count !== null ? origin.deployer_tx_count.toLocaleString() : "—"}
+      />
       {origin.funding_source ? (
         <>
           <DataRow label="Funding source" value={truncate(origin.funding_source)} />

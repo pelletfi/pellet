@@ -35,9 +35,26 @@ export async function GET(
     const timeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
       Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 
+    // scanSafety needs compliance (for TIP-20 pause/policy) and holders (for
+    // picking a realistic `from` in ERC-20 transfer simulation). Safety runs
+    // in parallel with holders here, so we pass an empty HolderData stub —
+    // scanSafety falls back to a non-zero default `from` when top_holders is
+    // empty. TIP-20 path doesn't touch holders at all.
+    const emptyHolders = {
+      total_holders: 0,
+      top5_pct: 0,
+      top10_pct: 0,
+      top20_pct: 0,
+      creator_address: null,
+      creator_hold_pct: null,
+      top_holders: [],
+      coverage: "unavailable" as const,
+      coverage_note: "Running in parallel with holder enumeration",
+    };
+
     const [holdersRes, safetyRes] = await Promise.allSettled([
       timeout(getHolders(addr), 8_000),
-      timeout(scanSafety(addr, tip20, market.pools), 8_000),
+      timeout(scanSafety(addr, tip20, market.pools, compliance, emptyHolders), 8_000),
     ]);
 
     const holders = holdersRes.status === "fulfilled" ? holdersRes.value : null;

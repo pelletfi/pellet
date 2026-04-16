@@ -97,6 +97,21 @@ const SYSTEM_LABELS: Record<string, string> = {
   [TEMPO_ADDRESSES.feeManager.toLowerCase()]: "Fee Manager",
 };
 
+/** Empty coverage-unavailable result — never pretend "0 holders" when we don't know. */
+function unavailable(note: string): HolderData {
+  return {
+    total_holders: 0,
+    top5_pct: 0,
+    top10_pct: 0,
+    top20_pct: 0,
+    creator_address: null,
+    creator_hold_pct: null,
+    top_holders: [],
+    coverage: "unavailable",
+    coverage_note: note,
+  };
+}
+
 /**
  * Scan all Transfer events for a token, reconstruct balances, compute concentration metrics.
  *
@@ -106,14 +121,37 @@ const SYSTEM_LABELS: Record<string, string> = {
  * 3. Detect creator = first address that received a mint (from == zero address)
  * 4. Strip burn addresses, sort by balance desc, compute top-N percentages
  * 5. Return top 50 holders with human-readable labels for known system addresses
+ *
+ * Coverage discipline: if log enumeration throws (RPC limits, timeout) OR
+ * returns zero logs for a token we know has positive circulating supply, we
+ * return coverage: "unavailable" instead of fabricating a "0 holders" answer.
+ * The downstream evaluation layer MUST treat unavailable coverage as missing
+ * data, not as confirmation of zero holders — this is the OLI measurement-
+ * over-inference rule in practice.
  */
 export async function getHolders(
   address: `0x${string}`,
-  decimals?: number
+  decimals?: number,
+  knownSupply?: bigint
 ): Promise<HolderData> {
   // Fetch all Transfer events from genesis to latest (paginated — Tempo RPC
   // rejects >100k block ranges per call).
-  const logs = await fetchAllTransferLogs(address);
+  let logs: Awaited<ReturnType<typeof fetchAllTransferLogs>>;
+  try {
+    logs = await fetchAllTransferLogs(address);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return unavailable(`Transfer-event enumeration failed: ${msg.slice(0, 140)}`);
+  }
+
+  // Contradiction check: zero logs for a token with known supply > 0 means
+  // enumeration silently failed (e.g., RPC returned empty ranges). Don't
+  // claim zero holders — return unavailable.
+  if (logs.length === 0 && knownSupply !== undefined && knownSupply > 0n) {
+    return unavailable(
+      `No Transfer events returned despite known supply of ${knownSupply.toString()}. RPC enumeration likely failed.`
+    );
+  }
 
   // Reconstruct balances from transfer events
   const balances = new Map<string, bigint>();
@@ -156,6 +194,14 @@ export async function getHolders(
   // Compute total supply in circulation (sum of all positive balances, excl. burns)
   const totalSupply = holders.reduce((sum, [, bal]) => sum + bal, 0n);
 
+  // Second contradiction check: logs present but reconstructed supply is zero.
+  // Rare but indicates a Transfer shape we didn't parse (e.g., wrong event sig).
+  if (holders.length === 0 && knownSupply !== undefined && knownSupply > 0n) {
+    return unavailable(
+      `Replayed ${logs.length} Transfer events but reconstructed zero positive balances; Transfer event shape may not match TIP-20 precompile emission.`
+    );
+  }
+
   // Compute top 5/10/20 percentages
   const pctOf = (n: number): number => {
     if (totalSupply === 0n) return 0;
@@ -168,8 +214,6 @@ export async function getHolders(
   const top20_pct = pctOf(20);
 
   // Build top 50 holder list with labels and human-readable balances
-  const divisor = decimals !== undefined ? 10n ** BigInt(decimals) : 1n;
-
   const top_holders = holders.slice(0, 50).map(([addr, bal]) => {
     const pct =
       totalSupply === 0n
@@ -203,6 +247,21 @@ export async function getHolders(
     }
   }
 
+  // Coverage: if we know supply and our reconstructed supply matches within
+  // a reasonable tolerance, it's complete; otherwise partial.
+  let coverage: HolderData["coverage"] = "complete";
+  let coverage_note: string | null = null;
+  if (knownSupply !== undefined && knownSupply > 0n) {
+    const diff =
+      totalSupply > knownSupply ? totalSupply - knownSupply : knownSupply - totalSupply;
+    // Allow 1% skew for rounding + pending transfers in the latest block
+    const tolerance = knownSupply / 100n;
+    if (diff > tolerance) {
+      coverage = "partial";
+      coverage_note = `Reconstructed supply (${totalSupply.toString()}) diverges from on-chain supply (${knownSupply.toString()}) by more than 1%. Some Transfer events likely missing.`;
+    }
+  }
+
   return {
     total_holders: holders.length,
     top5_pct,
@@ -211,6 +270,8 @@ export async function getHolders(
     creator_address: creatorAddress,
     creator_hold_pct,
     top_holders,
+    coverage,
+    coverage_note,
   };
 }
 

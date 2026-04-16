@@ -142,9 +142,10 @@ async function handler(
     let onChainName = "Unknown Token";
     let onChainSymbol = "???";
     let decimals: number | undefined;
+    let knownSupply: bigint | undefined;
 
     if (tip20) {
-      // TIP-20: getMetadata returns name, symbol, decimals from the precompile
+      // TIP-20: getMetadata returns name, symbol, decimals, totalSupply from the precompile
       const meta = await tempoClient.token
         .getMetadata({ token: checksumAddress })
         .catch(() => null);
@@ -152,6 +153,7 @@ async function handler(
         onChainName = meta.name ?? onChainName;
         onChainSymbol = meta.symbol ?? onChainSymbol;
         decimals = meta.decimals !== undefined ? Number(meta.decimals) : undefined;
+        knownSupply = meta.totalSupply;
       }
     } else {
       // ERC-20: multicall name + symbol + decimals
@@ -202,7 +204,7 @@ async function handler(
           roles: { issuer: [], pause: [], burn_blocked: [] },
         };
       }),
-      getHolders(checksumAddress, decimals).catch((err) => {
+      getHolders(checksumAddress, decimals, knownSupply).catch((err) => {
         console.error("[briefing/holders]", err);
         return {
           total_holders: 0,
@@ -212,6 +214,8 @@ async function handler(
           creator_address: null,
           creator_hold_pct: null,
           top_holders: [],
+          coverage: "unavailable" as const,
+          coverage_note: err instanceof Error ? err.message.slice(0, 140) : "unknown error",
         };
       }),
       resolveIdentity(address, onChainName, onChainSymbol).catch((err) => {
@@ -232,9 +236,11 @@ async function handler(
     const resolvedName = identity.name ?? onChainName;
     const resolvedSymbol = identity.symbol ?? onChainSymbol;
 
-    // 4. Run safety and origin in parallel (depend on market.pools and holders.creator)
+    // 4. Run safety and origin in parallel (safety needs market.pools +
+    // compliance + holders for TIP-20-aware evaluation; origin needs holder
+    // creator detection).
     const [safety, origin] = await Promise.all([
-      scanSafety(address, tip20, market.pools).catch((err) => {
+      scanSafety(address, tip20, market.pools, compliance, holders).catch((err) => {
         console.error("[briefing/safety]", err);
         return {
           score: 0,
@@ -251,13 +257,15 @@ async function handler(
       getOrigin(checksumAddress, holders.creator_address).catch((err) => {
         console.error("[briefing/origin]", err);
         return {
-          deployer: "unknown",
-          deployer_tx_count: 0,
-          deployer_age_days: 0,
+          deployer: null,
+          deployer_tx_count: null,
+          deployer_age_days: null,
           funding_source: null,
           funding_label: null,
           funding_hops: 0,
           prior_tokens: [],
+          coverage: "unavailable" as const,
+          coverage_note: err instanceof Error ? err.message.slice(0, 140) : "unknown error",
         };
       }),
     ]);

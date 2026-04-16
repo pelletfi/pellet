@@ -8,7 +8,12 @@ const TRANSFER_EVENT = parseAbiItem(
 
 /**
  * Analyze deployer origin: tx count, account age, and funding source.
- * If creatorAddress is null, returns conservative defaults.
+ *
+ * If creatorAddress is null — i.e., the holders aggregator couldn't identify
+ * a creator (holder enumeration was unavailable) — we return coverage:
+ * "unavailable" with null fields rather than fabricating deployer: "unknown"
+ * and zeros. The LLM evaluation layer MUST treat unavailable coverage as
+ * missing data, not as confirmation of a non-existent/unknown deployer.
  */
 export async function getOrigin(
   tokenAddress: `0x${string}`,
@@ -16,13 +21,16 @@ export async function getOrigin(
 ): Promise<OriginResult> {
   if (!creatorAddress) {
     return {
-      deployer: "unknown",
-      deployer_tx_count: 0,
-      deployer_age_days: 0,
+      deployer: null,
+      deployer_tx_count: null,
+      deployer_age_days: null,
       funding_source: null,
       funding_label: null,
       funding_hops: 0,
       prior_tokens: [],
+      coverage: "unavailable",
+      coverage_note:
+        "Creator address could not be identified upstream (holder Transfer-event enumeration was unavailable or returned no mint events). Deployer identity cannot be inferred without it.",
     };
   }
 
@@ -49,6 +57,8 @@ export async function getOrigin(
     funding_label: fundingSource?.label ?? null,
     funding_hops: fundingSource ? 1 : 0,
     prior_tokens: [],
+    coverage: "complete",
+    coverage_note: null,
   };
 }
 

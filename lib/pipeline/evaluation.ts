@@ -111,7 +111,31 @@ ${formatReserves(reserves)}`
 Token: ${name} (${symbol})
 Address: ${address}
 
-Be factual, neutral, and source-specific. No promotional language. No trading advice.${stablecoinBlock ? " For stablecoin-specific data (peg, reserves, risk), cite specific numbers from the data below." : ""}
+OLI DISCIPLINE — READ CAREFULLY:
+This briefing is Open-Ledger Intelligence (OLI) output. Pellet's core tenet
+is measurement over inference. Apply these rules strictly:
+
+1. When a section is labeled COVERAGE: UNAVAILABLE, treat its fields as
+   MISSING DATA, not as zero values. Do NOT write phrases like "has zero
+   holders" or "deployer is unknown" when coverage is unavailable — say
+   "holder distribution data unavailable for this token" or "deployer
+   identity not yet indexed".
+
+2. When coverage is unavailable, explicitly note the scope of missing data
+   and do NOT synthesize a verdict from absent signals. A null field is
+   NOT evidence against a token.
+
+3. For TIP-20 tokens (Tempo's first-class stablecoin standard), "honeypot"
+   is a compliance flag, not a trap. TIP-20 exposes pause + allowlist /
+   blocklist policy as explicit state — "paused" or "blocklist-enforced"
+   is not equivalent to "malicious". Report compliance posture factually.
+
+4. Do NOT conflate missing data with adverse findings. If safety is clean
+   but holder coverage is unavailable, say so; do not let absence of one
+   signal infect the interpretation of another.
+
+5. Be factual, neutral, and source-specific. No promotional language. No
+   trading advice.${stablecoinBlock ? " For stablecoin-specific data (peg, reserves, risk), cite specific numbers." : ""}
 
 MARKET DATA
 ${marketSummary}
@@ -131,7 +155,11 @@ ${identitySummary}
 ORIGIN & DEPLOYER
 ${originSummary}${stablecoinBlock}
 
-Write a 2-3 paragraph analyst note. Lead with the most important finding. Note any unusual patterns. End with what to watch. Be concise and direct.`;
+Write a 2-3 paragraph analyst note. Lead with the most important VERIFIED
+finding (skip sections with unavailable coverage for the opening line). Note
+any unusual patterns in VERIFIED data. Close with what to watch, and if any
+coverage gaps exist, note them as open measurement questions rather than as
+risks in themselves. Be concise and direct.`;
 }
 
 function formatPegStats(stats: PegStat[] | null | undefined, recentBreaks: number | null | undefined): string {
@@ -170,6 +198,7 @@ function formatMarketData(market: TokenMarketData): string {
     : "N/A";
 
   return `
+COVERAGE: ${market.pools.length > 0 ? "COMPLETE" : "UNAVAILABLE (no pools indexed)"}
 Price: $${market.price_usd.toFixed(8)}
 24h Volume: $${formatNumber(market.volume_24h)}
 Liquidity: $${formatNumber(market.liquidity_usd)}
@@ -197,24 +226,56 @@ Warnings: ${warningList}`;
 }
 
 function formatComplianceData(compliance: ComplianceResult): string {
+  // TIP-20 with null policy data is a coverage gap, not "no policy"
+  const tip20PolicyUnavailable =
+    compliance.token_type === "tip20" &&
+    compliance.policy_id === null &&
+    compliance.policy_type === null;
+
+  const coverageLine = tip20PolicyUnavailable
+    ? "COVERAGE: UNAVAILABLE (TIP-403 registry lookup returned no policy data)"
+    : "COVERAGE: COMPLETE";
+
   const supplyInfo = compliance.supply_cap
     ? `Current: ${formatNumber(parseFloat(compliance.current_supply))} / Cap: ${formatNumber(parseFloat(compliance.supply_cap))} (${compliance.headroom_pct?.toFixed(1)}% headroom)`
     : `Current: ${formatNumber(parseFloat(compliance.current_supply))} (no cap)`;
 
+  const policyLine =
+    tip20PolicyUnavailable
+      ? "Policy: [unavailable — TIP-403 not indexed]"
+      : `Policy: ${compliance.policy_type || "None"} ${compliance.policy_id !== null ? `(ID: ${compliance.policy_id})` : ""}`;
+
+  const adminLine =
+    tip20PolicyUnavailable ? "Admin: [unavailable]" : `Admin: ${compliance.policy_admin || "N/A"}`;
+
   return `
+${coverageLine}
 Type: ${compliance.token_type}
 Paused: ${compliance.paused ? "Yes" : "No"}
 Supply: ${supplyInfo}
-Policy: ${compliance.policy_type || "None"} ${compliance.policy_id ? `(ID: ${compliance.policy_id})` : ""}
-Admin: ${compliance.policy_admin || "N/A"}`;
+${policyLine}
+${adminLine}`;
 }
 
 function formatHolderData(holders: HolderData): string {
+  if (holders.coverage === "unavailable") {
+    return `
+COVERAGE: UNAVAILABLE
+Note: ${holders.coverage_note ?? "Transfer-event enumeration did not complete."}
+Holder counts, concentration percentages, and creator identity cannot be reported for this token. This is a measurement gap, not an indication of zero holders.`;
+  }
+
   const creatorInfo = holders.creator_address
     ? `Creator holds ${holders.creator_hold_pct?.toFixed(2)}%`
     : "Creator not identified";
 
+  const coverageLine =
+    holders.coverage === "partial"
+      ? `COVERAGE: PARTIAL — ${holders.coverage_note ?? "reconstruction diverged from on-chain supply"}`
+      : "COVERAGE: COMPLETE";
+
   return `
+${coverageLine}
 Total Holders: ${holders.total_holders.toLocaleString()}
 Top 5%: ${holders.top5_pct.toFixed(2)}% of supply
 Top 10%: ${holders.top10_pct.toFixed(2)}% of supply
@@ -241,7 +302,16 @@ Links: ${Object.keys(identity.links).length > 0 ? Object.keys(identity.links).jo
 }
 
 function formatOriginData(origin: OriginResult): string {
-  const deployerLabel = origin.deployer.slice(0, 6) + "...";
+  if (origin.coverage === "unavailable") {
+    return `
+COVERAGE: UNAVAILABLE
+Note: ${origin.coverage_note ?? "Deployer lookup could not complete."}
+Deployer identity, tx count, age, and funding source cannot be reported. This is a measurement gap, not confirmation of an absent or suspicious deployer.`;
+  }
+
+  const deployerLabel = origin.deployer
+    ? origin.deployer.slice(0, 6) + "..."
+    : "N/A";
   const fundingLabel = origin.funding_label
     ? `${origin.funding_label} (${origin.funding_hops} hop${origin.funding_hops !== 1 ? "s" : ""})`
     : `Unidentified (${origin.funding_hops} hop${origin.funding_hops !== 1 ? "s" : ""})`;
@@ -252,9 +322,10 @@ function formatOriginData(origin: OriginResult): string {
       : "None";
 
   return `
+COVERAGE: COMPLETE
 Deployer: ${deployerLabel}
-Deployer Age: ${origin.deployer_age_days} days
-Deployer TX Count: ${origin.deployer_tx_count}
+Deployer Age: ${origin.deployer_age_days ?? "N/A"} days
+Deployer TX Count: ${origin.deployer_tx_count ?? "N/A"}
 Funding Source: ${fundingLabel}
 Prior Tokens: ${priorTokensInfo}`;
 }

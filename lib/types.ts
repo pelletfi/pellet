@@ -49,6 +49,16 @@ export interface HolderData {
   creator_address: string | null;
   creator_hold_pct: number | null;
   top_holders: { address: string; balance: string; pct: number; label: string | null }[];
+  /**
+   * Coverage of the holder enumeration:
+   *   "complete"    — every Transfer event was walked, counts are authoritative
+   *   "partial"     — log fetch returned results but they may be truncated
+   *   "unavailable" — enumeration failed (RPC limits, timeout) OR returned
+   *                   zero logs for a token with known positive supply; all
+   *                   numeric fields should be treated as "unknown", not "zero"
+   */
+  coverage: "complete" | "partial" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface IdentityResult {
@@ -62,13 +72,22 @@ export interface IdentityResult {
 }
 
 export interface OriginResult {
-  deployer: string;
-  deployer_tx_count: number;
-  deployer_age_days: number;
+  deployer: string | null;
+  deployer_tx_count: number | null;
+  deployer_age_days: number | null;
   funding_source: string | null;
   funding_label: string | null;
   funding_hops: number;
   prior_tokens: { address: string; symbol: string; status: string }[];
+  /**
+   * Coverage of the origin analysis:
+   *   "complete"    — deployer identified and tx/funding data retrieved
+   *   "unavailable" — creator detection failed upstream (holder coverage
+   *                   was unavailable), so deployer identity can't be
+   *                   inferred; numeric fields are null rather than 0
+   */
+  coverage: "complete" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface StablecoinData {
