@@ -13,6 +13,14 @@ const spec = {
     contact: {
       url: "https://pelletfi.com",
     },
+    "x-guidance": [
+      "All endpoints return JSON. CORS is open. No API key needed for free endpoints.",
+      "Paid endpoints require an MPP payment in USDC.e on Tempo (currency 0x20c000000000000000000000b9537d11c60e8b50). Standard MPP clients (mppx, tempo-request CLI) auto-handle the 402 challenge and payment voucher exchange.",
+      "Addresses are 0x-prefixed 42-char hex. Stablecoin addresses on Tempo start with 0x20c0... (TIP-20 factory pattern).",
+      "For peg, risk, and reserves endpoints, ?as_of=<ISO8601|epoch|relative> returns historical snapshots. See /docs/methodology#time-travel for format.",
+      "Every numeric value is a direct on-chain measurement, not an estimate. When a measurement is unavailable, the field returns null with an explanatory note — never a synthetic estimate.",
+      "See https://pelletfi.com/docs/oli for the Open-Ledger Intelligence discipline specification.",
+    ].join(" "),
   },
   "x-service-info": {
     categories: ["blockchain", "data"],
@@ -30,9 +38,11 @@ const spec = {
       "rewards",
       "fee-economics",
     ],
-    docs: "https://pelletfi.com/docs",
-    docsBase: "https://pelletfi.com/docs/api",
-    llmsTxt: "https://pelletfi.com/docs/oli",
+    docs: {
+      homepage: "https://pelletfi.com",
+      apiReference: "https://pelletfi.com/docs/api",
+      llms: "https://pelletfi.com/docs/oli",
+    },
     provider: { name: "Pellet Finance", url: "https://pelletfi.com" },
     realm: "pelletfi.com",
     chain: "tempo",
@@ -47,6 +57,7 @@ const spec = {
     "/api/v1/tokens": {
       get: {
         operationId: "listTokens",
+        security: [],
         summary: "List or search Tempo tokens",
         description:
           "Returns top tokens by 24h volume, or search results when `?q=` is provided.",
@@ -98,6 +109,7 @@ const spec = {
     "/api/v1/tokens/{address}": {
       get: {
         operationId: "getToken",
+        security: [],
         summary: "Token detail — market, safety, compliance, holders",
         description:
           "Aggregates market data (GeckoTerminal), safety scan (bytecode + simulation), TIP-20 compliance metadata, and holder concentration for any Tempo token address.",
@@ -186,6 +198,7 @@ const spec = {
     "/api/v1/stablecoins": {
       get: {
         operationId: "listStablecoins",
+        security: [],
         summary: "Stablecoin matrix — all tracked Tempo stablecoins",
         description:
           "Returns live data for all known Tempo stablecoins: supply, headroom, policy, DEX spread, and opted-in supply.",
@@ -212,6 +225,7 @@ const spec = {
     "/api/v1/stablecoins/flows": {
       get: {
         operationId: "getStablecoinFlows",
+        security: [],
         summary: "Stablecoin DEX flow data",
         description:
           "Returns hourly net flow data between stablecoins routed through the enshrined Tempo DEX precompile.",
@@ -257,6 +271,7 @@ const spec = {
     "/api/v1/stablecoins/{address}": {
       get: {
         operationId: "getStablecoin",
+        security: [],
         summary: "Single stablecoin detail",
         parameters: [
           {
@@ -283,6 +298,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg": {
       get: {
         operationId: "getStablecoinPeg",
+        security: [],
         summary: "Current peg + 1h/24h/7d aggregates",
         description:
           "Returns the most recent peg sample and rolling-window stats: mean price, standard deviation, max deviation in basis points, and time spent outside ±10bps and ±50bps thresholds.",
@@ -295,6 +311,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg-events": {
       get: {
         operationId: "getStablecoinPegEvents",
+        security: [],
         summary: "Detected peg-break events",
         description:
           "Timeline of detected peg-break events for the stablecoin. Severity is `mild` (>10bps for ≥5min) or `severe` (>50bps for ≥1min). Ongoing events have `ended_at: null`.",
@@ -308,6 +325,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/risk": {
       get: {
         operationId: "getStablecoinRisk",
+        security: [],
         summary: "Composite risk score (0–100)",
         description:
           "Weighted composite risk score with explainable components (peg_risk, peg_break_risk, supply_risk, policy_risk). Higher = more risk.",
@@ -323,6 +341,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/reserves": {
       get: {
         operationId: "getStablecoinReserves",
+        security: [],
         summary: "Reserve / backing breakdown",
         description:
           "Returns total backing in USD plus per-reserve-type entries with attestation source, issuer, and backing model.",
@@ -335,6 +354,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/roles": {
       get: {
         operationId: "getStablecoinRoles",
+        security: [],
         summary: "Role holders",
         description:
           "Current role membership (admin, minter, burner, etc.) for a stablecoin. May return empty if Tempo's TIP-20 implementation does not expose role enumeration.",
@@ -347,6 +367,7 @@ const spec = {
     "/api/v1/stablecoins/flow-anomalies": {
       get: {
         operationId: "getFlowAnomalies",
+        security: [],
         summary: "Recent cross-stable flow anomalies",
         description:
           "Returns 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3σ. Sorted most recent / largest deviation first.",
@@ -359,6 +380,7 @@ const spec = {
     "/api/v1/system/health": {
       get: {
         operationId: "getSystemHealth",
+        security: [],
         summary: "Pellet ingestion + cron health",
         description:
           "Public health endpoint backed by the heartbeat monitor. Returns 200 if ok, 503 if cursor lag or peg sample staleness exceeds threshold. Suitable as an uptime probe.",
@@ -371,6 +393,7 @@ const spec = {
     "/api/v1/health": {
       get: {
         operationId: "health",
+        security: [],
         summary: "Health check",
         description: "Returns Tempo RPC connectivity status and latest block number.",
         responses: {
@@ -400,11 +423,13 @@ const spec = {
         summary: "Full Pellet Briefing — paid endpoint",
         description:
           "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
+        security: [{ MppPayment: [] }],
         "x-payment-info": {
           amount: "50000",
           currency: USDC_E,
           intent: "charge",
           method: "tempo",
+          description: "Pellet deep briefing — 8 aggregators + model synthesis",
         },
         parameters: [
           {
@@ -434,6 +459,14 @@ const spec = {
     },
   },
   components: {
+    securitySchemes: {
+      MppPayment: {
+        type: "http",
+        scheme: "MPP",
+        description:
+          "Merchant Payment Protocol (MPP) on Tempo. Clients exchange a 402 challenge for a signed payment voucher in USDC.e. See https://github.com/tempoxyz/mpp for the spec, or use the mppx / tempo-request CLI for automatic handling.",
+      },
+    },
     schemas: {
       StablecoinData: {
         type: "object",

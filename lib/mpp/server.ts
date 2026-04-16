@@ -43,7 +43,14 @@ function getMppx(): any {
   // (see tempoxyz/mpp schemas — TEMPO_PAYMENT uses USDC.e, 6 decimals).
   // Charging in USDC.e keeps Pellet compatible with every standard MPP client
   // and the `tempo wallet services` directory.
+  //
+  // Realm is explicit: mppx defaults to VERCEL_URL which resolves to the
+  // deployment subdomain (e.g. pellet-g21yr5bur-pellet.vercel.app). That
+  // breaks MPPScan attribution because the realm mismatches the origin host.
+  // Lock realm to pelletfi.com so on-chain payment stats are correctly
+  // attributed to the production hostname.
   _mppx = Mppx.create({
+    realm: "pelletfi.com",
     methods: [
       tempo.charge({
         currency: TEMPO_ADDRESSES.usdcE,
