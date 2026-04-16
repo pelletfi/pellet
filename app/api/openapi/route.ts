@@ -57,6 +57,7 @@ const spec = {
     "/api/v1/tokens": {
       get: {
         operationId: "listTokens",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "List or search Tempo tokens",
         description:
@@ -109,6 +110,7 @@ const spec = {
     "/api/v1/tokens/{address}": {
       get: {
         operationId: "getToken",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Token detail — market, safety, compliance, holders",
         description:
@@ -198,6 +200,7 @@ const spec = {
     "/api/v1/stablecoins": {
       get: {
         operationId: "listStablecoins",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Stablecoin matrix — all tracked Tempo stablecoins",
         description:
@@ -225,6 +228,7 @@ const spec = {
     "/api/v1/stablecoins/flows": {
       get: {
         operationId: "getStablecoinFlows",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Stablecoin DEX flow data",
         description:
@@ -271,6 +275,7 @@ const spec = {
     "/api/v1/stablecoins/{address}": {
       get: {
         operationId: "getStablecoin",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Single stablecoin detail",
         parameters: [
@@ -298,6 +303,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg": {
       get: {
         operationId: "getStablecoinPeg",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Current peg + 1h/24h/7d aggregates",
         description:
@@ -311,6 +317,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/peg-events": {
       get: {
         operationId: "getStablecoinPegEvents",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Detected peg-break events",
         description:
@@ -325,6 +332,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/risk": {
       get: {
         operationId: "getStablecoinRisk",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Composite risk score (0–100)",
         description:
@@ -341,6 +349,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/reserves": {
       get: {
         operationId: "getStablecoinReserves",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Reserve / backing breakdown",
         description:
@@ -354,6 +363,7 @@ const spec = {
     "/api/v1/stablecoins/{address}/roles": {
       get: {
         operationId: "getStablecoinRoles",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Role holders",
         description:
@@ -367,6 +377,7 @@ const spec = {
     "/api/v1/stablecoins/flow-anomalies": {
       get: {
         operationId: "getFlowAnomalies",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Recent cross-stable flow anomalies",
         description:
@@ -380,6 +391,7 @@ const spec = {
     "/api/v1/system/health": {
       get: {
         operationId: "getSystemHealth",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Pellet ingestion + cron health",
         description:
@@ -393,6 +405,7 @@ const spec = {
     "/api/v1/health": {
       get: {
         operationId: "health",
+        "x-payment-info": { authMode: "free" },
         security: [],
         summary: "Health check",
         description: "Returns Tempo RPC connectivity status and latest block number.",
@@ -425,6 +438,7 @@ const spec = {
           "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
+          authMode: "paid",
           amount: "50000",
           currency: USDC_E,
           intent: "charge",
@@ -436,10 +450,44 @@ const spec = {
             name: "address",
             in: "path",
             required: true,
-            description: "Token contract address (0x…)",
-            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" },
+            description:
+              "Token contract address (0x-prefixed, 42 hex chars). The token must exist on Tempo mainnet.",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x20c000000000000000000000b9537d11c60e8b50",
+            },
+          },
+          {
+            name: "refresh",
+            in: "query",
+            required: false,
+            description:
+              "If true, bypasses any cached briefing and forces recomputation. Default: false (current implementation always computes fresh — this flag is reserved for future caching).",
+            schema: { type: "boolean", default: false },
+          },
+          {
+            name: "sections",
+            in: "query",
+            required: false,
+            description:
+              "Comma-separated list of sections to include in the response. Allowed values: market, safety, compliance, holders, identity, origin, evaluation. Default: all sections.",
+            schema: {
+              type: "string",
+              example: "market,safety,compliance,holders",
+            },
           },
         ],
+        requestBody: {
+          required: false,
+          description:
+            "Not used — this is a GET endpoint. Input is conveyed via the `address` path parameter and optional `refresh` / `sections` query parameters.",
+          content: {
+            "application/json": {
+              schema: { type: "object", additionalProperties: false },
+            },
+          },
+        },
         responses: {
           "200": {
             description: "Pellet Briefing",
