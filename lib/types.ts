@@ -117,6 +117,11 @@ export interface BriefingResult {
 
 export const TEMPO_ADDRESSES = {
   pathUsd: "0x20c0000000000000000000000000000000000000" as `0x${string}`,
+  // USDC.e is the ecosystem-standard MPP payment currency. See tempoxyz/mpp
+  // schemas/services.ts — TEMPO_PAYMENT uses USDC.e with 6 decimals. Pellet's
+  // MPP-gated endpoints charge in USDC.e to remain compatible with every
+  // standard MPP client.
+  usdcE: "0x20c000000000000000000000b9537d11c60e8b50" as `0x${string}`,
   tip20Factory: "0x20fc000000000000000000000000000000000000" as `0x${string}`,
   stablecoinDex: "0xdec0000000000000000000000000000000000000" as `0x${string}`,
   tip403Registry: "0x403c000000000000000000000000000000000000" as `0x${string}`,

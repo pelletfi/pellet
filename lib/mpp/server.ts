@@ -39,10 +39,14 @@ function getMppx(): any {
 
   // Use tempo.charge() directly (not tempo()) so that `charge` is the only
   // registered intent — this makes mppx.charge a unique shorthand.
+  // Currency is USDC.e: the ecosystem-standard MPP payment token on Tempo
+  // (see tempoxyz/mpp schemas — TEMPO_PAYMENT uses USDC.e, 6 decimals).
+  // Charging in USDC.e keeps Pellet compatible with every standard MPP client
+  // and the `tempo wallet services` directory.
   _mppx = Mppx.create({
     methods: [
       tempo.charge({
-        currency: TEMPO_ADDRESSES.pathUsd,
+        currency: TEMPO_ADDRESSES.usdcE,
         recipient,
       }),
     ],

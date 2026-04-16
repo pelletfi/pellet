@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const PATHUSD = "0x20c0000000000000000000000000000000000000";
+// USDC.e: ecosystem-standard MPP payment currency on Tempo (see tempoxyz/mpp)
+const USDC_E = "0x20c000000000000000000000b9537d11c60e8b50";
 
 const spec = {
   openapi: "3.1.0",
@@ -380,10 +381,10 @@ const spec = {
         operationId: "getBriefing",
         summary: "Full Pellet Briefing — paid endpoint",
         description:
-          "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 pathUSD on Tempo.",
+          "Runs the full 8-aggregator pipeline (market, safety, compliance, holders, identity, origin, supply history, evaluation) and returns a structured briefing document. Requires an MPP payment of 0.05 USDC.e on Tempo.",
         "x-payment-info": {
           amount: "50000",
-          currency: PATHUSD,
+          currency: USDC_E,
           intent: "charge",
           method: "tempo",
         },
