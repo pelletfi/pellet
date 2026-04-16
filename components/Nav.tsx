@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Explorer", href: "/explorer" },
   { label: "Fee economics", href: "/fee-economics" },
   { label: "Studies", href: "/studies" },
+  { label: "Agents", href: "/agents" },
   { label: "Pricing", href: "/pricing" },
   { label: "Docs", href: "/docs" },
 ];
