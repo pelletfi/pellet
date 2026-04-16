@@ -137,19 +137,17 @@ export function mppCharge(
         const handlerResponse = await handler(request, context);
         return result.withReceipt(handlerResponse);
       } catch (err) {
-        // Diagnostic surface: we've been seeing opaque 500s on the zero-amount
-        // mirror routes. Returning the error body lets us see what's failing
-        // without having to tail runtime logs.
+        // Defensive surface: any exception in the MPP challenge flow becomes
+        // a 500 with a terse message. We log the full stack server-side so
+        // operators can diagnose without exposing implementation details to
+        // agents.
         console.error("[mpp-wrapper]", err);
         const msg = err instanceof Error ? err.message : String(err);
-        const stack = err instanceof Error ? err.stack : undefined;
         return new Response(
           JSON.stringify({
             error: {
               code: "MPP_WRAPPER_ERROR",
-              message: msg,
-              stack: stack?.split("\n").slice(0, 8).join("\n"),
-              amount,
+              message: msg.slice(0, 200),
             },
           }),
           {
@@ -172,10 +170,14 @@ export const briefingCharge = mppCharge("0.05", "Pellet deep briefing");
  * 402 challenge flow (identity proof via wallet signature) but transfer no
  * USDC.e. Matches the pattern used by GovLaws, StableEnrich, and others
  * whose free routes show up with a "FREE" tag in the MPPScan UI.
+ *
+ * Description must be pure ASCII — mppx stuffs it into the www-authenticate
+ * response header and HTTP headers reject any byte > 0xFF (so em-dashes,
+ * smart quotes, etc. will throw at response-construction time).
  */
 export const identityCharge = mppCharge(
   "0",
-  "Pellet free route — MPP identity challenge, no charge"
+  "Pellet free route - MPP identity challenge, no charge"
 );
 
 // Re-export for callers that need the raw mppx instance (e.g. session endpoints)
