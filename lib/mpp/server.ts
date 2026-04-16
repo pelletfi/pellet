@@ -37,12 +37,18 @@ function getMppx(): any {
     );
   }
 
-  // Use tempo.charge() directly (not tempo()) so that `charge` is the only
-  // registered intent — this makes mppx.charge a unique shorthand.
-  // Currency is USDC.e: the ecosystem-standard MPP payment token on Tempo
-  // (see tempoxyz/mpp schemas — TEMPO_PAYMENT uses USDC.e, 6 decimals).
-  // Charging in USDC.e keeps Pellet compatible with every standard MPP client
-  // and the `tempo wallet services` directory.
+  // Accept BOTH pathUSD and USDC.e as payment currencies. mppx exposes each
+  // as a separate option in the 402 challenge, and the client picks whichever
+  // it has funds for. Mirrors Parallel Web Systems' approach ("fund your
+  // wallet with pathUSD or USDC") — agents with Tempo-native wallets hold
+  // pathUSD, agents bridging in from EVM chains hold USDC.e.
+  //
+  //   - pathUSD: Tempo's enshrined, algorithmically-issued stablecoin.
+  //     Native, no bridge or Circle counterparty. Used as the quote token
+  //     for every quoteSwapExactAmountIn call against the enshrined DEX.
+  //   - USDC.e:  Circle's USDC bridged to Tempo. Broadly recognized,
+  //     bridgeable back to any EVM chain. The default in many MPP client
+  //     wallets (agentcash, etc.).
   //
   // Realm is explicit: mppx defaults to VERCEL_URL which resolves to the
   // deployment subdomain (e.g. pellet-g21yr5bur-pellet.vercel.app). That
@@ -52,6 +58,10 @@ function getMppx(): any {
   _mppx = Mppx.create({
     realm: "pelletfi.com",
     methods: [
+      tempo.charge({
+        currency: TEMPO_ADDRESSES.pathUsd,
+        recipient,
+      }),
       tempo.charge({
         currency: TEMPO_ADDRESSES.usdcE,
         recipient,

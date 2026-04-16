@@ -122,7 +122,7 @@ export default function AgentsPage() {
               letterSpacing: "-0.01em",
             }}
           >
-            Setup — npx mppx (Tempo / USDC.e)
+            Setup — npx mppx (Tempo, pathUSD or USDC.e)
           </h2>
 
           <p
@@ -145,9 +145,8 @@ export default function AgentsPage() {
             npx mppx account create
           </CodeBlock>
 
-          <CodeBlock label="Fund it with USDC.e on Tempo (exchange or bridge), then:">
-            {`npx mppx https://pelletfi.com/api/v1/tokens/0x20c000000000000000000000b9537d11c60e8b50/briefing \\
-  --method POST`}
+          <CodeBlock label="Fund it with pathUSD or USDC.e on Tempo (exchange or bridge), then:">
+            {`npx mppx https://pelletfi.com/api/v1/tokens/0x20c000000000000000000000b9537d11c60e8b50/briefing`}
           </CodeBlock>
         </section>
 
