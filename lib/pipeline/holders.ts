@@ -1,6 +1,7 @@
 import { tempoClient } from "@/lib/rpc";
 import type { HolderData } from "@/lib/types";
 import { TEMPO_ADDRESSES } from "@/lib/types";
+import { getBlockNumber } from "viem/actions";
 
 // Minimal Transfer event ABI — works with any ERC20/TIP20 token
 const TRANSFER_ABI = [
@@ -14,6 +15,70 @@ const TRANSFER_ABI = [
     ],
   },
 ] as const;
+
+// Tempo RPC enforces two limits per eth_getLogs call:
+//   1. Max block range: 100,000 blocks
+//   2. Max results: 20,000 logs
+// Start with a comfortable chunk and adaptively shrink on overflow.
+const BLOCK_CHUNK = 10_000n;
+const PARALLEL_CHUNKS = 6;
+
+/** Fetch Transfer events for a single block range, shrinking adaptively if
+ * Tempo rejects for either limit. Uses RPC-suggested ranges when available. */
+async function fetchRange(
+  address: `0x${string}`,
+  from: bigint,
+  to: bigint,
+): Promise<Awaited<ReturnType<typeof tempoClient.getContractEvents>>> {
+  try {
+    return await tempoClient.getContractEvents({
+      address,
+      abi: TRANSFER_ABI,
+      eventName: "Transfer",
+      fromBlock: from,
+      toBlock: to,
+    });
+  } catch (err) {
+    // Parse the RPC's hint, e.g. "retry with the range 10100000-10104417"
+    const detail =
+      // @ts-expect-error viem error shape
+      err?.cause?.message ?? err?.details ?? (err instanceof Error ? err.message : "");
+    const hint = /retry with the range (\d+)-(\d+)/.exec(String(detail));
+    if (hint) {
+      const newTo = BigInt(hint[2]);
+      const head = await fetchRange(address, from, newTo);
+      const tail = newTo + 1n <= to ? await fetchRange(address, newTo + 1n, to) : [];
+      return [...head, ...tail];
+    }
+    // Block-range overflow — split in half and retry.
+    if (String(detail).includes("max block range") && to > from) {
+      const mid = from + (to - from) / 2n;
+      const head = await fetchRange(address, from, mid);
+      const tail = await fetchRange(address, mid + 1n, to);
+      return [...head, ...tail];
+    }
+    throw err;
+  }
+}
+
+/** Paginate across the full chain — parallel at the outer loop, adaptive at
+ * each range. Safe for Tempo's 100k-block / 20k-result caps. */
+async function fetchAllTransferLogs(address: `0x${string}`) {
+  const latest = await getBlockNumber(tempoClient);
+  const ranges: Array<{ from: bigint; to: bigint }> = [];
+  for (let start = 0n; start <= latest; start += BLOCK_CHUNK) {
+    const end = start + BLOCK_CHUNK - 1n < latest ? start + BLOCK_CHUNK - 1n : latest;
+    ranges.push({ from: start, to: end });
+  }
+
+  const out: Awaited<ReturnType<typeof tempoClient.getContractEvents>> = [];
+  for (let i = 0; i < ranges.length; i += PARALLEL_CHUNKS) {
+    const batch = ranges.slice(i, i + PARALLEL_CHUNKS);
+    const results = await Promise.all(batch.map((r) => fetchRange(address, r.from, r.to)));
+    for (const logs of results) out.push(...logs);
+  }
+  return out;
+}
 
 // Addresses to exclude from holder lists (burn sinks, not real holders)
 const BURN_ADDRESSES = new Set([
@@ -46,14 +111,9 @@ export async function getHolders(
   address: `0x${string}`,
   decimals?: number
 ): Promise<HolderData> {
-  // Fetch all Transfer events from genesis to latest
-  const logs = await tempoClient.getContractEvents({
-    address,
-    abi: TRANSFER_ABI,
-    eventName: "Transfer",
-    fromBlock: 0n,
-    toBlock: "latest",
-  });
+  // Fetch all Transfer events from genesis to latest (paginated — Tempo RPC
+  // rejects >100k block ranges per call).
+  const logs = await fetchAllTransferLogs(address);
 
   // Reconstruct balances from transfer events
   const balances = new Map<string, bigint>();

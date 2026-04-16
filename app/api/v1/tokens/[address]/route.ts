@@ -22,18 +22,39 @@ export async function GET(
   const addr = address.toLowerCase() as `0x${string}`;
 
   try {
-    // isTip20 and compliance can run together; market and holders are independent
+    // Core data — must succeed. These are cheap RPC reads.
     const [tip20, compliance, market] = await Promise.all([
       isTip20(addr),
       getCompliance(addr),
       getMarketData(addr),
     ]);
 
-    // Holders and safety can now run in parallel (safety needs pools from market)
-    const [holders, safety] = await Promise.all([
-      getHolders(addr),
-      scanSafety(addr, tip20, market.pools),
+    // Holders is expensive for hot tokens (full Transfer-log replay) and can
+    // legitimately take minutes on heavily-used stables. Degrade gracefully:
+    // bound wall time with a timeout and return null if it blows past budget.
+    const timeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
+      Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
+
+    const [holdersRes, safetyRes] = await Promise.allSettled([
+      timeout(getHolders(addr), 8_000),
+      timeout(scanSafety(addr, tip20, market.pools), 8_000),
     ]);
+
+    const holders = holdersRes.status === "fulfilled" ? holdersRes.value : null;
+    const safety = safetyRes.status === "fulfilled" ? safetyRes.value : null;
+
+    if (holdersRes.status === "rejected") {
+      console.warn(
+        `[GET /api/v1/tokens/${address}] holders unavailable:`,
+        holdersRes.reason instanceof Error ? holdersRes.reason.message : holdersRes.reason,
+      );
+    }
+    if (safetyRes.status === "rejected") {
+      console.warn(
+        `[GET /api/v1/tokens/${address}] safety unavailable:`,
+        safetyRes.reason instanceof Error ? safetyRes.reason.message : safetyRes.reason,
+      );
+    }
 
     return NextResponse.json({
       address: addr,
@@ -46,27 +67,31 @@ export async function GET(
         price_change_24h: market.price_change_24h,
         pool_count: market.pools.length,
       },
-      safety: {
-        score: safety.score,
-        verdict: safety.verdict,
-        flags: safety.flags,
-        warnings: safety.warnings,
-        can_buy: safety.can_buy,
-        can_sell: safety.can_sell,
-        honeypot: safety.honeypot,
-      },
+      safety: safety
+        ? {
+            score: safety.score,
+            verdict: safety.verdict,
+            flags: safety.flags,
+            warnings: safety.warnings,
+            can_buy: safety.can_buy,
+            can_sell: safety.can_sell,
+            honeypot: safety.honeypot,
+          }
+        : null,
       compliance: {
         policy_type: compliance.policy_type,
         paused: compliance.paused,
         supply_cap: compliance.supply_cap,
         headroom_pct: compliance.headroom_pct,
       },
-      holders: {
-        total: holders.total_holders,
-        top5_pct: holders.top5_pct,
-        top10_pct: holders.top10_pct,
-        creator: holders.creator_address,
-      },
+      holders: holders
+        ? {
+            total: holders.total_holders,
+            top5_pct: holders.top5_pct,
+            top10_pct: holders.top10_pct,
+            creator: holders.creator_address,
+          }
+        : null,
     });
   } catch (err) {
     console.error(`[GET /api/v1/tokens/${address}]`, err);
