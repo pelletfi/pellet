@@ -56,7 +56,10 @@ export const spec = {
   },
   servers: [
     {
-      url: "https://pelletfi.com",
+      // Canonical non-redirecting host. The apex pelletfi.com 307-redirects
+      // to www at the Vercel edge, which breaks crawlers that don't follow
+      // redirects when probing endpoints declared in this spec.
+      url: "https://www.pelletfi.com",
       description: "Production",
     },
   ],
