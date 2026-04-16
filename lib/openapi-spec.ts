@@ -935,6 +935,74 @@ export const spec = {
         },
       },
     },
+    "/api/mpp/tokens/{address}/briefing": {
+      get: {
+        operationId: "mppGetBriefing",
+        summary:
+          "MPP paid · Deep briefing for any Tempo TIP-20 stablecoin",
+        description:
+          "MPP-discoverable mirror of /api/v1/tokens/{address}/briefing at the same $0.05 USDC.e price. Identical output — peg, policy, reserves, rewards, risk, flows, role holders, plus a Claude-synthesized analyst note. Lives at /api/mpp/* so MPPScan's directory crawler indexes it alongside the free identity-only routes.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.05",
+          minPrice: "0.05",
+          maxPrice: "0.05",
+          amount: "50000",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet deep briefing",
+        },
+        parameters: [
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description:
+              "Token contract address (0x-prefixed, 42 hex chars). The token must exist on Tempo mainnet.",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x20c000000000000000000000b9537d11c60e8b50",
+            },
+          },
+          {
+            name: "refresh",
+            in: "query",
+            required: false,
+            description:
+              "If true, bypasses any cached briefing and forces recomputation.",
+            schema: { type: "boolean", default: false },
+          },
+          {
+            name: "sections",
+            in: "query",
+            required: false,
+            description:
+              "Comma-separated list of sections to include. Allowed: market, safety, compliance, holders, identity, origin, evaluation. Default: all.",
+            schema: { type: "string", example: "market,safety,compliance,holders" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Pellet Briefing",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/BriefingResult" },
+              },
+            },
+          },
+          "402": {
+            description: "Payment required — include MPP credential in WWW-Authenticate",
+          },
+          "400": { description: "Invalid address" },
+          "502": { description: "Pipeline failure" },
+        },
+      },
+    },
     "/api/v1/tokens/{address}/briefing": {
       get: {
         operationId: "getBriefing",
