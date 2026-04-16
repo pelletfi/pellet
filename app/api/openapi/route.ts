@@ -53,7 +53,7 @@ const spec = {
       description: "Production",
     },
   ],
-  security: [],
+  security: [{ NoPayment: [] }],
   paths: {
     "/api/v1/tokens": {
       get: {
@@ -493,6 +493,13 @@ const spec = {
         scheme: "MPP",
         description:
           "Merchant Payment Protocol (MPP) on Tempo. Clients exchange a 402 challenge for a signed payment voucher in USDC.e. See https://github.com/tempoxyz/mpp for the spec, or use the mppx / tempo-request CLI for automatic handling.",
+      },
+      NoPayment: {
+        type: "apiKey",
+        in: "header",
+        name: "X-Pellet-Public",
+        description:
+          "No authentication or payment required. Declared as a named scheme so MPPScan recognises an explicit auth-mode declaration on free routes; clients do NOT need to send this header.",
       },
     },
     schemas: {
