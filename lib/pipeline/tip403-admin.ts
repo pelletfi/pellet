@@ -1,51 +1,46 @@
 /**
  * lib/pipeline/tip403-admin.ts
  *
- * TIP-403 policy admin scan — which policies does a given address administer?
+ * TIP-403 policy admin scan — which tracked TIP-20 stablecoins does a
+ * given address administer the policy of?
  *
- * Approach: read `policyIdCounter()` from the TIP-403 registry to get the
- * upper bound on policy IDs, then bulk-read every `policyData(i)` via
- * multicall and filter for entries where `admin == targetAddress`.
+ * Implementation note: Tempo's TIP-403 predeploy does NOT expose the
+ * `policyData(uint64 policyId)` function that viem/tempo's canonical ABI
+ * declares — live calls revert with an "unknown function selector" error.
+ * What IS live: `getPolicy(address token)` which returns the full policy
+ * record keyed by token. So we iterate through KNOWN_STABLECOINS rather
+ * than through a policy ID range.
  *
- * This is the single most agent-relevant enrichment for wallet intelligence:
- * policy admins hold the maximum compliance leverage over a stablecoin. An
- * agent checking "who can freeze USDC.e" or "is Circle behind this token"
- * needs this answer, and no other Tempo-native service produces it today.
+ * This is actually the more agent-useful framing — agents want to know
+ * "which tokens does 0xABC administer the compliance policy for?" not
+ * "which policy IDs." The answer is more semantically meaningful when it
+ * carries the token symbol + address alongside the policy metadata.
  *
- * Performance: scales with the number of registered policies (expected
- * O(dozens) in the early Tempo ecosystem). All reads issued in one
- * multicall. If policy count grows past ~200, this should move to a
- * background cron that snapshots (policyId, admin) into a DB table.
+ * Coverage limitation: only tracked stablecoins are scanned. An address
+ * that administers an untracked TIP-20 won't show up. Honest coverage
+ * flag reflects this.
  */
 
 import { tempoClient } from "@/lib/rpc";
 import { TEMPO_ADDRESSES } from "@/lib/types";
+import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 
-// Multicall3 canonical address — deployed on Tempo as a predeploy, but
-// viem's `tempo` chain config doesn't have it wired in by default, so we
-// pass it explicitly to multicall calls. Same address used across every
-// EVM-compatible chain. Verified via tempoxyz/docs predeploy list.
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
 
-// Minimal TIP-403 read ABI for admin scan. Same shape as the pre-trade
-// oracle's TIP403_READ_ABI, deliberately duplicated rather than shared
-// to keep these two pipelines independent.
-const TIP403_ADMIN_SCAN_ABI = [
+// Same ABI we use in stablecoins.ts — `getPolicy(token)` returns the full
+// 5-tuple (policyId, policyType, admin, supplyCap, paused) per token.
+const TIP403_GET_POLICY_ABI = [
   {
-    name: "policyIdCounter",
+    name: "getPolicy",
     type: "function",
     stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint64" }],
-  },
-  {
-    name: "policyData",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "policyId", type: "uint64" }],
+    inputs: [{ name: "token", type: "address" }],
     outputs: [
+      { name: "policyId", type: "uint256" },
       { name: "policyType", type: "uint8" },
       { name: "admin", type: "address" },
+      { name: "supplyCap", type: "uint256" },
+      { name: "paused", type: "bool" },
     ],
   },
 ] as const;
@@ -53,13 +48,10 @@ const TIP403_ADMIN_SCAN_ABI = [
 // Policy type enum per spec: 0 = WHITELIST, 1 = BLACKLIST. No compound.
 const POLICY_TYPE_LABELS = ["whitelist", "blacklist"] as const;
 
-// Upper bound on policies we'll scan inline. If `policyIdCounter` exceeds
-// this we still scan, but we return coverage:"partial" with a note so
-// consumers know the result isn't exhaustive. Move to background-cron
-// indexing before this number matters in practice.
-const INLINE_SCAN_LIMIT = 250;
-
 export interface AdministeredPolicy {
+  token_address: string;
+  token_symbol: string;
+  token_name: string;
   policy_id: number;
   policy_type: "whitelist" | "blacklist" | "unknown";
   admin: string;
@@ -67,72 +59,43 @@ export interface AdministeredPolicy {
 
 export interface PoliciesAdministeredResult {
   policies: AdministeredPolicy[];
-  /** Total policy count known to the registry at scan time. */
-  total_policy_count: number;
-  /** How many of those we actually inspected (may be less than total for huge registries). */
-  scanned_policy_count: number;
+  /** How many tracked stablecoins we scanned. */
+  stables_scanned: number;
   coverage: "complete" | "partial" | "unavailable";
   coverage_note: string | null;
 }
 
 /**
- * Return every TIP-403 policy where `address` is the admin.
+ * Return every tracked TIP-20 stablecoin where `address` is the policy admin.
  *
- * Bounded-parallel multicall. Returns coverage:"unavailable" if the
- * registry read fails; coverage:"partial" if the total policy count
- * exceeds INLINE_SCAN_LIMIT (we still scan the first N but are honest
- * about the gap).
+ * Reads `getPolicy(token)` for each token in KNOWN_STABLECOINS via a single
+ * multicall. Filters for admin match and returns token + policy metadata.
  */
 export async function getPoliciesAdministered(
   address: `0x${string}`
 ): Promise<PoliciesAdministeredResult> {
-  // ── 1. Read total policy count ─────────────────────────────────────────
-  let totalPolicyCount: number;
-  try {
-    const counter = await tempoClient.readContract({
-      address: TEMPO_ADDRESSES.tip403Registry,
-      abi: TIP403_ADMIN_SCAN_ABI,
-      functionName: "policyIdCounter",
-    });
-    totalPolicyCount = Number(counter);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  if (KNOWN_STABLECOINS.length === 0) {
     return {
       policies: [],
-      total_policy_count: 0,
-      scanned_policy_count: 0,
-      coverage: "unavailable",
-      coverage_note: `TIP-403 policyIdCounter() read failed: ${msg.slice(0, 140)}`,
-    };
-  }
-
-  if (totalPolicyCount === 0) {
-    return {
-      policies: [],
-      total_policy_count: 0,
-      scanned_policy_count: 0,
+      stables_scanned: 0,
       coverage: "complete",
       coverage_note: null,
     };
   }
 
-  // ── 2. Decide scan range ──────────────────────────────────────────────
-  const scanCount = Math.min(totalPolicyCount, INLINE_SCAN_LIMIT);
-  const truncated = scanCount < totalPolicyCount;
-
-  // ── 3. Bulk-read all policyData(i) via multicall ──────────────────────
-  // Policy IDs start at 0 and go through policyIdCounter - 1 (per spec
-  // `policyId = 0 → always false; policyId = 1 → always true; ≥2 → real`).
-  // We still scan 0 and 1 to surface any admin assignments on those slots.
-  const calls = Array.from({ length: scanCount }, (_, i) => ({
+  // Build one multicall for getPolicy(token) per tracked stablecoin.
+  const calls = KNOWN_STABLECOINS.map((s) => ({
     address: TEMPO_ADDRESSES.tip403Registry,
-    abi: TIP403_ADMIN_SCAN_ABI,
-    functionName: "policyData" as const,
-    args: [BigInt(i)] as const,
+    abi: TIP403_GET_POLICY_ABI,
+    functionName: "getPolicy" as const,
+    args: [s.address] as const,
   }));
 
   let results: Array<
-    | { status: "success"; result: readonly [number, `0x${string}`] }
+    | {
+        status: "success";
+        result: readonly [bigint, number, `0x${string}`, bigint, boolean];
+      }
     | { status: "failure"; error: Error }
   >;
   try {
@@ -145,43 +108,51 @@ export async function getPoliciesAdministered(
     const msg = err instanceof Error ? err.message : String(err);
     return {
       policies: [],
-      total_policy_count: totalPolicyCount,
-      scanned_policy_count: 0,
+      stables_scanned: 0,
       coverage: "unavailable",
-      coverage_note: `Multicall of policyData() reads failed: ${msg.slice(0, 140)}`,
+      coverage_note: `Multicall of getPolicy() reads failed: ${msg.slice(0, 140)}`,
     };
   }
 
-  // ── 4. Filter for policies where admin matches ───────────────────────
   const targetLower = address.toLowerCase();
   const matches: AdministeredPolicy[] = [];
+  let scanned = 0;
+  let failures = 0;
+
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
-    if (r.status !== "success") continue;
-    const [policyTypeRaw, admin] = r.result;
+    if (r.status !== "success") {
+      failures++;
+      continue;
+    }
+    scanned++;
+    const [pid, ptype, admin] = r.result;
     if (admin.toLowerCase() !== targetLower) continue;
     const policyType =
-      policyTypeRaw < POLICY_TYPE_LABELS.length
-        ? POLICY_TYPE_LABELS[policyTypeRaw]
+      ptype < POLICY_TYPE_LABELS.length
+        ? POLICY_TYPE_LABELS[ptype]
         : "unknown";
+    const stable = KNOWN_STABLECOINS[i];
     matches.push({
-      policy_id: i,
+      token_address: stable.address,
+      token_symbol: stable.symbol,
+      token_name: stable.name,
+      policy_id: Number(pid),
       policy_type: policyType,
       admin,
     });
   }
 
-  const coverage: PoliciesAdministeredResult["coverage"] = truncated
-    ? "partial"
-    : "complete";
-  const coverage_note = truncated
-    ? `Registry has ${totalPolicyCount} policies but this inline scan only inspected the first ${scanCount}. Policies beyond index ${scanCount - 1} were not checked — move to background-cron snapshot before this matters in practice.`
-    : null;
+  const coverage: PoliciesAdministeredResult["coverage"] =
+    failures === 0 ? "complete" : "partial";
+  const coverage_note =
+    failures > 0
+      ? `${failures} of ${KNOWN_STABLECOINS.length} tracked stablecoin policy reads failed. Results reflect the ${scanned} successful reads only.`
+      : null;
 
   return {
     policies: matches,
-    total_policy_count: totalPolicyCount,
-    scanned_policy_count: scanCount,
+    stables_scanned: scanned,
     coverage,
     coverage_note,
   };

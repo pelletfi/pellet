@@ -107,8 +107,7 @@ export async function getWalletIntelligence(
       ? policiesResult.value
       : {
           policies: [],
-          total_policy_count: 0,
-          scanned_policy_count: 0,
+          stables_scanned: 0,
           coverage: "unavailable",
           coverage_note: "TIP-403 admin scan pipeline threw upstream",
         };
@@ -229,8 +228,7 @@ function invalidInput(rawAddress: string): WalletIntelligence {
     is_burn_blocked_by: [],
     policies_administered: {
       policies: [],
-      total_policy_count: 0,
-      scanned_policy_count: 0,
+      stables_scanned: 0,
       coverage: "unavailable",
       coverage_note: note,
     },

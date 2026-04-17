@@ -322,6 +322,9 @@ export interface WalletRoleEntry {
 }
 
 export interface AdministeredPolicy {
+  token_address: string;
+  token_symbol: string;
+  token_name: string;
   policy_id: number;
   policy_type: "whitelist" | "blacklist" | "unknown";
   admin: string;
@@ -329,8 +332,8 @@ export interface AdministeredPolicy {
 
 export interface PoliciesAdministered {
   policies: AdministeredPolicy[];
-  total_policy_count: number;
-  scanned_policy_count: number;
+  /** How many tracked stablecoins we scanned. */
+  stables_scanned: number;
   coverage: "complete" | "partial" | "unavailable";
   coverage_note: string | null;
 }

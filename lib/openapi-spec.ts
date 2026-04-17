@@ -781,13 +781,16 @@ export const spec = {
                     policies_administered: {
                       type: "object",
                       description:
-                        "Every TIP-403 policy where this address is the admin. Full-registry scan via multicall.",
+                        "Every tracked TIP-20 stablecoin where this address is the TIP-403 policy admin. Scans all KNOWN_STABLECOINS via multicall of getPolicy(token).",
                       properties: {
                         policies: {
                           type: "array",
                           items: {
                             type: "object",
                             properties: {
+                              token_address: { type: "string" },
+                              token_symbol: { type: "string" },
+                              token_name: { type: "string" },
                               policy_id: { type: "integer" },
                               policy_type: {
                                 type: "string",
@@ -797,8 +800,7 @@ export const spec = {
                             },
                           },
                         },
-                        total_policy_count: { type: "integer" },
-                        scanned_policy_count: { type: "integer" },
+                        stables_scanned: { type: "integer" },
                         coverage: {
                           type: "string",
                           enum: ["complete", "partial", "unavailable"],
