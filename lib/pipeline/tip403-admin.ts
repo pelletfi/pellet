@@ -21,6 +21,12 @@
 import { tempoClient } from "@/lib/rpc";
 import { TEMPO_ADDRESSES } from "@/lib/types";
 
+// Multicall3 canonical address — deployed on Tempo as a predeploy, but
+// viem's `tempo` chain config doesn't have it wired in by default, so we
+// pass it explicitly to multicall calls. Same address used across every
+// EVM-compatible chain. Verified via tempoxyz/docs predeploy list.
+const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
+
 // Minimal TIP-403 read ABI for admin scan. Same shape as the pre-trade
 // oracle's TIP403_READ_ABI, deliberately duplicated rather than shared
 // to keep these two pipelines independent.
@@ -133,6 +139,7 @@ export async function getPoliciesAdministered(
     results = (await tempoClient.multicall({
       contracts: calls,
       allowFailure: true,
+      multicallAddress: MULTICALL3_ADDRESS,
     })) as typeof results;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
