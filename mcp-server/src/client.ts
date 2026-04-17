@@ -121,6 +121,18 @@ export async function lookupWalletIntelligence(address: string): Promise<unknown
 }
 
 /**
+ * Fast transaction-time precheck for any Tempo address.  Returns compact
+ * boolean flags — is_issuer_of_any / is_minter_of_any / is_pauser_of_any /
+ * is_burn_blocked_by_any / is_policy_admin_of_any / is_privileged — plus
+ * label and counts.  Pure DB read, no pipeline, designed for the agent
+ * critical path (target < 50ms).  Use lookupWalletIntelligence when you
+ * need per-stable breakdown or ERC-8004 agent status.
+ */
+export async function quickcheckAddress(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/addresses/${encodeURIComponent(address)}/quickcheck`);
+}
+
+/**
  * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
  * statically whether it would revert under TIP-403 policy — without sending
  * a transaction. Returns `willSucceed` (true/false/null) + policy details +

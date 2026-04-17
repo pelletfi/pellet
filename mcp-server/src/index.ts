@@ -17,11 +17,12 @@ import {
   getFlowAnomalies,
   simulateTransfer,
   lookupWalletIntelligence,
+  quickcheckAddress,
 } from "./client.js";
 
 const server = new McpServer({
   name: "@pelletfi/mcp",
-  version: "2.4.0",
+  version: "2.5.0",
 });
 
 // ── Tools ──────────────────────────────────────────────────────────────────────
@@ -182,6 +183,16 @@ server.tool(
   },
   async ({ address }) => {
     const result = await lookupWalletIntelligence(address);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.tool(
+  "quickcheck_address",
+  "Free · Fast transaction-time precheck for any Tempo address. Returns compact boolean flags (is_issuer_of_any / is_minter_of_any / is_default_admin_of_any / is_pauser_of_any / is_unpauser_of_any / is_burn_blocked_by_any / is_policy_admin_of_any / is_privileged) plus label metadata + role/admin counts. Pure DB read — no RPC, no pipeline. Target latency < 50ms, designed for agents in the transfer-decision critical path. Call lookup_wallet_intelligence when you need per-stable breakdown or ERC-8004 agent status.",
+  { address: z.string().describe("Any Tempo address (0x-prefixed, 42 hex chars).") },
+  async ({ address }) => {
+    const result = await quickcheckAddress(address);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   },
 );
