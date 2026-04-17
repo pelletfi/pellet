@@ -544,13 +544,8 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* RIGHT: FIG. 01 live data-flow capture */}
+          {/* RIGHT: live data-flow capture (framing stripped — video stands alone) */}
           <motion.div variants={fadeUp}>
-            <div className="fig-header">
-              <span>Fig. 01 → Live on-chain stream</span>
-              <span className="fig-value">TIP-20 · Tempo mainnet</span>
-            </div>
-
             {/*
               Isolating wrapper so mix-blend-mode has a known backdrop color.
               Framer-motion wraps this hero element in a transform, creating
@@ -587,29 +582,6 @@ export default function LandingPage() {
                   mixBlendMode: "lighten",
                 }}
               />
-            </div>
-
-            <div className="fig-footer">
-              <span>measured directly · never inferred</span>
-              <Link
-                href="/docs/methodology"
-                className="fig-method-link"
-              >
-                continuously reproducible
-                <motion.span
-                  aria-hidden
-                  style={{ display: "inline-block", marginLeft: 4 }}
-                  animate={{ y: [0, -1.5, 0], x: [0, 1.5, 0] }}
-                  transition={{
-                    duration: 2.6,
-                    repeat: Infinity,
-                    repeatDelay: 1.8,
-                    ease: "easeInOut",
-                  }}
-                >
-                  ↗
-                </motion.span>
-              </Link>
             </div>
           </motion.div>
         </div>
