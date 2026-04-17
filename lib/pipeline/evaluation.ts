@@ -112,7 +112,7 @@ Token: ${name} (${symbol})
 Address: ${address}
 
 OLI DISCIPLINE — READ CAREFULLY:
-This briefing is Open-Ledger Intelligence (OLI) output. Pellet's core tenet
+This briefing is Open-Ledger Interface (OLI) output. Pellet's core tenet
 is measurement over inference. Apply these rules strictly:
 
 1. When a section is labeled COVERAGE: UNAVAILABLE, treat its fields as

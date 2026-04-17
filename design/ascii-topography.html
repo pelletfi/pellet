@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ASCII Topography · Pellet</title>
+<link rel="icon" href="pellet-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d0e;
+    --ink-1: #2a2a2a;
+    --ink-2: #4a4a4a;
+    --ink-3: #6a6a6a;
+    --ink-4: #8a8a8a;
+    --ink-5: #b0b0b0;
+    --ink-6: #d0d0d0;
+    --ink-7: #e8e8e8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    color: var(--ink-3);
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    cursor: crosshair;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    display: block;
+  }
+  .ui {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    animation: fade-in 1.6s 0.4s ease-out forwards;
+  }
+  @keyframes fade-in { to { opacity: 1; } }
+  .frame { position: fixed; background: rgba(110, 110, 110, 0.22); }
+  .frame-t { top: 40px; left: 40px; right: 40px; height: 1px; }
+  .frame-b { bottom: 40px; left: 40px; right: 40px; height: 1px; }
+  .frame-l { top: 40px; bottom: 40px; left: 40px; width: 1px; }
+  .frame-r { top: 40px; bottom: 40px; right: 40px; width: 1px; }
+  .tag {
+    position: fixed;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .tag-tl { top: 64px; left: 64px; }
+  .tag-tr { top: 64px; right: 64px; text-align: right; color: var(--ink-2); }
+  .tag-bl {
+    bottom: 58px; left: 64px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--ink-6);
+  }
+  .tag-bl-sub {
+    position: fixed;
+    bottom: 36px; left: 64px;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .mark-box {
+    position: fixed;
+    bottom: 46px;
+    right: 64px;
+    pointer-events: none;
+  }
+  .mark-box img {
+    display: block;
+    width: 48px;
+    height: 48px;
+    opacity: 0.92;
+    filter: grayscale(100%);
+  }
+  .mark-box-rule {
+    width: 32px;
+    height: 1px;
+    background: rgba(180, 180, 180, 0.45);
+    margin-top: 10px;
+    margin-left: auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <div class="frame frame-t"></div>
+  <div class="frame frame-b"></div>
+  <div class="frame frame-l"></div>
+  <div class="frame frame-r"></div>
+  <div class="tag tag-tl">ASCII Topography</div>
+  <div class="tag tag-tr">FIG. 02 · Height Field Render · 24hz</div>
+  <div class="tag tag-bl">Terminal Cartography</div>
+  <div class="tag-bl-sub">Pellet · Open-Ledger Interface on Tempo</div>
+  <div class="mark-box">
+    <img src="pellet-mark.png" alt="Pellet" />
+    <div class="mark-box-rule"></div>
+  </div>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Intensity ramp — dark to bright
+  const RAMP = '  ··--==++**##%%@@';
+  const FONT_SIZE = 13;
+  const LINE_H = 13;
+  const CELL_W = 7.8; // measured for Geist Mono
+
+  const ATTRACTORS = [
+    { x: 0.32, y: 0.30, s: 1.00, ox: 0, oy: 0 },
+    { x: 0.32, y: 0.48, s: 0.80, ox: 0, oy: 0 },
+    { x: 0.32, y: 0.66, s: 0.52, ox: 0, oy: 0 },
+    { x: 0.54, y: 0.28, s: 0.72, ox: 0, oy: 0 },
+    { x: 0.60, y: 0.42, s: 0.58, ox: 0, oy: 0 },
+    { x: 0.78, y: 0.62, s: 0.42, ox: 0, oy: 0 },
+  ];
+
+  let W = 0, H = 0, COLS = 0, ROWS = 0;
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = `400 ${FONT_SIZE}px 'Geist Mono', ui-monospace, monospace`;
+    ctx.textBaseline = 'top';
+    COLS = Math.ceil(W / CELL_W);
+    ROWS = Math.ceil(H / LINE_H);
+  }
+
+  function heightAt(cx, cy, t) {
+    let v = 0;
+    for (const a of ATTRACTORS) {
+      const ax = (a.x + a.ox);
+      const ay = (a.y + a.oy);
+      const dx = cx - ax;
+      const dy = cy - ay;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      v += a.s * Math.exp(-d * 5.2);
+    }
+    // subtle wave ripple
+    v += 0.04 * Math.sin(cx * 14 + t * 0.0006) * Math.cos(cy * 10 - t * 0.0004);
+    return v;
+  }
+
+  function render(t) {
+    // Breathe attractors
+    for (const a of ATTRACTORS) {
+      a.ox = Math.sin(t * 0.00010 + a.s * 3.1) * 0.010;
+      a.oy = Math.cos(t * 0.00008 + a.s * 4.3) * 0.010;
+    }
+
+    ctx.fillStyle = '#0d0d0e';
+    ctx.fillRect(0, 0, W, H);
+
+    const ar = W / H; // aspect ratio — used to normalize so field doesn't stretch
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const u = c / COLS;
+        const v = r / ROWS;
+        const h = heightAt(u, v, t);
+        if (h < 0.02) continue;
+
+        const idx = Math.min(RAMP.length - 1, Math.floor(h * RAMP.length * 1.1));
+        const ch = RAMP[idx];
+        if (ch === ' ') continue;
+
+        const intensity = Math.min(1, h * 1.25);
+        const bright = Math.floor(58 + intensity * 200);
+        const alpha = 0.18 + intensity * 0.72;
+
+        ctx.fillStyle = `rgba(${bright}, ${bright}, ${bright}, ${alpha})`;
+        ctx.fillText(ch, c * CELL_W, r * LINE_H);
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

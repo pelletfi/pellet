@@ -7,7 +7,7 @@ export const spec = {
     title: "Pellet API",
     version: "1.0.0",
     description:
-      "Open-Ledger Intelligence (OLI) on Tempo. Direct on-chain measurement for every TIP-20 stablecoin — peg spread vs pathUSD, TIP-403 policy enforcement (allowlist / blocklist / compound), supply cap + headroom, reserve composition + attestation, TIP-20 reward attribution + effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores, DEX flow topology, cross-stable flow anomalies (z-score thresholds), peg-break events, role-holder enumeration, and historical time-travel via ?as_of=. Every numeric value is a measurement, not an estimate; null means unmeasured (never inferred as zero). 14 free endpoints + one $0.05 MPP-paid deep briefing. Aggregator-grade data without the aggregator layer — built for agents that care about the difference between a bridged token's actual peg and an oracle's idea of it.",
+      "Open-Ledger Interface (OLI) on Tempo. Direct on-chain measurement for every TIP-20 stablecoin — peg spread vs pathUSD, TIP-403 policy enforcement (allowlist / blocklist / compound), supply cap + headroom, reserve composition + attestation, TIP-20 reward attribution + effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores, DEX flow topology, cross-stable flow anomalies (z-score thresholds), peg-break events, role-holder enumeration, and historical time-travel via ?as_of=. Every numeric value is a measurement, not an estimate; null means unmeasured (never inferred as zero). 14 free endpoints + one $0.05 MPP-paid deep briefing. Aggregator-grade data without the aggregator layer — built for agents that care about the difference between a bridged token's actual peg and an oracle's idea of it.",
     contact: {
       url: "https://pelletfi.com",
     },
@@ -17,7 +17,7 @@ export const spec = {
       "Addresses are 0x-prefixed 42-char hex. Stablecoin addresses on Tempo start with 0x20c0... (TIP-20 factory pattern).",
       "For peg, risk, and reserves endpoints, ?as_of=<ISO8601|epoch|relative> returns historical snapshots. See /docs/methodology#time-travel for format.",
       "Every numeric value is a direct on-chain measurement, not an estimate. When a measurement is unavailable, the field returns null with an explanatory note — never a synthetic estimate.",
-      "See https://pelletfi.com/docs/oli for the Open-Ledger Intelligence discipline specification.",
+      "See https://pelletfi.com/docs/oli for the Open-Ledger Interface discipline specification.",
     ].join(" "),
     // Rounded-square mark (black P + velocity whooshes on white tile) — the
     // same asset Next.js serves at /icon.png as the favicon. Works on both
@@ -38,7 +38,7 @@ export const spec = {
       "stablecoin",
       "stablecoins",
       "stablecoin-intelligence",
-      "open-ledger-intelligence",
+      "open-ledger-interface",
       "oli",
       "tempo",
       "tip-20",
@@ -1367,7 +1367,7 @@ export const spec = {
         summary:
           "Deep briefing for any Tempo TIP-20 stablecoin — peg, policy, reserves, rewards, risk, flows, role holders, on-chain measured",
         description:
-          "Runs the full Pellet Open-Ledger Intelligence (OLI) pipeline for any Tempo TIP-20 stablecoin and returns a structured briefing document covering: live peg spread vs pathUSD (direct on-chain DEX measurement, not oracle estimate), TIP-403 policy enforcement (allowlist / blocklist / compound, pause state, supply cap headroom), reserve and backing breakdown with attestation source, TIP-20 reward attribution and effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk), DEX flow topology and cross-stable flow anomalies, role-holder enumeration (admin / minter / burner), peg-break event history, and a natural-language evaluation. Every numeric value is a direct on-chain measurement — null when unmeasured, never a synthetic estimate. Requires an MPP payment of 0.05 USDC.e on Tempo mainnet.",
+          "Runs the full Pellet Open-Ledger Interface (OLI) pipeline for any Tempo TIP-20 stablecoin and returns a structured briefing document covering: live peg spread vs pathUSD (direct on-chain DEX measurement, not oracle estimate), TIP-403 policy enforcement (allowlist / blocklist / compound, pause state, supply cap headroom), reserve and backing breakdown with attestation source, TIP-20 reward attribution and effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk), DEX flow topology and cross-stable flow anomalies, role-holder enumeration (admin / minter / burner), peg-break event history, and a natural-language evaluation. Every numeric value is a direct on-chain measurement — null when unmeasured, never a synthetic estimate. Requires an MPP payment of 0.05 USDC.e on Tempo mainnet.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",

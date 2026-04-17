@@ -18,7 +18,7 @@ Do both. MPPScan indexes Pellet immediately for agents using `tempo wallet servi
   url: "https://pelletfi.com",
   serviceUrl: "https://pelletfi.com",
   description:
-    "Open-Ledger Intelligence (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles.",
+    "Open-Ledger Interface (OLI) on Tempo. Every peg, policy, reserve, reward, flow, and risk signal for every TIP-20 stablecoin — measured directly on-chain, not estimated from oracles.",
   categories: ["blockchain", "data"],
   integration: "first-party",
   status: "active",

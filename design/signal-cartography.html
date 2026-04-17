@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Signal Cartography · Pellet</title>
+<link rel="icon" href="pellet-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d0e;
+    --ink-1: #2a2a2a;
+    --ink-2: #4a4a4a;
+    --ink-3: #6a6a6a;
+    --ink-4: #8a8a8a;
+    --ink-5: #b0b0b0;
+    --ink-6: #d0d0d0;
+    --ink-7: #e8e8e8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    color: var(--ink-3);
+    cursor: crosshair;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    display: block;
+  }
+  #contours { z-index: 1; }
+  #flow { z-index: 2; }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 35% 35%, transparent 20%, rgba(13, 13, 14, 0.55) 85%),
+      linear-gradient(180deg, rgba(13,13,14,0.4) 0%, transparent 20%, transparent 80%, rgba(13,13,14,0.5) 100%);
+  }
+  .ui {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    animation: fade-in 1.8s 0.6s ease-out forwards;
+  }
+  @keyframes fade-in {
+    to { opacity: 1; }
+  }
+  .frame-line {
+    position: fixed;
+    background: rgba(95, 88, 76, 0.32);
+  }
+  .frame-top    { top: 40px;    left: 40px;  right: 40px; height: 1px; }
+  .frame-bottom { bottom: 40px; left: 40px;  right: 40px; height: 1px; }
+  .frame-left   { top: 40px;    bottom: 40px; left: 40px; width: 1px; }
+  .frame-right  { top: 40px;    bottom: 40px; right: 40px; width: 1px; }
+  .corner {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+  }
+  .corner::before, .corner::after {
+    content: '';
+    position: absolute;
+    background: rgba(140, 130, 112, 0.5);
+  }
+  .corner::before { left: 50%; top: 0;    bottom: 0; width: 1px; transform: translateX(-50%); }
+  .corner::after  { top: 50%;  left: 0;   right: 0;  height: 1px; transform: translateY(-50%); }
+  .c-tl { top: 34px;    left: 34px; }
+  .c-tr { top: 34px;    right: 34px; }
+  .c-bl { bottom: 34px; left: 34px; }
+  .c-br { bottom: 34px; right: 34px; }
+
+  .meta {
+    position: fixed;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .meta-tl { top: 64px;    left: 64px; }
+  .meta-tr { top: 64px;    right: 64px; text-align: right; }
+  .meta-bl { bottom: 64px; left: 64px;  line-height: 1.7; }
+  .meta-br { bottom: 64px; right: 64px; text-align: right; }
+
+  .title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    color: var(--ink-6);
+    font-weight: 400;
+    text-transform: none;
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+  .sub {
+    color: var(--ink-4);
+  }
+  .mark-box {
+    pointer-events: none;
+  }
+  .mark-box img {
+    display: block;
+    width: 48px;
+    height: 48px;
+    opacity: 0.92;
+    filter: grayscale(100%);
+  }
+  .mark-box-rule {
+    width: 32px;
+    height: 1px;
+    background: rgba(180, 180, 180, 0.45);
+    margin-top: 10px;
+    margin-left: auto;
+  }
+  .axis-mark {
+    position: fixed;
+    color: var(--ink-2);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+  .node-label {
+    position: absolute;
+    font-family: 'Instrument Serif', serif;
+    font-size: 15px;
+    color: rgba(210, 200, 180, 0.7);
+    transform: translate(14px, -20px);
+    pointer-events: none;
+    opacity: 0;
+    animation: fade-in 1.6s 1.6s ease-out forwards;
+  }
+</style>
+</head>
+<body>
+  <canvas id="contours"></canvas>
+  <canvas id="flow"></canvas>
+  <div class="vignette"></div>
+
+  <div class="ui">
+    <div class="frame-line frame-top"></div>
+    <div class="frame-line frame-bottom"></div>
+    <div class="frame-line frame-left"></div>
+    <div class="frame-line frame-right"></div>
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+
+    <div class="meta meta-tl">Signal Cartography</div>
+    <div class="meta meta-tr">
+      FIG. 01 · TIDAL TOPOLOGY<br />
+      <span style="color: var(--ink-2)">live · 1Hz</span>
+    </div>
+
+    <div class="meta meta-bl">
+      <span class="title">Tidal Topology</span><br />
+      <span class="sub">Pellet · Open-Ledger Interface on Tempo</span><br />
+      <span style="color: var(--ink-2)">Observing the hidden terrain of value flows</span>
+    </div>
+
+    <div class="meta meta-br mark-box">
+      <img src="pellet-mark.png" alt="Pellet" />
+      <div class="mark-box-rule"></div>
+    </div>
+
+    <div id="node-labels" style="position: fixed; inset: 0; pointer-events: none;"></div>
+  </div>
+
+<script>
+(() => {
+  const contourCanvas = document.getElementById('contours');
+  const flowCanvas = document.getElementById('flow');
+  const cctx = contourCanvas.getContext('2d');
+  const fctx = flowCanvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Attractors — subtle "P" echo in normalized coords
+  const ATTRACTORS = [
+    { x: 0.33, y: 0.32, s: 1.00, label: 'α', ox: 0, oy: 0 },
+    { x: 0.33, y: 0.48, s: 0.80, label: 'β', ox: 0, oy: 0 },
+    { x: 0.33, y: 0.62, s: 0.55, label: 'γ', ox: 0, oy: 0 },
+    { x: 0.52, y: 0.30, s: 0.72, label: 'δ', ox: 0, oy: 0 },
+    { x: 0.57, y: 0.43, s: 0.56, label: 'ε', ox: 0, oy: 0 },
+  ];
+
+  let W, H;
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    [contourCanvas, flowCanvas].forEach(c => {
+      c.width = W * dpr;
+      c.height = H * dpr;
+      c.style.width = W + 'px';
+      c.style.height = H + 'px';
+      c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+    drawContours();
+    placeLabels();
+  }
+
+  function heightAt(x, y) {
+    let v = 0;
+    for (const a of ATTRACTORS) {
+      const ax = (a.x + a.ox) * W;
+      const ay = (a.y + a.oy) * H;
+      const dx = x - ax;
+      const dy = y - ay;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      v += a.s * Math.exp(-d / Math.min(W, H) * 4.2);
+    }
+    return v;
+  }
+
+  function fieldAt(x, y) {
+    let fx = 0, fy = 0;
+    for (const a of ATTRACTORS) {
+      const ax = (a.x + a.ox) * W;
+      const ay = (a.y + a.oy) * H;
+      const dx = x - ax;
+      const dy = y - ay;
+      const d2 = dx * dx + dy * dy + 1;
+      const d = Math.sqrt(d2);
+      const falloff = Math.exp(-d / Math.min(W, H) * 3.0);
+      const force = a.s * falloff;
+      // mix: rotational + mild attraction
+      fx += (-dy / d) * force * 1.0 + (-dx / d) * force * 0.18;
+      fy += ( dx / d) * force * 1.0 + (-dy / d) * force * 0.18;
+    }
+    return { x: fx, y: fy };
+  }
+
+  function drawContours() {
+    cctx.clearRect(0, 0, W, H);
+
+    // Grid whisper
+    cctx.strokeStyle = 'rgba(95, 95, 95, 0.12)';
+    cctx.lineWidth = 1;
+    const grid = 60;
+    cctx.beginPath();
+    for (let x = 0; x <= W; x += grid) {
+      cctx.moveTo(x, 0);
+      cctx.lineTo(x, H);
+    }
+    for (let y = 0; y <= H; y += grid) {
+      cctx.moveTo(0, y);
+      cctx.lineTo(W, y);
+    }
+    cctx.stroke();
+
+    // Dot matrix (halftone height field)
+    const dotSpacing = 11;
+    for (let gx = dotSpacing; gx < W; gx += dotSpacing) {
+      for (let gy = dotSpacing; gy < H; gy += dotSpacing) {
+        const h = heightAt(gx, gy);
+        if (h > 0.04) {
+          const radius = Math.max(0.5, Math.min(2.4, h * 2.6));
+          const alpha = Math.min(0.55, h * 0.72);
+          const bright = Math.round(210 * Math.min(1, h * 1.3));
+          cctx.fillStyle = `rgba(${bright}, ${bright}, ${bright}, ${alpha})`;
+          cctx.beginPath();
+          cctx.arc(gx, gy, radius, 0, Math.PI * 2);
+          cctx.fill();
+        }
+      }
+    }
+
+    // Contour lines — deformed concentric curves
+    for (let ci = 0; ci < ATTRACTORS.length; ci++) {
+      const a = ATTRACTORS[ci];
+      const cx = (a.x + a.ox) * W;
+      const cy = (a.y + a.oy) * H;
+      const maxR = Math.min(W, H) * 0.38;
+      const spacing = 24;
+      const levels = Math.floor(maxR / spacing);
+
+      for (let lv = 1; lv <= levels; lv++) {
+        const rBase = lv * spacing;
+        const pts = [];
+        for (let angle = 0; angle <= 360; angle += 1) {
+          const rad = angle * Math.PI / 180;
+          let r = rBase;
+          for (let oi = 0; oi < ATTRACTORS.length; oi++) {
+            if (oi === ci) continue;
+            const o = ATTRACTORS[oi];
+            const ox = (o.x + o.ox) * W;
+            const oy = (o.y + o.oy) * H;
+            const px = cx + r * Math.cos(rad);
+            const py = cy + r * Math.sin(rad);
+            const dx = px - ox;
+            const dy = py - oy;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            r += o.s * 38 * Math.exp(-d / (Math.min(W, H) * 0.16)) *
+                 Math.sin(d * 0.012 + rad * 1.4 + oi * 0.8);
+          }
+          pts.push([cx + r * Math.cos(rad), cy + r * Math.sin(rad)]);
+        }
+        const fade = 1 - lv / (levels + 1);
+        const alpha = Math.max(0.12, 0.55 * fade * a.s);
+        const bright = 200 + Math.round(45 * fade);
+        cctx.strokeStyle = `rgba(${bright}, ${bright}, ${bright}, ${alpha})`;
+        cctx.lineWidth = 1;
+        cctx.beginPath();
+        cctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) cctx.lineTo(pts[i][0], pts[i][1]);
+        cctx.stroke();
+      }
+    }
+
+    // Node markers
+    for (const a of ATTRACTORS) {
+      const cx = (a.x + a.ox) * W;
+      const cy = (a.y + a.oy) * H;
+      const r = 7 + a.s * 5;
+
+      cctx.strokeStyle = `rgba(220, 220, 220, ${0.70 * a.s})`;
+      cctx.lineWidth = 1;
+      cctx.beginPath();
+      cctx.arc(cx, cy, r, 0, Math.PI * 2);
+      cctx.stroke();
+
+      cctx.strokeStyle = `rgba(170, 170, 170, ${0.5 * a.s})`;
+      cctx.beginPath();
+      cctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      cctx.stroke();
+
+      cctx.fillStyle = `rgba(240, 240, 240, ${0.9 * a.s})`;
+      cctx.beginPath();
+      cctx.arc(cx, cy, 1.2, 0, Math.PI * 2);
+      cctx.fill();
+
+      cctx.strokeStyle = `rgba(160, 160, 160, ${0.35 * a.s})`;
+      cctx.beginPath();
+      const cl = 16 + a.s * 8;
+      cctx.moveTo(cx - cl, cy); cctx.lineTo(cx - r - 3, cy);
+      cctx.moveTo(cx + r + 3, cy); cctx.lineTo(cx + cl, cy);
+      cctx.moveTo(cx, cy - cl); cctx.lineTo(cx, cy - r - 3);
+      cctx.moveTo(cx, cy + r + 3); cctx.lineTo(cx, cy + cl);
+      cctx.stroke();
+    }
+  }
+
+  function placeLabels() {
+    const container = document.getElementById('node-labels');
+    container.innerHTML = '';
+    for (const a of ATTRACTORS) {
+      const el = document.createElement('div');
+      el.className = 'node-label';
+      el.textContent = a.label;
+      el.style.left = ((a.x + a.ox) * W) + 'px';
+      el.style.top = ((a.y + a.oy) * H) + 'px';
+      container.appendChild(el);
+    }
+  }
+
+  // Streamline particles
+  const NUM_PARTICLES = 420;
+  const particles = [];
+  class P {
+    constructor() { this.reset(true); }
+    reset(initial) {
+      this.x = Math.random() * (W || window.innerWidth);
+      this.y = Math.random() * (H || window.innerHeight);
+      this.age = 0;
+      this.maxAge = 120 + Math.random() * 220;
+      this.px = this.x;
+      this.py = this.y;
+      if (initial) this.age = Math.floor(Math.random() * this.maxAge);
+    }
+    step() {
+      this.px = this.x;
+      this.py = this.y;
+      const f = fieldAt(this.x, this.y);
+      const mag = Math.hypot(f.x, f.y) + 1e-6;
+      const speed = 1.1;
+      this.x += (f.x / mag) * speed;
+      this.y += (f.y / mag) * speed;
+      this.age++;
+      if (
+        this.age > this.maxAge ||
+        this.x < -20 || this.x > W + 20 ||
+        this.y < -20 || this.y > H + 20
+      ) this.reset(false);
+    }
+    draw(ctx) {
+      const t = this.age / this.maxAge;
+      const alpha = Math.sin(t * Math.PI) * 0.32;
+      ctx.strokeStyle = `rgba(220, 220, 220, ${alpha})`;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(this.px, this.py);
+      ctx.lineTo(this.x, this.y);
+      ctx.stroke();
+    }
+  }
+  function animate(t) {
+    // Slow breathing on attractor positions
+    for (const a of ATTRACTORS) {
+      a.ox = Math.sin(t * 0.00008 + a.s * 3.1) * 0.006;
+      a.oy = Math.cos(t * 0.00006 + a.s * 4.3) * 0.006;
+    }
+
+    // Fade trail
+    fctx.fillStyle = 'rgba(13, 13, 14, 0.045)';
+    fctx.fillRect(0, 0, W, H);
+
+    for (const p of particles) {
+      p.step();
+      p.draw(fctx);
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  let lastContour = 0;
+  function tickContours(t) {
+    // Re-render contours slowly so attractor drift is visible
+    if (t - lastContour > 120) {
+      drawContours();
+      placeLabels();
+      lastContour = t;
+    }
+    requestAnimationFrame(tickContours);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Create particles AFTER resize so W/H are defined
+  for (let i = 0; i < NUM_PARTICLES; i++) particles.push(new P());
+
+  requestAnimationFrame(animate);
+  requestAnimationFrame(tickContours);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tempo Flow Atlas · Pellet</title>
+<link rel="icon" href="pellet-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d0e;
+    --ink-1: #2a2a2a;
+    --ink-2: #4a4a4a;
+    --ink-3: #6a6a6a;
+    --ink-4: #8a8a8a;
+    --ink-5: #b0b0b0;
+    --ink-6: #d0d0d0;
+    --ink-7: #e8e8e8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    color: var(--ink-3);
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    cursor: crosshair;
+  }
+  canvas { position: fixed; inset: 0; display: block; }
+  #bg   { z-index: 1; }
+  #flow { z-index: 2; }
+  #fg   { z-index: 3; pointer-events: none; }
+  .vignette {
+    position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(13,13,14,0.55) 100%);
+  }
+  .ui {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    opacity: 0; animation: fade 1.8s 0.5s ease-out forwards;
+  }
+  @keyframes fade { to { opacity: 1; } }
+  .frame { position: fixed; background: rgba(110,110,110,0.22); }
+  .frame-t { top: 40px; left: 40px; right: 40px; height: 1px; }
+  .frame-b { bottom: 40px; left: 40px; right: 40px; height: 1px; }
+  .frame-l { top: 40px; bottom: 40px; left: 40px; width: 1px; }
+  .frame-r { top: 40px; bottom: 40px; right: 40px; width: 1px; }
+  .corner { position: fixed; width: 12px; height: 12px; }
+  .corner::before, .corner::after {
+    content: ''; position: absolute; background: rgba(150,150,150,0.45);
+  }
+  .corner::before { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+  .corner::after  { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+  .c-tl { top: 34px; left: 34px; }
+  .c-tr { top: 34px; right: 34px; }
+  .c-bl { bottom: 34px; left: 34px; }
+  .c-br { bottom: 34px; right: 34px; }
+  .tag {
+    position: fixed;
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .tag-tl { top: 64px; left: 64px; }
+  .tag-tr { top: 64px; right: 64px; text-align: right; color: var(--ink-4); }
+  .tag-tr-sub {
+    position: fixed; top: 82px; right: 64px;
+    font-size: 9px; font-weight: 300; letter-spacing: 0.14em;
+    color: var(--ink-2);
+  }
+  .display {
+    position: fixed;
+    bottom: 58px; left: 64px;
+    font-family: 'Instrument Serif', serif;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    color: var(--ink-6);
+    line-height: 1;
+  }
+  .display-sub {
+    position: fixed;
+    bottom: 36px; left: 64px;
+    font-size: 10px; font-weight: 300; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .mark-box {
+    position: fixed;
+    bottom: 46px;
+    right: 64px;
+    pointer-events: none;
+  }
+  .mark-box img {
+    display: block;
+    width: 48px;
+    height: 48px;
+    opacity: 0.92;
+    filter: grayscale(100%);
+  }
+  .mark-box-rule {
+    width: 32px;
+    height: 1px;
+    background: rgba(180,180,180,0.45);
+    margin-top: 10px;
+    margin-left: auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="flow"></canvas>
+<canvas id="fg"></canvas>
+<div class="vignette"></div>
+<div class="ui">
+  <div class="frame frame-t"></div>
+  <div class="frame frame-b"></div>
+  <div class="frame frame-l"></div>
+  <div class="frame frame-r"></div>
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+  <div class="tag tag-tl">Tempo Flow Atlas</div>
+  <div class="tag tag-tr">FIG. 03 · Stablecoin Network · Live</div>
+  <div class="tag-tr-sub" id="stamp">—</div>
+  <div class="display">Tempo Flow Atlas</div>
+  <div class="display-sub">Pellet · Open-Ledger Interface on Tempo</div>
+  <div class="mark-box">
+    <img src="pellet-mark.png" alt="Pellet" />
+    <div class="mark-box-rule"></div>
+  </div>
+</div>
+<script>
+(() => {
+  const bg = document.getElementById('bg');
+  const fl = document.getElementById('flow');
+  const fg = document.getElementById('fg');
+  const bctx = bg.getContext('2d');
+  const flctx = fl.getContext('2d');
+  const fgctx = fg.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Real Tempo stablecoins — supply in whole USD (divided by 1e6)
+  const STABLES = [
+    { sym: 'pathUSD', name: 'PathUSD',           supply: 3964112, risk: 4.0 },
+    { sym: 'USDC.e',  name: 'Bridged USDC',      supply: 2707410, risk: 5.6 },
+    { sym: 'USDT0',   name: 'USDT0',             supply:  554395, risk: 4.0 },
+    { sym: 'cUSD',    name: 'Cap USD',           supply:   53596, risk: 4.8 },
+    { sym: 'stcUSD',  name: 'Staked Cap USD',    supply:   23828, risk: 12.0 },
+    { sym: 'EURC.e',  name: 'Bridged EURC',      supply:   11012, risk: 12.0 },
+    { sym: 'frxUSD',  name: 'Frax USD',          supply:      24, risk: 4.0 },
+    { sym: 'GUSD',    name: 'Generic USD',       supply:       0, risk: 12.0 },
+    { sym: 'rUSD',    name: 'Reservoir USD',     supply:       0, risk: 12.0 },
+    { sym: 'wsrUSD',  name: 'Wrapped Savings',   supply:       0, risk: 12.0 },
+  ];
+
+  let W = 0, H = 0, NODES = [];
+
+  function layout(cx, cy, R) {
+    const sorted = [...STABLES].sort((a, b) => b.supply - a.supply);
+    const maxSup = Math.max(...sorted.map(s => s.supply));
+    sorted.forEach(s => {
+      const w = maxSup > 0 ? Math.log10((s.supply || 1) + 1) / Math.log10(maxSup + 1) : 0.1;
+      s.r = Math.max(5, 5 + w * 34);
+      s.w = w;
+    });
+    sorted[0].x = cx - R * 0.20; sorted[0].y = cy - R * 0.12;
+    sorted[1].x = cx + R * 0.22; sorted[1].y = cy - R * 0.06;
+    sorted[2].x = cx - R * 0.02; sorted[2].y = cy + R * 0.22;
+
+    const outer = sorted.slice(3);
+    outer.forEach((s, i) => {
+      const n = outer.length;
+      const angle = -Math.PI * 0.72 + (i / Math.max(1, n - 1)) * Math.PI * 1.55;
+      const radius = R * 0.58;
+      s.x = cx + Math.cos(angle) * radius;
+      s.y = cy + Math.sin(angle) * radius;
+    });
+    return sorted;
+  }
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    [bg, fl, fg].forEach(c => {
+      c.width = W * dpr;
+      c.height = H * dpr;
+      c.style.width = W + 'px';
+      c.style.height = H + 'px';
+      c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+    const cx = W * 0.45;
+    const cy = H * 0.48;
+    const R = Math.min(W, H) * 0.42;
+    NODES = layout(cx, cy, R);
+    drawBg();
+    drawFg();
+  }
+
+  function drawBg() {
+    bctx.clearRect(0, 0, W, H);
+    // Grid whisper
+    bctx.strokeStyle = 'rgba(95,95,95,0.10)';
+    bctx.lineWidth = 1;
+    bctx.beginPath();
+    const g = 60;
+    for (let x = 0; x <= W; x += g) { bctx.moveTo(x, 0); bctx.lineTo(x, H); }
+    for (let y = 0; y <= H; y += g) { bctx.moveTo(0, y); bctx.lineTo(W, y); }
+    bctx.stroke();
+
+    const cx = W * 0.45, cy = H * 0.48;
+    // Radial refs
+    bctx.strokeStyle = 'rgba(80,80,80,0.16)';
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      bctx.beginPath();
+      bctx.moveTo(cx + Math.cos(a) * 40, cy + Math.sin(a) * 40);
+      bctx.lineTo(cx + Math.cos(a) * Math.min(W, H) * 0.44, cy + Math.sin(a) * Math.min(W, H) * 0.44);
+      bctx.stroke();
+    }
+    // Reference rings
+    bctx.strokeStyle = 'rgba(110,110,110,0.22)';
+    for (const rr of [0.18, 0.32, 0.45]) {
+      bctx.beginPath();
+      bctx.arc(cx, cy, Math.min(W, H) * rr, 0, Math.PI * 2);
+      bctx.stroke();
+    }
+    // Edges between active nodes
+    bctx.strokeStyle = 'rgba(140,140,140,0.10)';
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = i + 1; j < NODES.length; j++) {
+        const a = NODES[i], b = NODES[j];
+        if (a.supply === 0 && b.supply === 0) continue;
+        bctx.beginPath();
+        bctx.moveTo(a.x, a.y);
+        bctx.lineTo(b.x, b.y);
+        bctx.stroke();
+      }
+    }
+  }
+
+  function drawFg() {
+    fgctx.clearRect(0, 0, W, H);
+    fgctx.textBaseline = 'top';
+
+    for (const n of NODES) {
+      const risky = n.risk >= 10;
+      const inactive = n.supply === 0;
+
+      // Outer ring — brightness signals status, not hue
+      const ringBright = inactive ? 80 : (risky ? 225 : 200);
+      const ringAlpha = inactive ? 0.25 : 0.70 + n.w * 0.25;
+      fgctx.strokeStyle = `rgba(${ringBright},${ringBright},${ringBright},${ringAlpha})`;
+      fgctx.lineWidth = 1;
+
+      if (risky && !inactive) {
+        fgctx.setLineDash([3, 3]);
+      }
+      fgctx.beginPath();
+      fgctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      fgctx.stroke();
+      fgctx.setLineDash([]);
+
+      // Inner dot
+      const dotBright = inactive ? 95 : 240;
+      fgctx.fillStyle = `rgba(${dotBright},${dotBright},${dotBright},${inactive ? 0.5 : 0.92})`;
+      fgctx.beginPath();
+      fgctx.arc(n.x, n.y, 1.8, 0, Math.PI * 2);
+      fgctx.fill();
+
+      // Crosshair
+      fgctx.strokeStyle = `rgba(150,150,150,${inactive ? 0.18 : 0.35})`;
+      const cl = n.r + 14;
+      fgctx.beginPath();
+      fgctx.moveTo(n.x - cl, n.y); fgctx.lineTo(n.x - n.r - 4, n.y);
+      fgctx.moveTo(n.x + n.r + 4, n.y); fgctx.lineTo(n.x + cl, n.y);
+      fgctx.moveTo(n.x, n.y - cl); fgctx.lineTo(n.x, n.y - n.r - 4);
+      fgctx.moveTo(n.x, n.y + n.r + 4); fgctx.lineTo(n.x, n.y + cl);
+      fgctx.stroke();
+
+      // Labels
+      const labelAlpha = inactive ? 0.35 : 0.85;
+      fgctx.fillStyle = `rgba(215,215,215,${labelAlpha})`;
+      fgctx.font = '500 12px "Geist Mono", monospace';
+      const lx = n.x + n.r + 20;
+      const ly = n.y - 8;
+      fgctx.fillText(n.sym, lx, ly);
+
+      fgctx.font = '300 9px "Geist Mono", monospace';
+      fgctx.fillStyle = `rgba(150,150,150,${labelAlpha * 0.85})`;
+      const supplyText = n.supply >= 1000
+        ? '$' + (n.supply / 1000).toFixed(n.supply >= 10000 ? 0 : 1) + 'K SUPPLY'
+        : n.supply > 0
+          ? '$' + n.supply.toFixed(0) + ' SUPPLY'
+          : 'DORMANT';
+      fgctx.fillText(supplyText, lx, ly + 14);
+
+      if (risky && !inactive) {
+        fgctx.fillStyle = 'rgba(232,232,232,0.65)';
+        fgctx.fillText('RISK ' + n.risk.toFixed(1), lx, ly + 26);
+      }
+    }
+  }
+
+  // Particle class — created AFTER resize populates NODES
+  class P {
+    constructor() { this.reset(true); }
+    reset(initial) {
+      const active = NODES.filter(n => n.supply > 0);
+      if (active.length < 2) { this.dead = true; return; }
+      const a = active[Math.floor(Math.random() * active.length)];
+      let b = active[Math.floor(Math.random() * active.length)];
+      let guard = 0;
+      while (b === a && guard++ < 6) b = active[Math.floor(Math.random() * active.length)];
+      if (a === b) { this.dead = true; return; }
+      this.a = a; this.b = b;
+      this.t = initial ? Math.random() : 0;
+      this.speed = 0.003 + Math.random() * 0.004;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const sign = Math.random() > 0.5 ? 1 : -1;
+      this.mx = mx + -dy * 0.18 * sign;
+      this.my = my + dx * 0.18 * sign;
+      this.x = a.x; this.y = a.y;
+      this.px = a.x; this.py = a.y;
+      this.dead = false;
+    }
+    step() {
+      if (this.dead) { this.reset(false); return; }
+      this.px = this.x;
+      this.py = this.y;
+      const f = this.t;
+      this.x = (1 - f) ** 2 * this.a.x + 2 * (1 - f) * f * this.mx + f * f * this.b.x;
+      this.y = (1 - f) ** 2 * this.a.y + 2 * (1 - f) * f * this.my + f * f * this.b.y;
+      this.t += this.speed;
+      if (this.t >= 1) this.reset(false);
+    }
+    draw(ctx) {
+      if (this.dead) return;
+      const phase = Math.sin(this.t * Math.PI);
+      const alpha = phase * 0.55;
+      ctx.strokeStyle = `rgba(228,228,228,${alpha})`;
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(this.px, this.py);
+      ctx.lineTo(this.x, this.y);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(244,244,244,${phase * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function updateStamp() {
+    const now = new Date();
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    const ss = String(now.getUTCSeconds()).padStart(2, '0');
+    document.getElementById('stamp').textContent = `${hh}:${mm}:${ss} UTC · 10 stables tracked`;
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Create particles AFTER NODES exists
+  const PARTICLES = [];
+  for (let i = 0; i < 220; i++) PARTICLES.push(new P());
+
+  setInterval(updateStamp, 1000);
+  updateStamp();
+
+  function animate() {
+    flctx.fillStyle = 'rgba(13,13,14,0.12)';
+    flctx.fillRect(0, 0, W, H);
+    for (const p of PARTICLES) {
+      p.step();
+      p.draw(flctx);
+    }
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

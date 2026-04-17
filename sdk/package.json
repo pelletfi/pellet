@@ -1,7 +1,7 @@
 {
   "name": "@pelletfi/sdk",
   "version": "1.7.0",
-  "description": "Typed TypeScript client for the Pellet API — open-ledger intelligence on Tempo.",
+  "description": "Typed TypeScript client for the Pellet API — Open-Ledger Interface on Tempo.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

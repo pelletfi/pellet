@@ -31,14 +31,14 @@ If not listed, ping the x402scan team / GitHub repo to add Pellet.
 **PR entry to add:**
 
 ```markdown
-- [pellet](https://github.com/pelletfi/pellet) - Open-ledger intelligence on Tempo. Peg health, risk scores, reserves, role holders, peg-break detection. Free + MPP-paid tools.
+- [pellet](https://github.com/pelletfi/pellet) - Open-Ledger Interface on Tempo. Peg health, risk scores, reserves, role holders, peg-break detection. Free + MPP-paid tools.
 ```
 
 ### b. mcpservers.org (or similar registries)
 Search "pellet" / "tempo" — submit if missing. Typical form: name, description, npm package, GitHub URL, tools list.
 
 **Description (200 chars):**
-> Open-ledger intelligence on Tempo. Live peg health, composite risk scores, backing reserves, forensically-derived role holders, peg-break events. Free tools + MPP-paid deep briefings.
+> Open-Ledger Interface on Tempo. Live peg health, composite risk scores, backing reserves, forensically-derived role holders, peg-break events. Free tools + MPP-paid deep briefings.
 
 **Tools list:**
 - search_token, lookup_token, analyze_token (paid)
@@ -70,7 +70,7 @@ Post a short native cast in each (don't just paste the launch thread — write s
 > https://pelletfi.com
 
 ### /defi channel
-> Built open-ledger intelligence on Tempo (the Stripe-backed L1).
+> Built Open-Ledger Interface on Tempo (the Stripe-backed L1).
 >
 > Indexes every TIP-20 event from genesis. Detects peg breaks. Scores risk. Maps cross-stable flows.
 >
@@ -88,7 +88,7 @@ Post a short native cast in each (don't just paste the launch thread — write s
 **Required:** project name, URL, description, twitter handle, GitHub, chain (Tempo)
 
 **Description:**
-> Pellet is open-ledger intelligence on Tempo. Live peg health, composite risk scores, backing reserves, role holders, and cross-stable flow anomaly detection — refreshed continuously across all 12 TIP-20 stables.
+> Pellet is Open-Ledger Interface on Tempo. Live peg health, composite risk scores, backing reserves, role holders, and cross-stable flow anomaly detection — refreshed continuously across all 12 TIP-20 stables.
 
 ---
 

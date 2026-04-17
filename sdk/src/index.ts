@@ -1,6 +1,6 @@
 // Pellet SDK — typed TypeScript client for the Pellet API.
 //
-// Open-ledger intelligence on Tempo: peg health, risk scores, reserves,
+// Open-Ledger Interface on Tempo: peg health, risk scores, reserves,
 // role holders, peg-break events, flow anomalies, system health.
 //
 // Usage:

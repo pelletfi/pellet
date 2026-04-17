@@ -1,12 +1,12 @@
 ---
 title: Introduction
-description: Open-ledger intelligence on Tempo — every peg, every policy, every flow.
+description: Open-Ledger Interface on Tempo — every peg, every policy, every flow.
 icon: BookOpen
 ---
 
-Pellet is open-ledger intelligence on Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
+Pellet is Open-Ledger Interface on Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
 
-## What is Open-Ledger Intelligence (OLI)?
+## What is Open-Ledger Interface (OLI)?
 
 **OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 `isAuthorized` queries, issuance and flow topology from mainnet events, role holders from forensic event replay — measured directly, not estimated from oracle aggregators.
 
@@ -14,7 +14,7 @@ OLI has explicit scope. Transfers *inside* [Tempo Zones](https://tempo.xyz/blog/
 
 When a Pellet endpoint returns a number, that number is a measurement. If the value can't be measured, the response says so explicitly via a `coverage` field — never a default masquerading as a zero. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
 
-## Why Tempo needs Open-Ledger Intelligence
+## Why Tempo needs Open-Ledger Interface
 
 Tempo isn't another general-purpose L1. It's a payments chain with enshrined stablecoin standards (TIP-20), native compliance policies (TIP-403), an enshrined DEX, and the Micropayment Protocol (MPP) for machine-to-machine payments at the HTTP layer.
 

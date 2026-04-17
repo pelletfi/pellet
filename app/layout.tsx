@@ -8,11 +8,11 @@ import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pelletfi.com"),
-  title: "Pellet — Open-Ledger Intelligence on Tempo",
+  title: "Pellet — Open-Ledger Interface on Tempo",
   description:
-    "Open-ledger intelligence on Tempo. Every peg, every policy, every flow — tracked natively across the public ledger and the mainnet/zone boundary.",
+    "Open-Ledger Interface on Tempo. Every peg, every policy, every flow — tracked natively across the public ledger and the mainnet/zone boundary.",
   openGraph: {
-    title: "Pellet — Open-Ledger Intelligence on Tempo",
+    title: "Pellet — Open-Ledger Interface on Tempo",
     description:
       "Every TIP-20 stablecoin on Tempo monitored: peg, supply, policy, flows, reserves, risk. MPP-native API + MCP server for agents.",
     url: "https://pelletfi.com",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pellet — Open-Ledger Intelligence on Tempo",
+    title: "Pellet — Open-Ledger Interface on Tempo",
     description:
       "Every TIP-20 stablecoin on Tempo monitored: peg, supply, policy, flows, reserves, risk. MPP-native API + MCP server for agents.",
     site: "@pelletfinance",
