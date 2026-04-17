@@ -545,24 +545,31 @@ export default function LandingPage() {
             </div>
 
             <video
+              ref={(el) => {
+                // Some browsers (Safari, strict autoplay policies) won't
+                // autoplay muted video unless we explicitly call .play()
+                // after metadata loads.  Belt-and-braces so the stream
+                // always animates on page load.
+                if (el && el.paused) el.play().catch(() => {});
+              }}
               src="/hero.mp4"
               poster="/hero-poster.jpg"
               autoPlay
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="auto"
               aria-label="Ambient capture of Pellet's Tempo on-chain data stream"
               style={{
                 width: "100%",
                 height: "auto",
                 display: "block",
                 aspectRatio: "1280 / 711",
-                // Pure-black bg is crushed in the encode; screen-blend makes
-                // those pixels transparent against the page, so only the
-                // white data points show through.  No border / no container
-                // — the stream floats in the page.
-                mixBlendMode: "screen",
+                // Pure-black source (luma < 48 is crushed to 0 in the
+                // encode), so `lighten` gives a clean pass-through: any
+                // black video pixel = max(0, pageBg) = pageBg.  No visible
+                // rectangle, no tint, only the white data points render.
+                mixBlendMode: "lighten",
               }}
             />
 
