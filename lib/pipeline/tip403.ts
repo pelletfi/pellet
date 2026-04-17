@@ -75,8 +75,13 @@ export interface SimulateTransferInput {
 }
 
 export interface SimulateTransferResult {
-  /** Would the transfer succeed if called now, based on policy + balance? */
-  willSucceed: boolean;
+  /**
+   * Would the transfer succeed if called now, based on policy + balance?
+   * - `true`  = all checks passed (TIP-403 authorized + balance sufficient)
+   * - `false` = blocked by a specific reason (see `blockedBy`)
+   * - `null`  = unknown (RPC gaps, partial coverage). Do NOT interpret null as false.
+   */
+  willSucceed: boolean | null;
   /** TIP-403 policy id attached to this token, or null if not a TIP-20 */
   policyId: number | null;
   /** Resolved policy type: "whitelist" | "blacklist" | "none" (id ≤ 1) | null */
@@ -146,6 +151,42 @@ export async function simulateTransfer(
   const blockNumber = await tempoClient.getBlockNumber().catch(() => null);
   const simulatedAtBlock = blockNumber !== null ? blockNumber.toString() : "unknown";
 
+  // ── pathUSD carve-out ─────────────────────────────────────────────────
+  // pathUSD is Tempo's enshrined quote currency. It has no TIP-403 policy
+  // gating — transfers are permissionless by design. The TIP-20 precompile
+  // deliberately does not expose a `transferPolicyId` for pathUSD, so the
+  // generic flow below would conservatively report "unknown." We know the
+  // real answer, so short-circuit.
+  if (token === TEMPO_ADDRESSES.pathUsd.toLowerCase()) {
+    const senderBalance = amount !== null ? await readBalance(token, from) : null;
+    const balanceOk =
+      senderBalance === null || amount === null || senderBalance >= amount;
+    return {
+      willSucceed: balanceOk,
+      policyId: null,
+      policyType: "none",
+      policyAdmin: null,
+      sender: { address: from, authorized: true },
+      recipient: { address: to, authorized: true },
+      balance:
+        amount !== null && senderBalance !== null
+          ? {
+              sufficient: balanceOk,
+              has: senderBalance.toString(),
+              needs: amount.toString(),
+            }
+          : null,
+      blockedBy: balanceOk ? null : "balance",
+      blockedParty: balanceOk ? null : "sender",
+      reason: balanceOk
+        ? "pathUSD is Tempo's enshrined quote currency and has no TIP-403 policy gating. Transfer authorized."
+        : "pathUSD has no TIP-403 policy gating; sender balance is insufficient for the requested amount.",
+      simulatedAtBlock,
+      coverage: "complete",
+      coverage_note: null,
+    };
+  }
+
   // ── Classify the token ─────────────────────────────────────────────────
   const isTip20 = await tempoClient
     .readContract({
@@ -190,21 +231,26 @@ export async function simulateTransfer(
   }
 
   if (policyId === null) {
+    // TIP-20 token, but we couldn't read its transferPolicyId. Do NOT infer
+    // denial (that was the 2026-04-16 evening pathUSD bug) — report unknown
+    // with an explicit coverage:partial so agents treat this as "retry or
+    // fall back to sending and handling revert," not "this transfer is blocked."
     return {
-      willSucceed: false,
+      willSucceed: null,
       policyId: null,
       policyType: null,
       policyAdmin: null,
       sender: { address: from, authorized: false },
       recipient: { address: to, authorized: false },
       balance: null,
-      blockedBy: "policy",
+      blockedBy: null,
       blockedParty: null,
       reason:
-        "TIP-20 precompile did not return a transferPolicyId. Cannot resolve the token's TIP-403 policy.",
+        "TIP-20 precompile did not return a transferPolicyId. Cannot resolve TIP-403 authorization. Agent should retry in a moment, or submit the tx and handle a potential revert.",
       simulatedAtBlock,
       coverage: "partial",
-      coverage_note: "TIP-20 getMetadata() returned no transferPolicyId for this token.",
+      coverage_note:
+        "TIP-20 getMetadata() returned no transferPolicyId for this token. This is rare for policy-gated stablecoins — possibly a transient RPC issue or a token with nonstandard metadata.",
     };
   }
 
@@ -289,13 +335,14 @@ export async function simulateTransfer(
   ]);
 
   if (senderAuth === null || recipientAuth === null) {
+    // Unknown — NOT false. OLI discipline: don't invent denial from an RPC gap.
     return {
-      willSucceed: false,
+      willSucceed: null,
       policyId,
       policyType: null,
       policyAdmin: null,
-      sender: { address: from, authorized: false },
-      recipient: { address: to, authorized: false },
+      sender: { address: from, authorized: senderAuth ?? false },
+      recipient: { address: to, authorized: recipientAuth ?? false },
       balance: null,
       blockedBy: null,
       blockedParty: null,
@@ -376,6 +423,8 @@ export async function simulateTransfer(
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function invalidInput(message: string): SimulateTransferResult {
+  // willSucceed:false here IS correct — we're certain the input is malformed
+  // so no matter what the chain says, the agent shouldn't try this transfer.
   return {
     willSucceed: false,
     policyId: null,

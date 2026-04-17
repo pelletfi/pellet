@@ -773,7 +773,11 @@ export const spec = {
                 schema: {
                   type: "object",
                   properties: {
-                    willSucceed: { type: "boolean" },
+                    willSucceed: {
+                      type: ["boolean", "null"],
+                      description:
+                        "true = pass, false = blocked (see blockedBy), null = unknown (coverage:partial). Do NOT interpret null as false.",
+                    },
                     policyId: { type: ["integer", "null"] },
                     policyType: {
                       type: ["string", "null"],
