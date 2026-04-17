@@ -25,6 +25,10 @@ import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { lookupLabel, type AddressLabel } from "@/lib/labels";
 import { getAgentStatus, type Erc8004AgentStatus } from "@/lib/pipeline/erc8004";
+import {
+  getPoliciesAdministered,
+  type PoliciesAdministeredResult,
+} from "@/lib/pipeline/tip403-admin";
 import { isAddress } from "viem";
 
 export interface RoleEntry {
@@ -47,11 +51,14 @@ export interface WalletIntelligence {
   is_minter_of: string[];
   is_pauser_of: string[];
   is_burn_blocked_by: string[];
+  /** TIP-403 policies where this address is the admin. Full-registry scan. */
+  policies_administered: PoliciesAdministeredResult;
   /** Aggregate stats for quick summary. */
   stats: {
     role_count: number;
     stables_involved: number;
     erc8004_agent_count: number;
+    policy_admin_count: number;
   };
   /** Measurement gaps the agent should know about. */
   deferred: string[];
@@ -74,13 +81,15 @@ export async function getWalletIntelligence(
 
   const address = rawAddress.toLowerCase() as `0x${string}`;
 
-  // Run all reads in parallel — label, agent status, and role holdings are
-  // independent and bounded.
-  const [labelResult, agentResult, rolesResult] = await Promise.allSettled([
-    lookupLabel(address),
-    getAgentStatus(address),
-    fetchRoles(address),
-  ]);
+  // Run all reads in parallel — label, agent status, role holdings, and
+  // TIP-403 admin scan are all independent and bounded.
+  const [labelResult, agentResult, rolesResult, policiesResult] =
+    await Promise.allSettled([
+      lookupLabel(address),
+      getAgentStatus(address),
+      fetchRoles(address),
+      getPoliciesAdministered(address),
+    ]);
 
   const label = labelResult.status === "fulfilled" ? labelResult.value : null;
   const agent =
@@ -93,6 +102,16 @@ export async function getWalletIntelligence(
           coverage_note: "ERC-8004 lookup failed upstream",
         };
   const roles = rolesResult.status === "fulfilled" ? rolesResult.value : [];
+  const policies_administered: PoliciesAdministeredResult =
+    policiesResult.status === "fulfilled"
+      ? policiesResult.value
+      : {
+          policies: [],
+          total_policy_count: 0,
+          scanned_policy_count: 0,
+          coverage: "unavailable",
+          coverage_note: "TIP-403 admin scan pipeline threw upstream",
+        };
 
   // Derive per-role summaries. Role names come from the forensic pipeline as
   // either canonical string constants (e.g., "ISSUER_ROLE") or raw hash if
@@ -125,23 +144,28 @@ export async function getWalletIntelligence(
   const stablesInvolved = new Set(roles.map((r) => r.stable));
 
   const deferred = [
-    "TIP-403 policy admin scan (which policies this address administers)",
     "MPP transaction activity summary (memo-hash indexing per address)",
     "First/last seen block (historical scan)",
     "ERC-8004 reputation feedback aggregation (requires agent-tokenId mapping)",
     "ERC-8004 identity metadata (tokenURI + registration file resolution)",
   ];
 
-  const coverage: WalletIntelligence["coverage"] =
+  // Top-level coverage collapses all four sub-pipelines. If any returned
+  // `unavailable` or `partial`, we inherit that — otherwise `complete`.
+  const allSettledOk =
     labelResult.status === "fulfilled" &&
     agentResult.status === "fulfilled" &&
-    rolesResult.status === "fulfilled"
-      ? "complete"
-      : "partial";
+    rolesResult.status === "fulfilled" &&
+    policiesResult.status === "fulfilled";
+  const anyPartial =
+    agent.coverage === "unavailable" ||
+    policies_administered.coverage !== "complete";
+  const coverage: WalletIntelligence["coverage"] =
+    allSettledOk && !anyPartial ? "complete" : "partial";
 
   const coverage_note =
     coverage === "partial"
-      ? "One or more data sources (label / ERC-8004 / role DB) failed to resolve. Non-null fields are authoritative; absent data is a measurement gap, not a confirmed absence."
+      ? "One or more sub-pipelines returned partial coverage. Check each section's own coverage + coverage_note for specifics. Absent data is a measurement gap, never inferred absence."
       : null;
 
   return {
@@ -153,10 +177,12 @@ export async function getWalletIntelligence(
     is_minter_of,
     is_pauser_of,
     is_burn_blocked_by,
+    policies_administered,
     stats: {
       role_count: roles.length,
       stables_involved: stablesInvolved.size,
       erc8004_agent_count: agent.agent_count,
+      policy_admin_count: policies_administered.policies.length,
     },
     deferred,
     coverage,
@@ -186,6 +212,7 @@ async function fetchRoles(address: `0x${string}`): Promise<RoleEntry[]> {
 }
 
 function invalidInput(rawAddress: string): WalletIntelligence {
+  const note = "Input address is not a valid 0x-prefixed 42-char hex string";
   return {
     address: rawAddress,
     label: null,
@@ -193,16 +220,28 @@ function invalidInput(rawAddress: string): WalletIntelligence {
       is_erc8004_agent: false,
       agent_count: 0,
       coverage: "unavailable",
-      coverage_note: "Input address is not a valid 0x-prefixed 42-char hex string",
+      coverage_note: note,
     },
     roles: [],
     is_issuer_of: [],
     is_minter_of: [],
     is_pauser_of: [],
     is_burn_blocked_by: [],
-    stats: { role_count: 0, stables_involved: 0, erc8004_agent_count: 0 },
+    policies_administered: {
+      policies: [],
+      total_policy_count: 0,
+      scanned_policy_count: 0,
+      coverage: "unavailable",
+      coverage_note: note,
+    },
+    stats: {
+      role_count: 0,
+      stables_involved: 0,
+      erc8004_agent_count: 0,
+      policy_admin_count: 0,
+    },
     deferred: [],
     coverage: "partial",
-    coverage_note: "Input address is not a valid 0x-prefixed 42-char hex string",
+    coverage_note: note,
   };
 }

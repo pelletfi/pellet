@@ -778,12 +778,41 @@ export const spec = {
                     is_minter_of: { type: "array", items: { type: "string" } },
                     is_pauser_of: { type: "array", items: { type: "string" } },
                     is_burn_blocked_by: { type: "array", items: { type: "string" } },
+                    policies_administered: {
+                      type: "object",
+                      description:
+                        "Every TIP-403 policy where this address is the admin. Full-registry scan via multicall.",
+                      properties: {
+                        policies: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              policy_id: { type: "integer" },
+                              policy_type: {
+                                type: "string",
+                                enum: ["whitelist", "blacklist", "unknown"],
+                              },
+                              admin: { type: "string" },
+                            },
+                          },
+                        },
+                        total_policy_count: { type: "integer" },
+                        scanned_policy_count: { type: "integer" },
+                        coverage: {
+                          type: "string",
+                          enum: ["complete", "partial", "unavailable"],
+                        },
+                        coverage_note: { type: ["string", "null"] },
+                      },
+                    },
                     stats: {
                       type: "object",
                       properties: {
                         role_count: { type: "integer" },
                         stables_involved: { type: "integer" },
                         erc8004_agent_count: { type: "integer" },
+                        policy_admin_count: { type: "integer" },
                       },
                     },
                     deferred: {

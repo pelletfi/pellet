@@ -321,6 +321,20 @@ export interface WalletRoleEntry {
   granted_tx_hash: string;
 }
 
+export interface AdministeredPolicy {
+  policy_id: number;
+  policy_type: "whitelist" | "blacklist" | "unknown";
+  admin: string;
+}
+
+export interface PoliciesAdministered {
+  policies: AdministeredPolicy[];
+  total_policy_count: number;
+  scanned_policy_count: number;
+  coverage: "complete" | "partial" | "unavailable";
+  coverage_note: string | null;
+}
+
 export interface WalletIntelligenceResponse {
   address: string;
   label: AddressLabel | null;
@@ -330,10 +344,13 @@ export interface WalletIntelligenceResponse {
   is_minter_of: string[];
   is_pauser_of: string[];
   is_burn_blocked_by: string[];
+  /** Every TIP-403 policy where this address is the admin (full-registry scan). */
+  policies_administered: PoliciesAdministered;
   stats: {
     role_count: number;
     stables_involved: number;
     erc8004_agent_count: number;
+    policy_admin_count: number;
   };
   /** Coverage gaps not yet measured — treat as open questions, not absence. */
   deferred: string[];
