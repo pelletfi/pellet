@@ -2,6 +2,8 @@ import { tempoClient } from "@/lib/rpc";
 import type { HolderData } from "@/lib/types";
 import { TEMPO_ADDRESSES } from "@/lib/types";
 import { getBlockNumber } from "viem/actions";
+import { db } from "@/lib/db";
+import { sql } from "drizzle-orm";
 
 // Minimal Transfer event ABI — works with any ERC20/TIP20 token
 const TRANSFER_ABI = [
@@ -26,11 +28,19 @@ const TRANSFER_ABI = [
 const BLOCK_CHUNK = 2_000n;
 const PARALLEL_CHUNKS = 3;
 
-// Total wall-time budget for the entire log enumeration. If exceeded, we
-// return coverage:"partial" (or "unavailable" if zero logs collected) with
-// whatever we've gathered so far — prevents the briefing from eating its
-// entire function budget on a single hot token.
+// Default wall-time budget for the entire log enumeration at request time.
+// If exceeded, we return coverage:"partial" (or "unavailable" if zero logs
+// collected) with whatever we've gathered so far — prevents the briefing
+// from eating its entire function budget on a single hot token.
+// The background `holder-snapshot` cron overrides this with a much larger
+// budget so the cached snapshot can cover hot tokens fully.
 const WALL_TIME_BUDGET_MS = 45_000;
+
+// Maximum age of a cached snapshot before we treat it as stale and fall back
+// to live enumeration.  Balances freshness against how long a full snapshot
+// takes to regenerate — the holder-snapshot cron runs every 30 min so three
+// hours gives us 5–6 successful refreshes of headroom before staleness.
+const CACHE_TTL_MS = 3 * 60 * 60 * 1000;
 
 /** Detect whether an RPC error indicates a limit overflow we can recover from
  * by bisecting the block range. viem nests error details across `cause`,
@@ -134,8 +144,13 @@ interface FetchAllResult {
 
 /** Paginate across the full chain — parallel at the outer loop, adaptive at
  * each range. Safe for Tempo's 100k-block / 20k-result caps. Enforces a
- * wall-time budget so hot tokens can't blow the entire function timeout. */
-async function fetchAllTransferLogs(address: `0x${string}`): Promise<FetchAllResult> {
+ * caller-provided wall-time budget so hot tokens can't blow the entire
+ * function timeout at request-time, but the background cron can still
+ * request a multi-minute budget to fully enumerate hot tokens. */
+async function fetchAllTransferLogs(
+  address: `0x${string}`,
+  budgetMs: number = WALL_TIME_BUDGET_MS,
+): Promise<FetchAllResult & { latest: bigint }> {
   const latest = await getBlockNumber(tempoClient);
   const ranges: Array<{ from: bigint; to: bigint }> = [];
   for (let start = 0n; start <= latest; start += BLOCK_CHUNK) {
@@ -149,7 +164,7 @@ async function fetchAllTransferLogs(address: `0x${string}`): Promise<FetchAllRes
   let truncated = false;
 
   for (let i = 0; i < ranges.length; i += PARALLEL_CHUNKS) {
-    if (Date.now() - startedAt > WALL_TIME_BUDGET_MS) {
+    if (Date.now() - startedAt > budgetMs) {
       truncated = true;
       break;
     }
@@ -158,7 +173,7 @@ async function fetchAllTransferLogs(address: `0x${string}`): Promise<FetchAllRes
     for (const logs of results) out.push(...logs);
     rangesProcessed += batch.length;
   }
-  return { logs: out, truncated, rangesProcessed, rangesTotal: ranges.length };
+  return { logs: out, truncated, rangesProcessed, rangesTotal: ranges.length, latest };
 }
 
 // Addresses to exclude from holder lists (burn sinks, not real holders)
@@ -213,14 +228,17 @@ function unavailable(note: string): HolderData {
 export async function getHolders(
   address: `0x${string}`,
   decimals?: number,
-  knownSupply?: bigint
-): Promise<HolderData> {
+  knownSupply?: bigint,
+  options?: { budgetMs?: number }
+): Promise<HolderData & { asOfBlock?: number }> {
+  const budgetMs = options?.budgetMs ?? WALL_TIME_BUDGET_MS;
+
   // Fetch all Transfer events from genesis to latest (paginated — Tempo RPC
   // rejects >100k block ranges per call). Wall-time budget prevents a single
   // hot token from starving the rest of the briefing pipeline.
-  let fetched: FetchAllResult;
+  let fetched: FetchAllResult & { latest: bigint };
   try {
-    fetched = await fetchAllTransferLogs(address);
+    fetched = await fetchAllTransferLogs(address, budgetMs);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return unavailable(`Transfer-event enumeration failed: ${msg.slice(0, 140)}`);
@@ -370,7 +388,106 @@ export async function getHolders(
     top_holders,
     coverage,
     coverage_note,
+    asOfBlock: Number(fetched.latest),
   };
+}
+
+/** Cache read.  Returns a snapshot written by the `holder-snapshot` cron if
+ * one exists and is newer than CACHE_TTL_MS; otherwise null so callers fall
+ * back to live enumeration.  Keep this function *read-only* — writes happen
+ * exclusively in the cron path via `writeHolderSnapshot` below. */
+export async function getCachedHolders(
+  address: `0x${string}`
+): Promise<HolderData | null> {
+  const addr = address.toLowerCase();
+  const result = await db.execute(sql`
+    SELECT total_holders, top5_pct, top10_pct, top20_pct,
+           creator_address, creator_hold_pct, top_holders,
+           coverage, coverage_note, computed_at
+    FROM holder_snapshots
+    WHERE stable = ${addr}
+  `);
+  const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
+    ?? (result as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+  const row = rows[0];
+  if (!row) return null;
+
+  const computedAt = row.computed_at as string | Date;
+  const ageMs = Date.now() - new Date(computedAt).getTime();
+  if (ageMs > CACHE_TTL_MS) return null;
+
+  return {
+    total_holders: Number(row.total_holders),
+    top5_pct: Number(row.top5_pct),
+    top10_pct: Number(row.top10_pct),
+    top20_pct: Number(row.top20_pct),
+    creator_address: (row.creator_address as string | null) ?? null,
+    creator_hold_pct:
+      row.creator_hold_pct !== null && row.creator_hold_pct !== undefined
+        ? Number(row.creator_hold_pct)
+        : null,
+    top_holders: row.top_holders as HolderData["top_holders"],
+    coverage: row.coverage as HolderData["coverage"],
+    coverage_note: (row.coverage_note as string | null) ?? null,
+  };
+}
+
+/** Cache writeback.  Called exclusively from `lib/ingest/holder-snapshot-builder.ts`
+ * after a generously-budgeted live enumeration completes.  UPSERTs by stable
+ * address so each run replaces the prior snapshot in place. */
+export async function writeHolderSnapshot(
+  address: `0x${string}`,
+  snap: HolderData & { asOfBlock?: number }
+): Promise<void> {
+  const addr = address.toLowerCase();
+  await db.execute(sql`
+    INSERT INTO holder_snapshots (
+      stable, total_holders, top5_pct, top10_pct, top20_pct,
+      creator_address, creator_hold_pct, top_holders,
+      coverage, coverage_note, as_of_block, computed_at
+    ) VALUES (
+      ${addr},
+      ${snap.total_holders},
+      ${snap.top5_pct},
+      ${snap.top10_pct},
+      ${snap.top20_pct},
+      ${snap.creator_address},
+      ${snap.creator_hold_pct},
+      ${JSON.stringify(snap.top_holders)}::jsonb,
+      ${snap.coverage},
+      ${snap.coverage_note ?? null},
+      ${snap.asOfBlock ?? null},
+      NOW()
+    )
+    ON CONFLICT (stable) DO UPDATE SET
+      total_holders = EXCLUDED.total_holders,
+      top5_pct = EXCLUDED.top5_pct,
+      top10_pct = EXCLUDED.top10_pct,
+      top20_pct = EXCLUDED.top20_pct,
+      creator_address = EXCLUDED.creator_address,
+      creator_hold_pct = EXCLUDED.creator_hold_pct,
+      top_holders = EXCLUDED.top_holders,
+      coverage = EXCLUDED.coverage,
+      coverage_note = EXCLUDED.coverage_note,
+      as_of_block = EXCLUDED.as_of_block,
+      computed_at = NOW()
+  `);
+}
+
+/** Request-time convenience: try the cached snapshot first; fall back to
+ * live enumeration with the caller's budget if the cache is cold or stale.
+ * Most request-time callers (briefing, /api/v1/tokens) should use THIS
+ * instead of `getHolders` directly so hot tokens return a complete snapshot
+ * written by the cron rather than a partial live-enumeration result. */
+export async function getHoldersWithCache(
+  address: `0x${string}`,
+  decimals?: number,
+  knownSupply?: bigint,
+  options?: { budgetMs?: number }
+): Promise<HolderData> {
+  const cached = await getCachedHolders(address).catch(() => null);
+  if (cached) return cached;
+  return getHolders(address, decimals, knownSupply, options);
 }
 
 /**

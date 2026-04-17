@@ -12,6 +12,8 @@
     { "path": "/api/cron/flow-anomaly", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/health-check", "schedule": "*/2 * * * *" },
     { "path": "/api/cron/reward-decode", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/fee-decode", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/fee-decode", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/holder-snapshot", "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/tip403-admin-index", "schedule": "*/10 * * * *" }
   ]
 }

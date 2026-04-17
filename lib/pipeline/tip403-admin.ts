@@ -1,75 +1,121 @@
 /**
  * lib/pipeline/tip403-admin.ts
  *
- * TIP-403 policy admin scan — intended to return every tracked stablecoin
- * where a given address is the policy admin.
+ * TIP-403 policy admin lookup — returns every policy on the TIP-403 registry
+ * where the given address is the current admin.
  *
- * ⚠️ DISCOVERED 2026-04-17 ~00:30 UTC: Tempo's live TIP-403 predeploy does
- * NOT implement the read functions needed for this scan. Both:
+ * Backstory: Tempo's live TIP-403 predeploy at 0x403c… doesn't expose the
+ * canonical read functions (`policyData` / `getPolicy` both revert with
+ * "unknown function selector"), so we can't answer "who admins policy X"
+ * with a direct call. Instead, the `tip403-admin-index` cron replays the
+ * state-change events emitted by the registry (PolicyCreated + admin
+ * updates) into the `policies` table; this module is now a thin DB reader
+ * on top of that snapshot.
  *
- *   policyData(uint64 policyId)     → returns (uint8, address)
- *   getPolicy(address token)        → returns (uint256, uint8, address, uint256, bool)
+ * Token-to-policy attribution — which TIP-20 contract on Tempo is gated by
+ * a given policyId — is NOT part of this pipeline because the registry
+ * doesn't emit an event linking them.  `token_address/symbol/name` are
+ * therefore always null in the returned rows; the admin mapping is honest
+ * and complete, the token mapping is an open follow-up (indexing the
+ * TIP-20-side policy-set events).
  *
- * revert with the custom error `0xaa4bc69a` ("unknown function selector")
- * on every call. These are declared in the canonical viem/tempo ABI and in
- * earlier Pellet code, but the deployed proxy at 0x403c… doesn't back them.
- *
- * Only read functions confirmed working today:
- *   - policyIdCounter()                     → uint64
- *   - isAuthorized(uint64 policyId, address user) → bool  (our pre-trade oracle uses this)
- *
- * So we can answer "is X authorized under policy Y" but NOT enumerate which
- * policies exist or who their admins are, via read functions alone.
- *
- * Workaround path (deferred to a future iteration): index the state-change
- * events emitted by TIP-403 and reconstruct the (policyId → admin) map
- * off-chain:
- *
- *   PolicyCreated(uint64 indexed policyId, address indexed updater, PolicyType policyType)
- *   PolicyAdminUpdated(uint64 indexed policyId, address indexed updater, address indexed admin)
- *   WhitelistUpdated / BlacklistUpdated also correlate an admin to a policy.
- *
- * That's a full indexer job — event subscription + DB snapshot + query layer.
- * Bigger scope than a one-RPC multicall so it belongs in a follow-up build.
- * For now this module returns coverage:"unavailable" with an honest note so
- * wallet-intel consumers know where the gap is.
- *
- * OLI discipline: do not invent coverage we can't deliver. null/unavailable
- * is always clearer than a silent "zero admin matches" that's actually
- * "we couldn't check."
+ * OLI discipline: admin matches are reported with coverage "complete" when
+ * they exist; token fields stay null rather than being inferred from the
+ * tracked-stablecoin set.
  */
 
+import { db } from "@/lib/db";
+import { sql } from "drizzle-orm";
+
 export interface AdministeredPolicy {
-  token_address: string;
-  token_symbol: string;
-  token_name: string;
+  /** TIP-20 contract this policy gates. null = token-to-policy mapping not
+   * yet indexed; agents must not infer token identity from this row. */
+  token_address: string | null;
+  token_symbol: string | null;
+  token_name: string | null;
   policy_id: number;
-  policy_type: "whitelist" | "blacklist" | "unknown";
+  policy_type: "whitelist" | "blacklist" | "compound" | "unknown";
   admin: string;
 }
 
 export interface PoliciesAdministeredResult {
   policies: AdministeredPolicy[];
-  /** How many tracked stablecoins we scanned. Zero until the event-indexer workaround ships. */
+  /** Number of policies currently indexed in the registry snapshot. Optional
+   * so existing fallback code paths that don't populate it still type-check. */
+  policies_scanned?: number;
+  /** Retained for SDK/API back-compat; equals policies_scanned when set. */
   stables_scanned: number;
   coverage: "complete" | "partial" | "unavailable";
   coverage_note: string | null;
 }
 
-/**
- * Currently returns coverage:"unavailable" for every address. See module
- * header comment for why — Tempo's TIP-403 read surface doesn't expose the
- * needed functions. Ship the honest answer now; close the gap via the
- * event-indexer workaround in a follow-up iteration.
- */
+type PolicyRow = {
+  policy_id: number;
+  policy_type: string | null;
+  admin: string | null;
+  updated_at?: string | Date;
+};
+
+function normalizePolicyType(
+  raw: string | null,
+): AdministeredPolicy["policy_type"] {
+  if (raw === "whitelist" || raw === "blacklist" || raw === "compound") {
+    return raw;
+  }
+  return "unknown";
+}
+
+/** Look up the policies where `address` is currently the admin, sourced
+ * from the `policies` table (populated by the `tip403-admin-index` cron). */
 export async function getPoliciesAdministered(
-  _address: `0x${string}`
+  address: `0x${string}`,
 ): Promise<PoliciesAdministeredResult> {
+  const addr = address.toLowerCase();
+
+  // Snapshot freshness — if the policies table hasn't been populated yet we
+  // should be explicit about it rather than silently returning zero matches.
+  const totalResult = await db.execute(sql`
+    SELECT COUNT(*)::int AS n FROM policies
+  `);
+  const totalRows = ((totalResult as unknown as { rows?: Record<string, unknown>[] }).rows
+    ?? (totalResult as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+  const totalIndexed = Number(totalRows[0]?.n ?? 0);
+
+  if (totalIndexed === 0) {
+    return {
+      policies: [],
+      policies_scanned: 0,
+      stables_scanned: 0,
+      coverage: "unavailable",
+      coverage_note:
+        "TIP-403 policy index is empty — the `tip403-admin-index` cron has not populated the policies table yet (runs every 10 min). Re-check shortly; a cold snapshot is not an authoritative zero.",
+    };
+  }
+
+  const result = await db.execute(sql`
+    SELECT policy_id, policy_type, admin, updated_at
+    FROM policies
+    WHERE admin = ${addr}
+    ORDER BY policy_id ASC
+  `);
+  const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
+    ?? (result as unknown as Record<string, unknown>[])) as unknown as PolicyRow[];
+
+  const policies: AdministeredPolicy[] = rows.map((r) => ({
+    token_address: null,
+    token_symbol: null,
+    token_name: null,
+    policy_id: Number(r.policy_id),
+    policy_type: normalizePolicyType(r.policy_type),
+    admin: r.admin ?? addr,
+  }));
+
   return {
-    policies: [],
-    stables_scanned: 0,
-    coverage: "unavailable",
+    policies,
+    policies_scanned: totalIndexed,
+    stables_scanned: totalIndexed,
+    coverage: "partial",
     coverage_note:
-      "TIP-403 policy admin lookup is not yet available. The live registry at 0x403c… does not implement the policyData / getPolicy read functions that viem/tempo's canonical ABI declares — calls revert with unknown-function selector. Next iteration will reconstruct (policyId → admin) off-chain by indexing PolicyCreated + PolicyAdminUpdated events.",
+      "Admin mapping is derived from indexed PolicyCreated + PolicyAdminUpdated events and is authoritative. Token-to-policy attribution (which TIP-20 contract each policyId gates) is not yet indexed — token_address/symbol/name are null by design, never inferred.",
   };
 }

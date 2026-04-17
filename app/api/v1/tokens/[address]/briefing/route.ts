@@ -19,7 +19,7 @@ import { briefingCharge } from "@/lib/mpp/server";
 import { tempoClient } from "@/lib/rpc";
 import { isTip20, getCompliance } from "@/lib/pipeline/compliance";
 import { getMarketData } from "@/lib/pipeline/market";
-import { getHolders } from "@/lib/pipeline/holders";
+import { getHoldersWithCache } from "@/lib/pipeline/holders";
 import { resolveIdentity } from "@/lib/pipeline/identity";
 import { scanSafety } from "@/lib/pipeline/safety";
 import { getOrigin } from "@/lib/pipeline/origin";
@@ -208,7 +208,7 @@ async function handler(
           coverage_note: err instanceof Error ? err.message.slice(0, 140) : "unknown error",
         };
       }),
-      getHolders(checksumAddress, decimals, knownSupply).catch((err) => {
+      getHoldersWithCache(checksumAddress, decimals, knownSupply).catch((err) => {
         console.error("[briefing/holders]", err);
         return {
           total_holders: 0,

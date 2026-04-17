@@ -126,6 +126,31 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Holder snapshots — per-token cached holder reconstruction computed by the
+// `holder-snapshot` cron with a generous wall-time budget, so request-time
+// consumers (briefing, /api/v1/tokens) can serve a complete snapshot without
+// re-running the 45s-budgeted live enumeration.
+export const holderSnapshots = pgTable(
+  "holder_snapshots",
+  {
+    stable: text("stable").primaryKey(),
+    totalHolders: integer("total_holders").notNull(),
+    top5Pct: numeric("top5_pct").notNull(),
+    top10Pct: numeric("top10_pct").notNull(),
+    top20Pct: numeric("top20_pct").notNull(),
+    creatorAddress: text("creator_address"),
+    creatorHoldPct: numeric("creator_hold_pct"),
+    topHolders: jsonb("top_holders").notNull(),
+    coverage: text("coverage").notNull(),
+    coverageNote: text("coverage_note"),
+    asOfBlock: bigint("as_of_block", { mode: "number" }),
+    computedAt: timestamp("computed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    computedAtIdx: index("holder_snapshots_computed_at_idx").on(t.computedAt),
+  }),
+);
+
 // Address labels — human-readable resolution for any on-chain address that
 // shows up in our data. Powers the role-holder UI, peg-events, flow-anomalies,
 // and the standalone /api/v1/addresses/:addr endpoint.

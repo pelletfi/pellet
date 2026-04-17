@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isTip20, getCompliance } from "@/lib/pipeline/compliance";
 import { getMarketData } from "@/lib/pipeline/market";
-import { getHolders } from "@/lib/pipeline/holders";
+import { getHoldersWithCache } from "@/lib/pipeline/holders";
 import { scanSafety } from "@/lib/pipeline/safety";
 
 const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -53,7 +53,7 @@ export async function GET(
     };
 
     const [holdersRes, safetyRes] = await Promise.allSettled([
-      timeout(getHolders(addr), 8_000),
+      timeout(getHoldersWithCache(addr), 8_000),
       timeout(scanSafety(addr, tip20, market.pools, compliance, emptyHolders), 8_000),
     ]);
 

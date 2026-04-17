@@ -288,16 +288,20 @@ export interface WalletRoleEntry {
     granted_tx_hash: string;
 }
 export interface AdministeredPolicy {
-    token_address: string;
-    token_symbol: string;
-    token_name: string;
+    /** TIP-20 contract this policy gates. `null` means the token-to-policy
+     * mapping is not yet indexed for this row — do NOT infer token identity. */
+    token_address: string | null;
+    token_symbol: string | null;
+    token_name: string | null;
     policy_id: number;
-    policy_type: "whitelist" | "blacklist" | "unknown";
+    policy_type: "whitelist" | "blacklist" | "compound" | "unknown";
     admin: string;
 }
 export interface PoliciesAdministered {
     policies: AdministeredPolicy[];
-    /** How many tracked stablecoins we scanned. */
+    /** Total policies currently indexed in the TIP-403 registry snapshot. */
+    policies_scanned?: number;
+    /** Retained for back-compat — now equals policies_scanned. */
     stables_scanned: number;
     coverage: "complete" | "partial" | "unavailable";
     coverage_note: string | null;
