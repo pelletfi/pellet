@@ -544,8 +544,12 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* RIGHT: live data-flow capture (framing stripped — video stands alone) */}
+          {/* RIGHT: live data-flow capture — right-aligned chrome only */}
           <motion.div variants={fadeUp}>
+            <div className="fig-header" style={{ justifyContent: "flex-end" }}>
+              <span className="fig-value">TIP-20 · Tempo mainnet</span>
+            </div>
+
             {/*
               Isolating wrapper so mix-blend-mode has a known backdrop color.
               Framer-motion wraps this hero element in a transform, creating
@@ -582,6 +586,25 @@ export default function LandingPage() {
                   mixBlendMode: "lighten",
                 }}
               />
+            </div>
+
+            <div className="fig-footer" style={{ justifyContent: "flex-end" }}>
+              <Link href="/docs/oli" className="fig-method-link">
+                OLI
+                <motion.span
+                  aria-hidden
+                  style={{ display: "inline-block", marginLeft: 4 }}
+                  animate={{ y: [0, -1.5, 0], x: [0, 1.5, 0] }}
+                  transition={{
+                    duration: 2.6,
+                    repeat: Infinity,
+                    repeatDelay: 1.8,
+                    ease: "easeInOut",
+                  }}
+                >
+                  ↗
+                </motion.span>
+              </Link>
             </div>
           </motion.div>
         </div>
