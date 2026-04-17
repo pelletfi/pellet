@@ -1,0 +1,117 @@
+---
+title: OLI Specification v0.1
+description: The normative specification for Open-Ledger Interface conformance — what a service MUST, SHOULD, and MAY do to claim OLI compliance.
+icon: FileCode
+---
+
+# Open-Ledger Interface Specification
+
+**Version: 0.1**
+
+This document is the **normative specification** for Open-Ledger Interface (OLI) conformance. The prose framing of OLI — what the discipline is and why it matters — lives at [/docs/oli](/docs/oli); this page defines the testable requirements.
+
+Keywords MUST, MUST NOT, SHOULD, MAY are interpreted as defined in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119). A service is **OLI-conforming at version 0.1** when it satisfies every MUST listed below. The [reference implementation](#reference-implementation) is Pellet on Tempo.
+
+---
+
+## 1. Scope
+
+OLI applies to services that publish measurements derived from publicly verifiable on-chain data on a specified public ledger (the "covered ledger"). An OLI service MUST declare its covered ledger somewhere discoverable (openapi `x-service-info.chain`, a `/docs` landing, or equivalent).
+
+**In scope:** any signal that can be measured directly from the covered ledger — events, balances, quotes, registry reads, precompile queries, attestations anchored to the ledger.
+
+**Out of scope:** off-chain oracle aggregates, third-party indexer feeds, synthetic inference layered on top of measured data, and activity private to a ledger extension (e.g. private sidechains, zones, rollups whose inner state isn't committed back to the covered ledger).
+
+An OLI service MAY surface out-of-scope data, but MUST NOT label it as an OLI measurement.
+
+---
+
+## 2. Tenets (normative)
+
+Every OLI-conforming service MUST uphold all three:
+
+1. **Public-ledger primacy.** Source of truth MUST be the covered ledger. Prices, balances, and compliance states MUST come from direct reads — pool queries, event logs, precompile calls, contract state. A service MUST NOT substitute an oracle aggregate or third-party feed when a direct read is available.
+
+2. **Scope honesty.** A service MUST explicitly declare what it covers and what it does not. Out-of-scope signals MUST NOT be inferred, estimated, or filled in.
+
+3. **Measurement over inference.** Every numeric field MUST be a direct measurement, not an estimate. When a measurement is unavailable, the field MUST be `null` and the response MUST carry a `coverage: "unavailable"` marker (see §3).
+
+---
+
+## 3. Coverage convention
+
+Every data section in an OLI response MUST expose two companion fields:
+
+```json
+{
+  "…measured data…": "…",
+  "coverage": "complete" | "partial" | "unavailable",
+  "coverage_note": "string or null"
+}
+```
+
+- **`coverage: "complete"`** — every measurement in this section succeeded. `coverage_note` MAY be `null`.
+- **`coverage: "partial"`** — the section was reached but one or more measurements could not complete. `coverage_note` MUST be a non-empty string explaining which fields are unmeasured and why.
+- **`coverage: "unavailable"`** — the entire section could not be measured. Numeric fields MUST be `null`, and `coverage_note` MUST state the cause.
+
+Clients MUST NOT interpret `null` fields as zero-valued measurements. A `null` on an OLI response always means "we did not measure this"; it never means "we measured this and the value was zero".
+
+Nested data sections (e.g. `market`, `safety`, `holders` inside a briefing) each carry their own `coverage` / `coverage_note` pair. Section-level coverage MUST NOT be inferred from the top-level envelope.
+
+---
+
+## 4. Null discipline
+
+Numeric and string fields representing measurements MUST use `null` to indicate an unmeasured value. A service MUST NOT return `0`, `""`, or any other default sentinel to mean "not measured" unless that literal value is explicitly defined as a sentinel in the field's documentation (see below).
+
+**Sentinel values** — non-null values that carry special meaning — are permitted when the "special case" they represent is itself a measurable fact. Examples:
+
+- `supply_cap: "0"` MAY mean "this token is uncapped", provided the field documentation explicitly says so.
+- `headroom_pct: -1` MAY mean "no cap applies", provided documented.
+
+A sentinel MUST be semantically distinct from `null`. `null` always means "not measured"; a sentinel means "measured, and the answer is this special case". Consumers MUST be able to tell them apart.
+
+---
+
+## 5. Reproducibility metadata
+
+An OLI response SHOULD carry enough metadata for a consumer to verify or re-derive the measurement:
+
+- **`sourceBlock`** (integer) — block number the measurement is anchored to.
+- **`sourceCall`** (string) — the RPC method or contract call that produced it, e.g. `"TIP403Registry.isAuthorized(uint64,address)"`.
+- **`methodologyVersion`** (semver string) — identifies the derivation pipeline; changes when the formula changes.
+- **`computedAt`** (ISO 8601 timestamp) — when the response was generated.
+
+Services that support historical snapshots SHOULD expose a `?as_of=<ISO8601|epoch|relative>` query parameter. When set, the returned data MUST be frozen at that block, and `asOf` MUST appear in the reproducibility metadata.
+
+---
+
+## 6. Compliance signaling
+
+An OLI-conforming service MUST emit an `X-OLI-Version` HTTP response header on every successful response:
+
+```
+X-OLI-Version: 0.1
+```
+
+Clients MAY use the presence of this header to detect whether a service is OLI-aware. A service that does not set the header MUST NOT be assumed to conform, regardless of whether its response shape matches §3–5.
+
+Services MAY additionally expose a machine-readable manifest at `/.well-known/oli.json` describing their covered ledger, supported endpoints, and any section-specific coverage notes. The manifest schema is deferred to v0.2.
+
+---
+
+## 7. Versioning
+
+This specification uses semver. Within a `v0.x` release, additions are permitted (new optional fields, new MAY/SHOULD clauses). Changes that would invalidate an existing conformant implementation require a major-version bump (`v1.0`, `v2.0`, etc.).
+
+The current version is `0.1`. Spec changes are tracked at the [changelog](/docs/spec/changelog) (stub — coming soon).
+
+---
+
+## Reference implementation
+
+[Pellet](https://pelletfi.com) is the reference implementation of OLI v0.1 on Tempo. Every endpoint satisfies every MUST in this document; the [methodology](/docs/methodology) doc specifies the exact derivation of each measurement.
+
+OLI is chain-agnostic — any public ledger where direct measurement is possible can be covered by an OLI-conforming implementation. Pellet stays native to Tempo by design; the spec is what expands.
+
+**Want to implement OLI elsewhere?** The conformance rules above are complete. A simple compatibility check: does every numeric field have a measurement path traceable to a direct chain read, and does the response carry `coverage` + `coverage_note` on every section? If yes, it's OLI. The `X-OLI-Version` header publishes the claim.

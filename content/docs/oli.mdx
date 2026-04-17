@@ -88,11 +88,18 @@ Zones don't drain mainnet — they add a new boundary surface with its own event
 
 - **[REST API](/docs/api)** — every endpoint is OLI-sourced. The methodology doc specifies exactly how each value is read.
 - **[MCP Server](/docs/mcp)** — exposes OLI measurements to agents as typed tools. An agent calling Pellet's MCP is doing OLI on your behalf.
-- **[Methodology](/docs/methodology)** — the full formula reference. The OLI bible.
+- **[Methodology](/docs/methodology)** — the full formula reference.
 - **[Explorer](/explorer)** — OLI values rendered for human readers.
+
+## OLI is a specification, not just a house term
+
+OLI is formalized as a **versioned specification** with normative MUST / SHOULD / MAY requirements. See the [OLI Specification v0.1](/docs/spec) for the testable conformance rules. This page is the philosophy; the spec is the contract.
+
+Pellet is the reference implementation of OLI v0.1 on Tempo. Other chains, other implementations welcome — the spec is chain-agnostic, and the `X-OLI-Version` response header makes conformance a testable claim, not a branding exercise.
 
 ## Further reading
 
+- [OLI Specification v0.1](/docs/spec) — the normative requirements
 - [Methodology](/docs/methodology) — every formula OLI uses
 - [API Reference](/docs/api) — the endpoints that expose OLI measurements
 - [Tempo Primer](/docs/tempo-primer) — background on the primitives OLI reads (TIP-20, TIP-403, enshrined DEX, MPP)
