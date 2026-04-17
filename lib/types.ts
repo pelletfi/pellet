@@ -187,4 +187,12 @@ export const TEMPO_ADDRESSES = {
   stablecoinDex: "0xdec0000000000000000000000000000000000000" as `0x${string}`,
   tip403Registry: "0x403c000000000000000000000000000000000000" as `0x${string}`,
   feeManager: "0xfeec000000000000000000000000000000000000" as `0x${string}`,
+  // ERC-8004 "Trustless Agents" predeploys on Tempo mainnet. Both are EIP-1967
+  // upgradeable proxies, so resolve the current implementation slot when
+  // building ABI surfaces. Verified on-chain 2026-04-16.
+  // Spec: https://eips.ethereum.org/EIPS/eip-8004
+  erc8004IdentityRegistry:
+    "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
+  erc8004ReputationRegistry:
+    "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63" as `0x${string}`,
 } as const;
