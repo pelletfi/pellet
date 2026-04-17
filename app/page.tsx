@@ -588,6 +588,9 @@ export default function LandingPage() {
                 loop
                 playsInline
                 preload="auto"
+                disablePictureInPicture
+                disableRemotePlayback
+                tabIndex={-1}
                 aria-label="Ambient capture of Pellet's Tempo on-chain data stream"
                 style={{
                   width: "100%",
