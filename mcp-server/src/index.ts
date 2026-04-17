@@ -12,6 +12,7 @@ import {
   getPegEvents,
   getRiskScore,
   getReserves,
+  simulateTransfer,
 } from "./client.js";
 
 const server = new McpServer({
@@ -122,6 +123,28 @@ server.tool(
     const result = await getReserves(address);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
+);
+
+server.tool(
+  "simulate_transfer",
+  "Free · Pre-trade compliance oracle. Given a proposed TIP-20 transfer {from, to, token, amount?}, predict statically whether it would revert under TIP-403 policy — without sending a transaction. Returns willSucceed (true/false/null), policy id/type/admin, per-party authorization, optional balance check, and a human-readable reason. Null willSucceed means 'unknown' (coverage:partial); never interpret null as false. Call before submitting a transfer to avoid wasting gas on Unauthorized() reverts.",
+  {
+    from: z.string().describe("Sender address (0x-prefixed, 42 hex chars)"),
+    to: z.string().describe("Recipient address (0x-prefixed, 42 hex chars)"),
+    token: z
+      .string()
+      .describe("TIP-20 token contract address (Tempo stables start with 0x20c0…)"),
+    amount: z
+      .string()
+      .optional()
+      .describe(
+        "Optional raw uint256 decimal string (e.g. '1000000' = 1 USDC.e at 6 decimals). If provided, sender balance is also checked.",
+      ),
+  },
+  async ({ from, to, token, amount }) => {
+    const result = await simulateTransfer(from, to, token, amount);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
 );
 
 // ── Start ──────────────────────────────────────────────────────────────────────

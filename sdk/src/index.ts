@@ -23,6 +23,8 @@ import type {
   RewardsResponse,
   RiskResponse,
   RolesResponse,
+  SimulateTransferInput,
+  SimulateTransferResponse,
   StablecoinSummary,
   StablecoinsListResponse,
 } from "./types.js";
@@ -147,6 +149,40 @@ export class Pellet {
     return {
       lookup: () => this.request<AddressLabel>(`/api/v1/addresses/${addr}`),
     };
+  }
+
+  /**
+   * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
+   * statically whether it would revert under TIP-403 policy — without
+   * actually sending a transaction. Saves agents gas on preventable reverts.
+   *
+   * - `willSucceed: true`  → policy + balance pass; safe to submit.
+   * - `willSucceed: false` → blocked; see `blockedBy` and `reason`.
+   * - `willSucceed: null`  → unknown; retry or submit and handle revert.
+   *
+   * Example:
+   *   const { data } = await pellet.simulate({
+   *     from: "0xabc…",
+   *     to: "0xdef…",
+   *     token: "0x20c0…b9537d11c60e8b50",  // USDC.e
+   *     amount: "1000000",                 // 1 USDC.e (6 decimals)
+   *   });
+   *   if (data.willSucceed === false) {
+   *     console.error(data.reason);
+   *     return;
+   *   }
+   *   // ... submit the transfer
+   */
+  simulate(input: SimulateTransferInput) {
+    const params = new URLSearchParams({
+      from: input.from,
+      to: input.to,
+      token: input.token,
+    });
+    if (input.amount !== undefined) params.set("amount", input.amount);
+    return this.request<SimulateTransferResponse>(
+      `/api/v1/tip403/simulate?${params.toString()}`,
+    );
   }
 
   /** Pellet system health + cron pipeline state. */

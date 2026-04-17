@@ -79,3 +79,24 @@ export async function getRiskScore(address: string): Promise<unknown> {
 export async function getReserves(address: string): Promise<unknown> {
   return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/reserves`);
 }
+
+/**
+ * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
+ * statically whether it would revert under TIP-403 policy — without sending
+ * a transaction. Returns `willSucceed` (true/false/null) + policy details +
+ * (if amount given) balance check. Null means unknown, never inferred false.
+ */
+export async function simulateTransfer(
+  from: string,
+  to: string,
+  token: string,
+  amount?: string,
+): Promise<unknown> {
+  const params = new URLSearchParams({
+    from,
+    to,
+    token,
+  });
+  if (amount !== undefined && amount !== "") params.set("amount", amount);
+  return apiGet(`/api/v1/tip403/simulate?${params.toString()}`);
+}

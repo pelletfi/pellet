@@ -304,3 +304,38 @@ export interface AddressLabel {
   source: "pellet_curated" | "forensic" | "ens" | "community";
   notes: unknown;
 }
+
+// ── Pre-trade compliance oracle (TIP-403 simulation) ─────────────────────────
+
+export interface SimulateTransferInput {
+  from: Address;
+  to: Address;
+  token: Address;
+  /** Optional raw uint256 decimal string. If provided, sender balance is also checked. */
+  amount?: string;
+}
+
+export interface SimulateTransferResponse {
+  /**
+   * - `true`  = all checks passed (authorized + balance sufficient)
+   * - `false` = blocked by a specific reason (see blockedBy)
+   * - `null`  = unknown (coverage:partial). Do NOT interpret null as false.
+   */
+  willSucceed: boolean | null;
+  policyId: number | null;
+  policyType: "whitelist" | "blacklist" | "none" | null;
+  policyAdmin: string | null;
+  sender: { address: string; authorized: boolean };
+  recipient: { address: string; authorized: boolean };
+  balance: {
+    sufficient: boolean;
+    has: string;
+    needs: string;
+  } | null;
+  blockedBy: "policy" | "balance" | "not_a_tip20" | "invalid_input" | null;
+  blockedParty: "sender" | "recipient" | null;
+  reason: string;
+  simulatedAtBlock: string;
+  coverage: "complete" | "partial";
+  coverage_note: string | null;
+}
