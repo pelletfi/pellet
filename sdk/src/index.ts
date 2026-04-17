@@ -27,6 +27,7 @@ import type {
   SimulateTransferResponse,
   StablecoinSummary,
   StablecoinsListResponse,
+  WalletIntelligenceResponse,
 } from "./types.js";
 
 export * from "./types.js";
@@ -144,10 +145,23 @@ export class Pellet {
     );
   }
 
-  /** Address label / entity resolution. */
+  /**
+   * Address scope — resolve labels, ERC-8004 agent status, role holdings
+   * across tracked stablecoins, and derived role summaries in one call.
+   *
+   * - `intelligence()` returns the full wallet-intel bundle (label + agent +
+   *   roles + is_issuer_of etc.). This is the default modern endpoint and
+   *   bundles what Codex / Nansen / Zerion can't on Tempo.
+   * - `lookup()` is the legacy label-only view, kept for backward compat.
+   *   Prefer `intelligence()` going forward.
+   */
   address(addr: Address) {
     return {
-      lookup: () => this.request<AddressLabel>(`/api/v1/addresses/${addr}`),
+      intelligence: () =>
+        this.request<WalletIntelligenceResponse>(`/api/v1/addresses/${addr}`),
+      /** @deprecated Use `intelligence()` — returns label bundled with role + ERC-8004 data. */
+      lookup: () =>
+        this.request<WalletIntelligenceResponse>(`/api/v1/addresses/${addr}`),
     };
   }
 

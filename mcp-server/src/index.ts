@@ -13,6 +13,7 @@ import {
   getRiskScore,
   getReserves,
   simulateTransfer,
+  lookupWalletIntelligence,
 } from "./client.js";
 
 const server = new McpServer({
@@ -123,6 +124,18 @@ server.tool(
     const result = await getReserves(address);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
+);
+
+server.tool(
+  "lookup_wallet_intelligence",
+  "Free · Single-endpoint wallet intelligence for any Tempo address. Returns curated + forensic labels, ERC-8004 agent status (is this an agent? how many agent NFTs owned?), role holdings across every tracked TIP-20 stablecoin (issuer / minter / pauser / burn-blocked), and derived summaries (is_issuer_of, is_minter_of, etc.). Unique to Pellet on Tempo — combines TIP-403 role forensics with ERC-8004 identity registry reads in one call. Every field has explicit coverage; null is never inferred as absence.",
+  {
+    address: z.string().describe("Any Tempo address (0x-prefixed, 42 hex chars). Can be EOA, contract, or ERC-8004 agent."),
+  },
+  async ({ address }) => {
+    const result = await lookupWalletIntelligence(address);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
 );
 
 server.tool(

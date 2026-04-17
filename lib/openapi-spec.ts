@@ -714,6 +714,132 @@ export const spec = {
         },
       },
     },
+    "/api/v1/addresses/{address}": {
+      get: {
+        operationId: "getWalletIntelligence",
+        summary:
+          "Wallet intelligence — label + ERC-8004 agent status + role holdings for any Tempo address",
+        description:
+          "Single-endpoint intelligence profile for any Tempo address. Combines curated + forensic labels (lib/labels + address_labels), ERC-8004 agent status (Identity Registry at 0x8004A169…), role holdings across tracked TIP-20 stablecoins (issuer / minter / pauser / burn-blocked), and derived per-role summaries (`is_issuer_of`, `is_minter_of`, etc.). Every field has explicit coverage — null is a measurement gap, never inferred absence. Unique to Pellet: ERC-8004 read-through combined with TIP-403 role forensics in one call.",
+        parameters: [
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description: "Any Tempo address (0x-prefixed, 42 hex chars). EOA, contract, or ERC-8004 agent.",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x0Ce3d541f48c5c6543b84bd2FD9CBae0Fb9FeaFe",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Wallet intelligence",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    label: {
+                      type: ["object", "null"],
+                      properties: {
+                        address: { type: "string" },
+                        label: { type: "string" },
+                        category: { type: "string" },
+                        source: { type: "string" },
+                        notes: {},
+                      },
+                    },
+                    agent: {
+                      type: "object",
+                      properties: {
+                        is_erc8004_agent: { type: "boolean" },
+                        agent_count: { type: "integer" },
+                        coverage: { type: "string", enum: ["complete", "unavailable"] },
+                        coverage_note: { type: ["string", "null"] },
+                      },
+                    },
+                    roles: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          stable: { type: "string" },
+                          role_name: { type: "string" },
+                          granted_at: { type: "string", format: "date-time" },
+                          granted_tx_hash: { type: "string" },
+                        },
+                      },
+                    },
+                    is_issuer_of: { type: "array", items: { type: "string" } },
+                    is_minter_of: { type: "array", items: { type: "string" } },
+                    is_pauser_of: { type: "array", items: { type: "string" } },
+                    is_burn_blocked_by: { type: "array", items: { type: "string" } },
+                    stats: {
+                      type: "object",
+                      properties: {
+                        role_count: { type: "integer" },
+                        stables_involved: { type: "integer" },
+                        erc8004_agent_count: { type: "integer" },
+                      },
+                    },
+                    deferred: {
+                      type: "array",
+                      items: { type: "string" },
+                      description:
+                        "Coverage gaps Pellet has NOT measured yet — agent should consider these open questions, not absence.",
+                    },
+                    coverage: { type: "string", enum: ["complete", "partial"] },
+                    coverage_note: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          "502": { description: "Transient upstream error — retry" },
+        },
+      },
+    },
+    "/api/mpp/addresses/{address}": {
+      get: {
+        operationId: "mppGetWalletIntelligence",
+        summary:
+          "MPP (free, identity-only) · Wallet intelligence — label + ERC-8004 + roles",
+        description:
+          "Zero-charge MPP mirror of /api/v1/addresses/{address}. Same response shape; agent signs a $0 identity voucher for MPPScan-ledger accounting. Unique differentiator vs chain-generic wallet APIs (Nansen / Zerion / Codex): ERC-8004 agent status + TIP-403 role forensics in one call, on Tempo.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route - MPP identity challenge, no charge",
+        },
+        parameters: [
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x0Ce3d541f48c5c6543b84bd2FD9CBae0Fb9FeaFe",
+            },
+          },
+        ],
+        responses: {
+          "200": { description: "Wallet intelligence (same schema as /api/v1/addresses/{address})" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
     "/api/v1/tip403/simulate": {
       get: {
         operationId: "simulateTransfer",

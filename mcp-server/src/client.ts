@@ -81,6 +81,16 @@ export async function getReserves(address: string): Promise<unknown> {
 }
 
 /**
+ * Wallet intelligence — label + ERC-8004 agent status + role holdings +
+ * derived role summaries for any Tempo address. Combines pellet curated
+ * labels, forensic role discovery, and the ERC-8004 Identity Registry.
+ * Unique to Pellet on Tempo — chain-generic wallet APIs can't produce this.
+ */
+export async function lookupWalletIntelligence(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/addresses/${encodeURIComponent(address)}`);
+}
+
+/**
  * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
  * statically whether it would revert under TIP-403 policy — without sending
  * a transaction. Returns `willSucceed` (true/false/null) + policy details +

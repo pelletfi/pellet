@@ -305,6 +305,42 @@ export interface AddressLabel {
   notes: unknown;
 }
 
+// ── Wallet intelligence ──────────────────────────────────────────────────────
+
+export interface Erc8004AgentStatus {
+  is_erc8004_agent: boolean;
+  agent_count: number;
+  coverage: "complete" | "unavailable";
+  coverage_note: string | null;
+}
+
+export interface WalletRoleEntry {
+  stable: string;
+  role_name: string;
+  granted_at: string;
+  granted_tx_hash: string;
+}
+
+export interface WalletIntelligenceResponse {
+  address: string;
+  label: AddressLabel | null;
+  agent: Erc8004AgentStatus;
+  roles: WalletRoleEntry[];
+  is_issuer_of: string[];
+  is_minter_of: string[];
+  is_pauser_of: string[];
+  is_burn_blocked_by: string[];
+  stats: {
+    role_count: number;
+    stables_involved: number;
+    erc8004_agent_count: number;
+  };
+  /** Coverage gaps not yet measured — treat as open questions, not absence. */
+  deferred: string[];
+  coverage: "complete" | "partial";
+  coverage_note: string | null;
+}
+
 // ── Pre-trade compliance oracle (TIP-403 simulation) ─────────────────────────
 
 export interface SimulateTransferInput {
