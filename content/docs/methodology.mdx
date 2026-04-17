@@ -132,9 +132,10 @@ else:                              supply_risk = MAX(0, MIN(100, 100 - headroom_
 | Policy type | Score |
 | --- | --- |
 | `blacklist` | 50 |
-| `compound` | 45 |
 | `whitelist` | 30 |
 | (none) | 10 |
+
+> **Scope-honesty note.** TIP-403 defines two policy types per the current spec: `whitelist` and `blacklist`. (An earlier Pellet version referenced a `compound` type; that was a stale assumption from before the spec was finalized.) As of now, policy-metadata reads on the live registry revert with an unknown-function selector — only `isAuthorized(policyId, user)` and `policyIdCounter()` are callable. While that gap persists, `policy_type` reports `coverage: "unavailable"` rather than a default, and `policy_risk` falls back to its `(none)` baseline weight. The event-indexer workaround (reconstructing `(policyId → admin, type)` from `PolicyCreated` + `PolicyAdminUpdated` logs) will close this gap in a follow-up release.
 
 ### Verdict thresholds *(convention, not part of API)*
 

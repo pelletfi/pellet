@@ -8,11 +8,11 @@ Pellet is open-ledger intelligence on Tempo. We monitor every TIP-20 stablecoin 
 
 ## What is Open-Ledger Intelligence (OLI)?
 
-**OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 precompile queries, issuance and flow topology from mainnet events — measured directly, not estimated from oracle aggregators.
+**OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 `isAuthorized` queries, issuance and flow topology from mainnet events, role holders from forensic event replay — measured directly, not estimated from oracle aggregators.
 
-OLI has explicit scope. Zone-internal activity (private parallel ledgers introduced in [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo)) is by design outside OLI's lens. The mainnet/zone boundary — where funds lock, where compliance policies are enforced, where proofs are committed — is squarely within it.
+OLI has explicit scope. Transfers *inside* [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo) (private parallel ledgers) stay private by design. But zones are validiums with a rich public portal — every deposit, withdrawal, batch commitment, bounce-back, and token-enable event lands on Tempo mainnet with plaintext token + amount fields, even when the deposit itself is end-user-encrypted. OLI covers that boundary in depth: per-zone TVL, encrypted-deposit adoption rate, cross-zone flow matrix, compliance-propagation latency. The zone operator sees what's inside; Pellet sees everything that crosses in or out.
 
-When a Pellet endpoint returns a number, that number is a measurement. Not an estimate. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
+When a Pellet endpoint returns a number, that number is a measurement. If the value can't be measured, the response says so explicitly via a `coverage` field — never a default masquerading as a zero. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
 
 ## Why Tempo needs Open-Ledger Intelligence
 
@@ -24,7 +24,9 @@ Generic chain indexers don't understand these primitives. They treat TIP-20 toke
 
 - **Peg stability** — real-time price via enshrined DEX quote swaps, spread in basis points
 - **Supply dynamics** — current supply, caps, mint/burn activity via TIP-20 precompile events
-- **Compliance policies** — TIP-403 policy state, admin roles, blacklist / allowlist status
+- **Pre-trade compliance simulation** — TIP-403 `isAuthorized` oracle, predicts whether a transfer would revert before gas is spent
+- **Role holders** — forensic derivation of issuer, pauser, and burn-blocked admins via mint/burn event replay + `hasRole` verification
+- **Wallet intelligence** — labels, ERC-8004 agent status, role holdings, and per-address role summaries in one call
 - **Cross-pair flows** — movement between stables, routing through native DEX
 - **Backing structure** — issuer context, reserve model (protocol-native, bridged, fiat-backed)
 - **Editorial analysis** — every stable gets a written briefing covering origin, risk, context

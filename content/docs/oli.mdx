@@ -15,10 +15,12 @@ Pellet practices OLI on Tempo. That's not a marketing line — it's a statement 
 Pellet's source of truth is the public Tempo ledger itself. We read the chain directly:
 
 - **Peg** comes from `quoteSwapExactAmountIn` against the enshrined DEX — the actual swap rate a transaction would receive, measured live.
-- **Compliance** comes from `getPolicy()` against the TIP-403 precompile — the authoritative policy state every TIP-20 transfer is evaluated against.
+- **Compliance** comes from `isAuthorized(policyId, user)` queries against the TIP-403 precompile — the authoritative per-user, per-policy check every TIP-20 transfer is evaluated against. Pellet runs the same check before agents submit, so `/api/v1/tip403/simulate` predicts `Unauthorized()` reverts without spending gas.
 - **Issuance, burns, transfers** come from decoded TIP-20 events on the chain.
 - **Fee-token elections** come from the fee manager precompile directly.
 - **Rewards** come from the reward precompile events.
+
+> **Scope-honesty note.** Not every TIP-403 read is live yet. Policy-metadata reads (admin, type enumeration, full registry scan) currently revert on the deployed registry — only `isAuthorized` and `policyIdCounter` are callable today. Full metadata is coming via event-log reconstruction (`PolicyCreated` + `PolicyAdminUpdated` on mainnet). Until it lands, Pellet reports those fields as `coverage: "unavailable"` rather than defaults. That's scope honesty in practice.
 
 Nothing is sourced from off-chain oracle aggregators, price feeds, or third-party indexers. When an aggregator is uncertain about a Tempo stable's peg, they mark it `confidence: null`. Pellet has an answer because Pellet read the pool.
 
@@ -38,11 +40,11 @@ When a number is outside OLI's lens, Pellet says so. Scope honesty is not a cave
 Every metric Pellet publishes is a **measurement**, not an estimate.
 
 - `spread_bps` is the difference between the bid and ask side of an actual DEX quote call. Not a triangulation through USD.
-- `composite_risk` is a weighted combination of measurements — peg deviation, peg-break history, supply headroom, policy type — each of which is itself a direct read.
+- `composite_risk` is a weighted combination of signals — peg deviation, peg-break history, supply headroom, and policy posture. Peg + supply components are direct reads; the policy component currently degrades to a scope-honest default until full TIP-403 metadata reads land (see scope-honesty note above). The composite doesn't hide which components are direct vs. degraded.
 - `effective_apy_pct` is computed from distributed reward amounts and opted-in supply, both read directly.
 - `backing_usd` is `totalSupply × current_peg_price` — two direct reads, composed.
 
-If a value cannot be measured, it is returned as `null` with an explanatory note in the response. Pellet never invents a number to fill a gap.
+If a value cannot be measured, it is returned as `null` with an explanatory `coverage` / `coverage_note` pair in the response. Pellet never invents a number to fill a gap.
 
 ## OLI vs. the alternatives
 
