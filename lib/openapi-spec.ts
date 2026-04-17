@@ -19,6 +19,13 @@ export const spec = {
       "Every numeric value is a direct on-chain measurement, not an estimate. When a measurement is unavailable, the field returns null with an explanatory note — never a synthetic estimate.",
       "See https://pelletfi.com/docs/oli for the Open-Ledger Intelligence discipline specification.",
     ].join(" "),
+    // Transparent-bg, white-mark variant served to directory UIs that render
+    // on dark backgrounds. Redocly-standard x-logo field.
+    "x-logo": {
+      url: "https://pelletfi.com/pellet-mark.png",
+      altText: "Pellet — italic P. with velocity whooshes",
+      backgroundColor: "transparent",
+    },
   },
   "x-service-info": {
     name: "Pellet",
@@ -53,6 +60,11 @@ export const spec = {
     provider: { name: "Pellet Finance", url: "https://pelletfi.com" },
     realm: "pelletfi.com",
     chain: "tempo",
+    // Transparent-bg, white-mark variant for dark-UI directory listings
+    // (MPPScan, mpp.dev, etc.). Browser favicons continue to use /icon.png
+    // which is dark-on-light for light-theme tab visibility.
+    logo: "https://pelletfi.com/pellet-mark.png",
+    logoUrl: "https://pelletfi.com/pellet-mark.png",
   },
   servers: [
     {
