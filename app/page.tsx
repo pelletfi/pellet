@@ -679,7 +679,7 @@ export default function LandingPage() {
             ))}
           </div>
           <span className="stats-version">
-            Pellet · v1.3.0 · Methodology v1.0
+            MPP-Native · v1.3.0 · Methodology v1.0
           </span>
         </motion.div>
       </motion.div>
