@@ -306,7 +306,11 @@ export default function LandingPage() {
           display: grid;
           grid-template-columns: 1.05fr 1fr;
           gap: 56px;
-          align-items: start;
+          /* Center the two columns vertically so the left headline aligns
+             with the VIDEO's midline, not the fig-header caption above it.
+             Keeps the headline's perceived position stable regardless of
+             whether the right column has chrome attached. */
+          align-items: center;
         }
         .landing-hero-h1 {
           font-family: 'Instrument Serif', Georgia, serif;
@@ -388,10 +392,15 @@ export default function LandingPage() {
           justify-content: space-between;
           align-items: baseline;
           gap: 12px;
-          margin-bottom: 16px;
+          /* Tighter than before — the chrome should hug the video, not
+             float distantly above it.  Also keeps the right column's
+             overall height closer to the left column so centering reads
+             as "hero section", not "caption + figure". */
+          margin-bottom: 10px;
           font-family: var(--font-mono);
-          font-size: 11px;
-          letter-spacing: 0.04em;
+          font-size: 10px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
           color: var(--color-text-tertiary);
         }
         .fig-value {
@@ -403,10 +412,11 @@ export default function LandingPage() {
           display: flex;
           justify-content: space-between;
           gap: 12px;
-          margin-top: 16px;
+          /* Match the fig-header tightening — chrome hugs the video. */
+          margin-top: 10px;
           font-family: var(--font-mono);
           font-size: 10px;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.06em;
           color: var(--color-text-quaternary);
           text-transform: uppercase;
         }
