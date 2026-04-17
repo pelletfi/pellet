@@ -558,8 +558,11 @@ export default function LandingPage() {
                 height: "auto",
                 display: "block",
                 aspectRatio: "1280 / 711",
-                background: "#0a0a0a",
-                border: "1px solid var(--color-border-subtle)",
+                // Pure-black bg is crushed in the encode; screen-blend makes
+                // those pixels transparent against the page, so only the
+                // white data points show through.  No border / no container
+                // — the stream floats in the page.
+                mixBlendMode: "screen",
               }}
             />
 
