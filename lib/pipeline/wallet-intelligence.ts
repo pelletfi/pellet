@@ -143,6 +143,7 @@ export async function getWalletIntelligence(
   const stablesInvolved = new Set(roles.map((r) => r.stable));
 
   const deferred = [
+    "TIP-403 policy admin enumeration (deployed registry doesn't expose policyData/getPolicy reads — requires event-indexer workaround via PolicyCreated + PolicyAdminUpdated)",
     "MPP transaction activity summary (memo-hash indexing per address)",
     "First/last seen block (historical scan)",
     "ERC-8004 reputation feedback aggregation (requires agent-tokenId mapping)",

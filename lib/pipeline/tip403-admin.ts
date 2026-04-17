@@ -1,52 +1,43 @@
 /**
  * lib/pipeline/tip403-admin.ts
  *
- * TIP-403 policy admin scan — which tracked TIP-20 stablecoins does a
- * given address administer the policy of?
+ * TIP-403 policy admin scan — intended to return every tracked stablecoin
+ * where a given address is the policy admin.
  *
- * Implementation note: Tempo's TIP-403 predeploy does NOT expose the
- * `policyData(uint64 policyId)` function that viem/tempo's canonical ABI
- * declares — live calls revert with an "unknown function selector" error.
- * What IS live: `getPolicy(address token)` which returns the full policy
- * record keyed by token. So we iterate through KNOWN_STABLECOINS rather
- * than through a policy ID range.
+ * ⚠️ DISCOVERED 2026-04-17 ~00:30 UTC: Tempo's live TIP-403 predeploy does
+ * NOT implement the read functions needed for this scan. Both:
  *
- * This is actually the more agent-useful framing — agents want to know
- * "which tokens does 0xABC administer the compliance policy for?" not
- * "which policy IDs." The answer is more semantically meaningful when it
- * carries the token symbol + address alongside the policy metadata.
+ *   policyData(uint64 policyId)     → returns (uint8, address)
+ *   getPolicy(address token)        → returns (uint256, uint8, address, uint256, bool)
  *
- * Coverage limitation: only tracked stablecoins are scanned. An address
- * that administers an untracked TIP-20 won't show up. Honest coverage
- * flag reflects this.
+ * revert with the custom error `0xaa4bc69a` ("unknown function selector")
+ * on every call. These are declared in the canonical viem/tempo ABI and in
+ * earlier Pellet code, but the deployed proxy at 0x403c… doesn't back them.
+ *
+ * Only read functions confirmed working today:
+ *   - policyIdCounter()                     → uint64
+ *   - isAuthorized(uint64 policyId, address user) → bool  (our pre-trade oracle uses this)
+ *
+ * So we can answer "is X authorized under policy Y" but NOT enumerate which
+ * policies exist or who their admins are, via read functions alone.
+ *
+ * Workaround path (deferred to a future iteration): index the state-change
+ * events emitted by TIP-403 and reconstruct the (policyId → admin) map
+ * off-chain:
+ *
+ *   PolicyCreated(uint64 indexed policyId, address indexed updater, PolicyType policyType)
+ *   PolicyAdminUpdated(uint64 indexed policyId, address indexed updater, address indexed admin)
+ *   WhitelistUpdated / BlacklistUpdated also correlate an admin to a policy.
+ *
+ * That's a full indexer job — event subscription + DB snapshot + query layer.
+ * Bigger scope than a one-RPC multicall so it belongs in a follow-up build.
+ * For now this module returns coverage:"unavailable" with an honest note so
+ * wallet-intel consumers know where the gap is.
+ *
+ * OLI discipline: do not invent coverage we can't deliver. null/unavailable
+ * is always clearer than a silent "zero admin matches" that's actually
+ * "we couldn't check."
  */
-
-import { tempoClient } from "@/lib/rpc";
-import { TEMPO_ADDRESSES } from "@/lib/types";
-import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
-
-const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
-
-// Same ABI we use in stablecoins.ts — `getPolicy(token)` returns the full
-// 5-tuple (policyId, policyType, admin, supplyCap, paused) per token.
-const TIP403_GET_POLICY_ABI = [
-  {
-    name: "getPolicy",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "token", type: "address" }],
-    outputs: [
-      { name: "policyId", type: "uint256" },
-      { name: "policyType", type: "uint8" },
-      { name: "admin", type: "address" },
-      { name: "supplyCap", type: "uint256" },
-      { name: "paused", type: "bool" },
-    ],
-  },
-] as const;
-
-// Policy type enum per spec: 0 = WHITELIST, 1 = BLACKLIST. No compound.
-const POLICY_TYPE_LABELS = ["whitelist", "blacklist"] as const;
 
 export interface AdministeredPolicy {
   token_address: string;
@@ -59,106 +50,26 @@ export interface AdministeredPolicy {
 
 export interface PoliciesAdministeredResult {
   policies: AdministeredPolicy[];
-  /** How many tracked stablecoins we scanned. */
+  /** How many tracked stablecoins we scanned. Zero until the event-indexer workaround ships. */
   stables_scanned: number;
   coverage: "complete" | "partial" | "unavailable";
   coverage_note: string | null;
 }
 
 /**
- * Return every tracked TIP-20 stablecoin where `address` is the policy admin.
- *
- * Reads `getPolicy(token)` for each token in KNOWN_STABLECOINS via a single
- * multicall. Filters for admin match and returns token + policy metadata.
+ * Currently returns coverage:"unavailable" for every address. See module
+ * header comment for why — Tempo's TIP-403 read surface doesn't expose the
+ * needed functions. Ship the honest answer now; close the gap via the
+ * event-indexer workaround in a follow-up iteration.
  */
 export async function getPoliciesAdministered(
-  address: `0x${string}`
+  _address: `0x${string}`
 ): Promise<PoliciesAdministeredResult> {
-  if (KNOWN_STABLECOINS.length === 0) {
-    return {
-      policies: [],
-      stables_scanned: 0,
-      coverage: "complete",
-      coverage_note: null,
-    };
-  }
-
-  // Build one multicall for getPolicy(token) per tracked stablecoin.
-  const calls = KNOWN_STABLECOINS.map((s) => ({
-    address: TEMPO_ADDRESSES.tip403Registry,
-    abi: TIP403_GET_POLICY_ABI,
-    functionName: "getPolicy" as const,
-    args: [s.address] as const,
-  }));
-
-  let results: Array<
-    | {
-        status: "success";
-        result: readonly [bigint, number, `0x${string}`, bigint, boolean];
-      }
-    | { status: "failure"; error: Error }
-  >;
-  try {
-    results = (await tempoClient.multicall({
-      contracts: calls,
-      allowFailure: true,
-      multicallAddress: MULTICALL3_ADDRESS,
-    })) as typeof results;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      policies: [],
-      stables_scanned: 0,
-      coverage: "unavailable",
-      coverage_note: `Multicall of getPolicy() reads failed: ${msg.slice(0, 140)}`,
-    };
-  }
-
-  const targetLower = address.toLowerCase();
-  const matches: AdministeredPolicy[] = [];
-  let scanned = 0;
-  let failures = 0;
-  let firstErrorMessage: string | null = null;
-
-  for (let i = 0; i < results.length; i++) {
-    const r = results[i];
-    if (r.status !== "success") {
-      failures++;
-      if (firstErrorMessage === null) {
-        firstErrorMessage =
-          r.error instanceof Error ? r.error.message.slice(0, 200) : String(r.error).slice(0, 200);
-      }
-      continue;
-    }
-    scanned++;
-    const [pid, ptype, admin] = r.result;
-    if (admin.toLowerCase() !== targetLower) continue;
-    const policyType =
-      ptype < POLICY_TYPE_LABELS.length
-        ? POLICY_TYPE_LABELS[ptype]
-        : "unknown";
-    const stable = KNOWN_STABLECOINS[i];
-    matches.push({
-      token_address: stable.address,
-      token_symbol: stable.symbol,
-      token_name: stable.name,
-      policy_id: Number(pid),
-      policy_type: policyType,
-      admin,
-    });
-  }
-
-  const coverage: PoliciesAdministeredResult["coverage"] =
-    failures === 0 ? "complete" : scanned > 0 ? "partial" : "unavailable";
-  const coverage_note =
-    failures > 0
-      ? `${failures} of ${KNOWN_STABLECOINS.length} tracked stablecoin policy reads failed. ${scanned} successful. First-failure reason: ${firstErrorMessage ?? "unknown"}`
-      : null;
-
   return {
-    policies: matches,
-    stables_scanned: scanned,
-    coverage,
-    coverage_note,
+    policies: [],
+    stables_scanned: 0,
+    coverage: "unavailable",
+    coverage_note:
+      "TIP-403 policy admin lookup is not yet available. The live registry at 0x403c… does not implement the policyData / getPolicy read functions that viem/tempo's canonical ABI declares — calls revert with unknown-function selector. Next iteration will reconstruct (policyId → admin) off-chain by indexing PolicyCreated + PolicyAdminUpdated events.",
   };
 }
