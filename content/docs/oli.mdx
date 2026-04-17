@@ -68,14 +68,19 @@ This is why the distinction matters. Pellet's peg number is not "another provide
 
 ## Why this matters now
 
-In April 2026, Tempo announced **Zones** — private parallel ledgers for enterprise stablecoin use. Enterprise payroll, B2B invoicing, and treasury operations can now run on Tempo without their internal transactions being public.
+In April 2026, Tempo announced **Zones** — private parallel ledgers designed to let enterprise stablecoin use (payroll, B2B invoicing, treasury) run without exposing internal transactions. Zones are currently **testnet-only**: the prover isn't live yet, no production zones exist, and the spec is labeled "expect breaking changes." Tempo mainnet launched on 2026-03-18 without zones; they're a roadmap item, not a shipped product.
 
-This narrows the observable surface. It also *sharpens* what remains visible:
+When zones do ship at production scale, they'll narrow the observable surface of internal transfers. But zones are **validiums with a public portal**, not opaque sidechains — so the boundary surface becomes richer per unit than people initially assume. What lands on mainnet, even with encrypted zones running:
 
-- Every **issuance** and **burn** still happens on mainnet.
-- Every **TIP-403 policy** still applies, cross-zone, and every policy change is mainnet-visible.
-- Every **zone deposit and withdrawal** — the boundary between public and private — is a mainnet event.
-- Every **validity proof** a zone commits is a mainnet artifact.
+- **Issuance and burns** remain mainnet events, same as today.
+- **Every deposit and withdrawal** hits a mainnet `ZonePortal` with plaintext `token` + `amount` fields. Encrypted deposits keep the recipient and memo private but the token and amount are still public.
+- **Every batch commitment** (`BatchSubmitted` event with state-transition hashes) is a mainnet artifact.
+- **Every TIP-403 policy change** (`PolicyCreated`, `PolicyAdminUpdated`, `WhitelistUpdated`, `BlacklistUpdated`) propagates into zones via the mirrored registry — and the events themselves live on mainnet, indexable.
+- **Bounce-back events** — withdrawals blocked at the exit by TIP-403 — are mainnet-observable proxies for in-zone policy friction.
+
+OLI's scope expands along the boundary as zones grow: per-zone TVL by stablecoin, encrypted-deposit adoption ratio (unique per-zone KPI nobody else will compute), cross-zone flow matrix via chained portal callbacks, compliance-propagation latency between a mainnet policy write and each zone's next `TempoAdvanced`, and sequencer revenue per zone per token.
+
+> **Honest status.** Pellet indexes the mainnet stablecoin and TIP-403 surface today. The zone-portal event indexer is on deck — a standalone build that will ship as the first production zones come online. Until then, this section describes the OLI scope we'll cover, not a live capability.
 
 The public ledger becomes scarcer in volume and richer in signal per unit. OLI is the discipline that knows the difference.
 
