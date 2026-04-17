@@ -594,6 +594,15 @@ export default function LandingPage() {
                   height: "100%",
                   display: "block",
                   mixBlendMode: "lighten",
+                  // Radial-gradient mask fades the video's corners to
+                  // transparent so the data points dissolve into the page
+                  // instead of tracing a hard rectangle.  No visible edge;
+                  // just dots emerging from the dark.  WebKit prefix kept
+                  // for older Safari.
+                  maskImage:
+                    "radial-gradient(ellipse 80% 85% at center, black 40%, transparent 100%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 80% 85% at center, black 40%, transparent 100%)",
                 }}
               />
             </div>
