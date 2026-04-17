@@ -1,6 +1,6 @@
 // Pellet SDK — typed TypeScript client for the Pellet API.
 //
-// Stablecoin intelligence on Tempo: peg health, risk scores, reserves,
+// Open-ledger intelligence on Tempo: peg health, risk scores, reserves,
 // role holders, peg-break events, flow anomalies, system health.
 //
 // Usage:
@@ -87,11 +87,54 @@ export class Pellet {
         const limit = opts.limit ?? 20;
         return this.request(`/api/v1/stablecoins/flow-anomalies?limit=${limit}`, { asOf: opts.asOf });
     }
-    /** Address label / entity resolution. */
+    /**
+     * Address scope — resolve labels, ERC-8004 agent status, role holdings
+     * across tracked stablecoins, and derived role summaries in one call.
+     *
+     * - `intelligence()` returns the full wallet-intel bundle (label + agent +
+     *   roles + is_issuer_of etc.). This is the default modern endpoint and
+     *   bundles what Codex / Nansen / Zerion can't on Tempo.
+     * - `lookup()` is the legacy label-only view, kept for backward compat.
+     *   Prefer `intelligence()` going forward.
+     */
     address(addr) {
         return {
+            intelligence: () => this.request(`/api/v1/addresses/${addr}`),
+            /** @deprecated Use `intelligence()` — returns label bundled with role + ERC-8004 data. */
             lookup: () => this.request(`/api/v1/addresses/${addr}`),
         };
+    }
+    /**
+     * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
+     * statically whether it would revert under TIP-403 policy — without
+     * actually sending a transaction. Saves agents gas on preventable reverts.
+     *
+     * - `willSucceed: true`  → policy + balance pass; safe to submit.
+     * - `willSucceed: false` → blocked; see `blockedBy` and `reason`.
+     * - `willSucceed: null`  → unknown; retry or submit and handle revert.
+     *
+     * Example:
+     *   const { data } = await pellet.simulate({
+     *     from: "0xabc…",
+     *     to: "0xdef…",
+     *     token: "0x20c0…b9537d11c60e8b50",  // USDC.e
+     *     amount: "1000000",                 // 1 USDC.e (6 decimals)
+     *   });
+     *   if (data.willSucceed === false) {
+     *     console.error(data.reason);
+     *     return;
+     *   }
+     *   // ... submit the transfer
+     */
+    simulate(input) {
+        const params = new URLSearchParams({
+            from: input.from,
+            to: input.to,
+            token: input.token,
+        });
+        if (input.amount !== undefined)
+            params.set("amount", input.amount);
+        return this.request(`/api/v1/tip403/simulate?${params.toString()}`);
     }
     /** Pellet system health + cron pipeline state. */
     system = {

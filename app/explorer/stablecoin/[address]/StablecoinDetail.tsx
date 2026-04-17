@@ -1179,7 +1179,11 @@ export default function StablecoinDetail({
   const isPathUsd = token.symbol === "pathUSD";
   const priceColor = pegDeviationColor(token.price_vs_pathusd);
   const devBps = pegDeviationBps(token.price_vs_pathusd);
-  const hasCap = token.supply_cap !== "0" && token.headroom_pct !== -1;
+  const hasCap =
+    token.supply_cap !== null &&
+    token.supply_cap !== "0" &&
+    token.headroom_pct !== null &&
+    token.headroom_pct !== -1;
   const currentSupplyNum = formatSupplyRaw(token.current_supply);
   const optedInSupplyNum = formatSupplyRaw(token.opted_in_supply);
   const optedInPct =
@@ -1204,7 +1208,12 @@ export default function StablecoinDetail({
     },
     {
       label: "Headroom",
-      value: token.headroom_pct === -1 ? "uncapped" : `${token.headroom_pct.toFixed(1)}%`,
+      value:
+        token.headroom_pct === null
+          ? "—"
+          : token.headroom_pct === -1
+            ? "uncapped"
+            : `${token.headroom_pct.toFixed(1)}%`,
       color: "var(--color-text-primary)",
     },
     {
@@ -1704,7 +1713,7 @@ export default function StablecoinDetail({
               {formatSupply(token.current_supply)}
             </strong>
             .{" "}
-            {hasCap ? (
+            {hasCap && token.supply_cap !== null && token.headroom_pct !== null ? (
               <>
                 The TIP-403 policy caps issuance at{" "}
                 <strong
@@ -1720,6 +1729,11 @@ export default function StablecoinDetail({
                 </strong>{" "}
                 of headroom before new mints are blocked at the protocol level.
               </>
+            ) : token.supply_cap === null ? (
+              <>
+                Supply cap is unmeasured — the TIP-403 registry&apos;s
+                getPolicy() read is not callable on the current deployment.
+              </>
             ) : (
               <>
                 This stablecoin has no supply cap — issuance is constrained only by the issuer,
@@ -1730,7 +1744,7 @@ export default function StablecoinDetail({
         </BodyProse>
 
         <DataCard style={{ marginTop: 32, padding: "24px 24px 20px" }}>
-          {hasCap && (
+          {hasCap && token.supply_cap !== null && (
             <div style={{ marginBottom: 20 }}>
               <SupplyCapBar
                 current={token.current_supply}
@@ -1744,14 +1758,22 @@ export default function StablecoinDetail({
           />
           <DataRow
             label="Supply cap"
-            value={hasCap ? formatSupply(token.supply_cap) : "uncapped"}
+            value={
+              token.supply_cap === null
+                ? "—"
+                : hasCap
+                  ? formatSupply(token.supply_cap)
+                  : "uncapped"
+            }
           />
           <DataRow
             label="Headroom"
             value={
-              token.headroom_pct === -1
-                ? "uncapped"
-                : `${token.headroom_pct.toFixed(1)}%`
+              token.headroom_pct === null
+                ? "—"
+                : token.headroom_pct === -1
+                  ? "uncapped"
+                  : `${token.headroom_pct.toFixed(1)}%`
             }
           />
           <DataRow
@@ -1796,7 +1818,7 @@ export default function StablecoinDetail({
         <DataCard style={{ marginTop: 32 }}>
           <DataRow
             label="Policy ID"
-            value={token.policy_id > 0 ? `#${token.policy_id}` : "—"}
+            value={token.policy_id != null && token.policy_id > 0 ? `#${token.policy_id}` : "—"}
           />
           <DataRow label="Policy type" value={token.policy_type || "—"} />
           <DataRow

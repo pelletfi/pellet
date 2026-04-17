@@ -16,22 +16,34 @@ export interface StablecoinSummary {
     name: string;
     symbol: string;
     currency: string;
-    policy_id: number;
-    policy_type: string;
-    policy_admin: string;
-    supply_cap: string;
+    /**
+     * TIP-403 policy fields. `null` means UNMEASURED (the registry's
+     * getPolicy(address) read is not callable on the current deployment).
+     * Do NOT interpret null as "no policy" — when a stablecoin is explicitly
+     * non-policied (e.g. pathUSD), `policy_type` will be "none".
+     */
+    policy_id: number | null;
+    policy_type: "whitelist" | "blacklist" | "compound" | "none" | null;
+    policy_admin: string | null;
+    /** Supply cap as uint256 string. `"0"` = uncapped sentinel; `null` = unmeasured. */
+    supply_cap: string | null;
     current_supply: string;
-    headroom_pct: number;
+    /** Headroom percent. `-1` = uncapped sentinel; `null` = unmeasured. */
+    headroom_pct: number | null;
     price_vs_pathusd: number;
-    spread_bps: number;
+    /** DEX spread in bps vs pathUSD. `null` = unmeasured; never interpret as zero. */
+    spread_bps: number | null;
     volume_24h: number;
-    yield_rate: number;
+    /** Effective APY. `null` = unmeasured; never interpret as zero yield. */
+    yield_rate: number | null;
     opted_in_supply: string;
     risk?: {
         composite: number;
         components: Record<string, number>;
         computed_at: string;
     } | null;
+    coverage?: "complete" | "partial" | "unavailable";
+    coverage_note?: string | null;
 }
 export interface StablecoinsListResponse {
     stablecoins: StablecoinSummary[];
@@ -262,4 +274,90 @@ export interface AddressLabel {
     category: "system" | "token" | "bridge" | "issuer" | "multisig" | "eoa" | "other";
     source: "pellet_curated" | "forensic" | "ens" | "community";
     notes: unknown;
+}
+export interface Erc8004AgentStatus {
+    is_erc8004_agent: boolean;
+    agent_count: number;
+    coverage: "complete" | "unavailable";
+    coverage_note: string | null;
+}
+export interface WalletRoleEntry {
+    stable: string;
+    role_name: string;
+    granted_at: string;
+    granted_tx_hash: string;
+}
+export interface AdministeredPolicy {
+    token_address: string;
+    token_symbol: string;
+    token_name: string;
+    policy_id: number;
+    policy_type: "whitelist" | "blacklist" | "unknown";
+    admin: string;
+}
+export interface PoliciesAdministered {
+    policies: AdministeredPolicy[];
+    /** How many tracked stablecoins we scanned. */
+    stables_scanned: number;
+    coverage: "complete" | "partial" | "unavailable";
+    coverage_note: string | null;
+}
+export interface WalletIntelligenceResponse {
+    address: string;
+    label: AddressLabel | null;
+    agent: Erc8004AgentStatus;
+    roles: WalletRoleEntry[];
+    is_issuer_of: string[];
+    is_minter_of: string[];
+    is_pauser_of: string[];
+    is_burn_blocked_by: string[];
+    /** Every TIP-403 policy where this address is the admin (full-registry scan). */
+    policies_administered: PoliciesAdministered;
+    stats: {
+        role_count: number;
+        stables_involved: number;
+        erc8004_agent_count: number;
+        policy_admin_count: number;
+    };
+    /** Coverage gaps not yet measured — treat as open questions, not absence. */
+    deferred: string[];
+    coverage: "complete" | "partial";
+    coverage_note: string | null;
+}
+export interface SimulateTransferInput {
+    from: Address;
+    to: Address;
+    token: Address;
+    /** Optional raw uint256 decimal string. If provided, sender balance is also checked. */
+    amount?: string;
+}
+export interface SimulateTransferResponse {
+    /**
+     * - `true`  = all checks passed (authorized + balance sufficient)
+     * - `false` = blocked by a specific reason (see blockedBy)
+     * - `null`  = unknown (coverage:partial). Do NOT interpret null as false.
+     */
+    willSucceed: boolean | null;
+    policyId: number | null;
+    policyType: "whitelist" | "blacklist" | "none" | null;
+    policyAdmin: string | null;
+    sender: {
+        address: string;
+        authorized: boolean;
+    };
+    recipient: {
+        address: string;
+        authorized: boolean;
+    };
+    balance: {
+        sufficient: boolean;
+        has: string;
+        needs: string;
+    } | null;
+    blockedBy: "policy" | "balance" | "not_a_tip20" | "invalid_input" | null;
+    blockedParty: "sender" | "recipient" | null;
+    reason: string;
+    simulatedAtBlock: string;
+    coverage: "complete" | "partial";
+    coverage_note: string | null;
 }

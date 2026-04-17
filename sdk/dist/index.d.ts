@@ -1,4 +1,4 @@
-import type { Address, AddressLabel, CronRunsResponse, FeeEconomicsOverviewResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RewardsResponse, RiskResponse, RolesResponse, StablecoinSummary, StablecoinsListResponse } from "./types.js";
+import type { Address, CronRunsResponse, FeeEconomicsOverviewResponse, FlowAnomaliesResponse, FlowsResponse, HealthResponse, PegEventsResponse, PegResponse, ReproducibilityMeta, ReservesResponse, RewardsResponse, RiskResponse, RolesResponse, SimulateTransferInput, SimulateTransferResponse, StablecoinSummary, StablecoinsListResponse, WalletIntelligenceResponse } from "./types.js";
 export * from "./types.js";
 interface PelletConfig {
     /** Base URL — defaults to https://pelletfi.com */
@@ -63,10 +63,44 @@ export declare class Pellet {
         limit?: number;
         asOf?: AsOf;
     }): Promise<PelletResponse<FlowAnomaliesResponse>>;
-    /** Address label / entity resolution. */
+    /**
+     * Address scope — resolve labels, ERC-8004 agent status, role holdings
+     * across tracked stablecoins, and derived role summaries in one call.
+     *
+     * - `intelligence()` returns the full wallet-intel bundle (label + agent +
+     *   roles + is_issuer_of etc.). This is the default modern endpoint and
+     *   bundles what Codex / Nansen / Zerion can't on Tempo.
+     * - `lookup()` is the legacy label-only view, kept for backward compat.
+     *   Prefer `intelligence()` going forward.
+     */
     address(addr: Address): {
-        lookup: () => Promise<PelletResponse<AddressLabel>>;
+        intelligence: () => Promise<PelletResponse<WalletIntelligenceResponse>>;
+        /** @deprecated Use `intelligence()` — returns label bundled with role + ERC-8004 data. */
+        lookup: () => Promise<PelletResponse<WalletIntelligenceResponse>>;
     };
+    /**
+     * Pre-trade compliance oracle. Given a proposed TIP-20 transfer, predict
+     * statically whether it would revert under TIP-403 policy — without
+     * actually sending a transaction. Saves agents gas on preventable reverts.
+     *
+     * - `willSucceed: true`  → policy + balance pass; safe to submit.
+     * - `willSucceed: false` → blocked; see `blockedBy` and `reason`.
+     * - `willSucceed: null`  → unknown; retry or submit and handle revert.
+     *
+     * Example:
+     *   const { data } = await pellet.simulate({
+     *     from: "0xabc…",
+     *     to: "0xdef…",
+     *     token: "0x20c0…b9537d11c60e8b50",  // USDC.e
+     *     amount: "1000000",                 // 1 USDC.e (6 decimals)
+     *   });
+     *   if (data.willSucceed === false) {
+     *     console.error(data.reason);
+     *     return;
+     *   }
+     *   // ... submit the transfer
+     */
+    simulate(input: SimulateTransferInput): Promise<PelletResponse<SimulateTransferResponse>>;
     /** Pellet system health + cron pipeline state. */
     system: {
         health: () => Promise<PelletResponse<HealthResponse>>;

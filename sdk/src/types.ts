@@ -23,22 +23,34 @@ export interface StablecoinSummary {
   name: string;
   symbol: string;
   currency: string;
-  policy_id: number;
-  policy_type: string;
-  policy_admin: string;
-  supply_cap: string;
+  /**
+   * TIP-403 policy fields. `null` means UNMEASURED (the registry's
+   * getPolicy(address) read is not callable on the current deployment).
+   * Do NOT interpret null as "no policy" — when a stablecoin is explicitly
+   * non-policied (e.g. pathUSD), `policy_type` will be "none".
+   */
+  policy_id: number | null;
+  policy_type: "whitelist" | "blacklist" | "compound" | "none" | null;
+  policy_admin: string | null;
+  /** Supply cap as uint256 string. `"0"` = uncapped sentinel; `null` = unmeasured. */
+  supply_cap: string | null;
   current_supply: string;
-  headroom_pct: number;
+  /** Headroom percent. `-1` = uncapped sentinel; `null` = unmeasured. */
+  headroom_pct: number | null;
   price_vs_pathusd: number;
-  spread_bps: number;
+  /** DEX spread in bps vs pathUSD. `null` = unmeasured; never interpret as zero. */
+  spread_bps: number | null;
   volume_24h: number;
-  yield_rate: number;
+  /** Effective APY. `null` = unmeasured; never interpret as zero yield. */
+  yield_rate: number | null;
   opted_in_supply: string;
   risk?: {
     composite: number;
     components: Record<string, number>;
     computed_at: string;
   } | null;
+  coverage?: "complete" | "partial" | "unavailable";
+  coverage_note?: string | null;
 }
 
 export interface StablecoinsListResponse {

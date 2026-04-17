@@ -134,15 +134,21 @@ export async function getStablecoinMetadata(
         ? optedInSupplyRaw.value.toString()
         : "0";
 
-    // pathUSD has no supply cap — headroom is null, represented as -1 sentinel
+    // pathUSD is the enshrined quote currency — architecturally uncapped and
+    // not a TIP-403 policied token. We skip the getPolicy() read entirely, so:
+    //   policy_type: "none" is a measured architectural fact (pathUSD is NOT
+    //     policy-gated — it's the system unit of account)
+    //   policy_id / policy_admin: null because we didn't read them (there is
+    //     no policy to read)
+    //   supply_cap: "0" sentinel = uncapped; headroom_pct: -1 sentinel = uncapped
     return {
       address,
       name,
       symbol,
       currency: "USD",
-      policy_id: 0,
+      policy_id: null,
       policy_type: "none",
-      policy_admin: TEMPO_ADDRESSES.tip403Registry,
+      policy_admin: null,
       supply_cap: "0",
       current_supply: totalSupply,
       headroom_pct: -1, // no cap
@@ -216,12 +222,15 @@ export async function getStablecoinMetadata(
   const optedIn =
     optedInRes.status === "fulfilled" ? optedInRes.value.toString() : "0";
 
-  // Policy
-  let policyId = 0;
-  let policyType = "unknown";
-  let policyAdmin = "";
-  let supplyCap = "0";
-  let headroomPct: number = -1;
+  // Policy — null defaults mean UNMEASURED, not "no policy". We only overwrite
+  // with measurements if the getPolicy() call succeeds. The TIP-403 registry
+  // currently reverts this read on mainnet (see coverage_note below), so these
+  // are expected to stay null until the event-indexer workaround ships.
+  let policyId: number | null = null;
+  let policyType: StablecoinData["policy_type"] = null;
+  let policyAdmin: string | null = null;
+  let supplyCap: string | null = null;
+  let headroomPct: number | null = null;
 
   if (policyRes.status === "fulfilled" && policyRes.value) {
     const [pid, ptype, admin, cap] = policyRes.value as [
@@ -232,12 +241,16 @@ export async function getStablecoinMetadata(
       boolean
     ];
     policyId = Number(pid);
-    policyType = POLICY_TYPE_LABELS[ptype] ?? "unknown";
+    policyType =
+      (POLICY_TYPE_LABELS[ptype] as StablecoinData["policy_type"]) ?? null;
     policyAdmin = admin;
     supplyCap = cap.toString();
 
-    // Headroom: percentage of supply cap remaining
-    if (cap > 0n && totalSupplyRes.status === "fulfilled") {
+    // Headroom: percentage of supply cap remaining. cap === 0 is the uncapped
+    // sentinel ("0" string + -1 pct); cap > 0 produces a real percentage.
+    if (cap === 0n) {
+      headroomPct = -1;
+    } else if (totalSupplyRes.status === "fulfilled") {
       const currentBig = totalSupplyRes.value;
       const remaining = cap - currentBig;
       headroomPct =
@@ -282,7 +295,7 @@ export async function getStablecoinMetadata(
     : "partial";
   const coverage_note = policyRes.status === "fulfilled"
     ? null
-    : "TIP-403 registry getPolicy() call failed — policy fields reflect defaults, not on-chain state.";
+    : "TIP-403 read surface gap — getPolicy(address) is not callable on the current registry deployment, so policy_id / policy_type / policy_admin / supply_cap / headroom_pct are null (UNMEASURED), not zero. Workaround via event-indexing of PolicyCreated + PolicyAdminUpdated is pending.";
 
   return {
     address,
@@ -315,20 +328,21 @@ export async function getAllStablecoins(): Promise<StablecoinData[]> {
       getStablecoinMetadata(address, name, symbol).catch((err) => {
         console.error(`[stablecoins] failed to fetch ${symbol}:`, err);
         // Fallback stays in the response shape so the UI doesn't break, but
-        // EVERY numeric field is null and coverage is explicitly "unavailable".
-        // This prevents the matrix from silently reporting a 1:1-pegged
-        // stable with "0 supply / 0 spread / 0 yield" when the fetch failed.
+        // every unmeasured field is null and coverage is explicitly
+        // "unavailable". This prevents the matrix from silently reporting a
+        // 1:1-pegged stable with "0 supply / 0 spread / 0 yield" when the
+        // fetch failed.
         return {
           address,
           name,
           symbol,
           currency: "USD",
-          policy_id: 0,
-          policy_type: "unknown",
-          policy_admin: "",
-          supply_cap: "0",
+          policy_id: null,
+          policy_type: null,
+          policy_admin: null,
+          supply_cap: null,
           current_supply: "0",
-          headroom_pct: -1,
+          headroom_pct: null,
           price_vs_pathusd: 0,
           spread_bps: null,
           volume_24h: 0,

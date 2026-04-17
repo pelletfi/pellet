@@ -1464,17 +1464,46 @@ export const spec = {
           name: { type: "string" },
           symbol: { type: "string" },
           currency: { type: "string" },
-          policy_id: { type: "integer" },
-          policy_type: { type: "string" },
-          policy_admin: { type: "string" },
-          supply_cap: { type: "string" },
+          policy_id: {
+            type: ["integer", "null"],
+            description:
+              "TIP-403 policy ID. null = UNMEASURED (registry getPolicy() not callable); do NOT interpret as 0.",
+          },
+          policy_type: {
+            type: ["string", "null"],
+            enum: ["whitelist", "blacklist", "compound", "none", null],
+            description:
+              "Policy type, or \"none\" for system tokens (pathUSD). null = UNMEASURED.",
+          },
+          policy_admin: {
+            type: ["string", "null"],
+            description:
+              "Policy admin address. null = UNMEASURED (not the zero address).",
+          },
+          supply_cap: {
+            type: ["string", "null"],
+            description:
+              "uint256 supply cap as string. \"0\" = uncapped sentinel; null = UNMEASURED.",
+          },
           current_supply: { type: "string" },
-          headroom_pct: { type: "number" },
+          headroom_pct: {
+            type: ["number", "null"],
+            description:
+              "Headroom percent. -1 = uncapped sentinel; null = UNMEASURED.",
+          },
           price_vs_pathusd: { type: "number" },
-          spread_bps: { type: "integer" },
+          spread_bps: {
+            type: ["integer", "null"],
+            description: "DEX spread in bps. null = UNMEASURED; never interpret as zero.",
+          },
           volume_24h: { type: "number" },
-          yield_rate: { type: "number" },
+          yield_rate: {
+            type: ["number", "null"],
+            description: "Effective APY. null = UNMEASURED; never interpret as zero yield.",
+          },
           opted_in_supply: { type: "string" },
+          coverage: { type: "string", enum: ["complete", "partial", "unavailable"] },
+          coverage_note: { type: ["string", "null"] },
         },
       },
       BriefingResult: {

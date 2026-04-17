@@ -118,12 +118,29 @@ export interface StablecoinData {
   name: string;
   symbol: string;
   currency: string;
-  policy_id: number;
-  policy_type: string;
-  policy_admin: string;
-  supply_cap: string;
+  /**
+   * TIP-403 policy fields. `null` means UNMEASURED — the registry's
+   * `getPolicy(address)` read function is not callable on the current
+   * deployment and we have no event-indexer workaround yet. Consumers
+   * MUST NOT interpret null as "no policy" or "policy id 0"; when a
+   * stablecoin has no policy we surface `policy_type: "none"` explicitly.
+   */
+  policy_id: number | null;
+  policy_type: "whitelist" | "blacklist" | "compound" | "none" | null;
+  policy_admin: string | null;
+  /**
+   * Raw supply cap as a uint256 string. The sentinel `"0"` means the
+   * stablecoin is uncapped (architectural for pathUSD). `null` means
+   * UNMEASURED — the getPolicy read failed, so we don't know the cap.
+   */
+  supply_cap: string | null;
   current_supply: string;
-  headroom_pct: number;
+  /**
+   * Headroom percent before supply cap is reached. Sentinel `-1` means
+   * uncapped (pathUSD or any stable where `supply_cap === "0"`). `null`
+   * means UNMEASURED — cap is unknown so headroom can't be computed.
+   */
+  headroom_pct: number | null;
   price_vs_pathusd: number;
   /**
    * DEX spread in basis points vs pathUSD. null means NOT MEASURED

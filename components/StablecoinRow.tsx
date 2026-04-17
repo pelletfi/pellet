@@ -12,7 +12,8 @@ function formatSupply(raw: string, decimals = 6): string {
   return `$${n.toFixed(2)}`;
 }
 
-function formatHeadroom(pct: number): string {
+function formatHeadroom(pct: number | null): string {
+  if (pct === null) return "—";
   if (pct === -1) return "uncapped";
   return `${pct.toFixed(1)}%`;
 }
@@ -117,7 +118,10 @@ export default function StablecoinRow({ token }: StablecoinRowProps) {
         style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: "12px",
-          color: token.headroom_pct === -1 ? "var(--color-text-tertiary)" : "var(--color-text-secondary)",
+          color:
+            token.headroom_pct === null || token.headroom_pct === -1
+              ? "var(--color-text-tertiary)"
+              : "var(--color-text-secondary)",
         }}
       >
         {formatHeadroom(token.headroom_pct)}
