@@ -537,17 +537,34 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* RIGHT: FIG. 01 peg chart */}
+          {/* RIGHT: FIG. 01 live data-flow capture */}
           <motion.div variants={fadeUp}>
             <div className="fig-header">
-              <span>Fig. 01 → pathUSD peg, 90-day rolling</span>
-              <span className="fig-value">$1.0000 ± 0.0004</span>
+              <span>Fig. 01 → Live on-chain stream</span>
+              <span className="fig-value">TIP-20 · Tempo mainnet</span>
             </div>
 
-            <PegChart />
+            <video
+              src="/hero.mp4"
+              poster="/hero-poster.jpg"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label="Ambient capture of Pellet's Tempo on-chain data stream"
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                aspectRatio: "1280 / 711",
+                background: "#0a0a0a",
+                border: "1px solid var(--color-border-subtle)",
+              }}
+            />
 
             <div className="fig-footer">
-              <span>σ = 0.0002 · drift 0 · deviation events 0</span>
+              <span>measured directly · never inferred</span>
               <Link
                 href="/docs/methodology"
                 className="fig-method-link"
