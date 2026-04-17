@@ -1,38 +1,7 @@
 "use client";
 
-import { motion, useInView, useMotionValue, animate } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
-
-// ── Count-up stat value ─────────────────────────────────────────────────────
-
-function AnimatedStat({
-  target,
-  format,
-  delay = 0,
-}: {
-  target: number;
-  format: (n: number) => string;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.4 });
-  const count = useMotionValue(0);
-  const [display, setDisplay] = useState(format(0));
-
-  useEffect(() => {
-    if (!inView) return;
-    const controls = animate(count, target, {
-      duration: 1.2,
-      delay,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) => setDisplay(format(latest)),
-    });
-    return () => controls.stop();
-  }, [inView, target, count, format, delay]);
-
-  return <span ref={ref}>{display}</span>;
-}
 
 // ── Motion variants ─────────────────────────────────────────────────────────
 
@@ -424,33 +393,29 @@ export default function LandingPage() {
           border-top: 1px solid var(--color-border-subtle);
           padding-top: 20px;
           display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 24px;
-        }
-        .stats-row {
-          display: flex;
-          gap: 48px;
-        }
-        .stat {
-          display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 14px;
         }
-        .stat-label {
+        .fig02-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
           font-family: var(--font-mono);
           font-size: 10px;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: var(--color-text-quaternary);
+          color: var(--color-text-tertiary);
         }
-        .stat-value {
+        .fig02-evidence {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 16px;
           font-family: var(--font-mono);
-          font-size: 22px;
-          font-weight: 500;
+          font-size: 11px;
+          letter-spacing: 0.02em;
+          color: var(--color-text-secondary);
           font-variant-numeric: tabular-nums;
-          letter-spacing: -0.01em;
-          color: var(--color-text-primary);
         }
         .stats-version {
           font-family: var(--font-mono);
@@ -458,20 +423,12 @@ export default function LandingPage() {
           letter-spacing: 0.1em;
           text-transform: uppercase;
           color: var(--color-text-quaternary);
+          white-space: nowrap;
         }
         @media (max-width: 960px) {
           .landing-hero-grid { grid-template-columns: 1fr; gap: 40px; }
-          .stats-strip { flex-direction: column; align-items: stretch; gap: 14px; }
-          .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px 12px;
-            width: 100%;
-          }
-          .stat-value { font-size: 18px; }
-        }
-        @media (max-width: 960px) {
           .landing-root { min-height: 0 !important; }
+          .fig02-evidence { flex-wrap: wrap; gap: 6px 16px; }
         }
         @media (max-width: 560px) {
           .landing-inner { padding: 20px 16px; }
@@ -486,9 +443,17 @@ export default function LandingPage() {
             flex-direction: column;
             gap: 4px;
           }
-          .stat-label { font-size: 9px; letter-spacing: 0.08em; }
-          .stat-value { font-size: 15px; letter-spacing: -0.02em; }
-          .stats-row { gap: 12px 10px; }
+          .fig02-header {
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+          }
+          .fig02-evidence {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 10.5px;
+          }
           .stats-version { font-size: 9px; }
         }
       `}</style>
@@ -619,46 +584,19 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Stats strip */}
+        {/* Fig. 02 — pathUSD aggregate */}
         <motion.div variants={fadeUp} className="stats-strip">
-          <div className="stats-row">
-            {[
-              {
-                label: "Stablecoins",
-                target: 12,
-                format: (n: number) => Math.round(n).toString(),
-                delay: 0,
-              },
-              {
-                label: "24h Volume",
-                target: 172,
-                format: (n: number) => `$${Math.round(n)}K`,
-                delay: 0.08,
-              },
-              {
-                label: "Total Supply",
-                target: 2.81,
-                format: (n: number) => `$${n.toFixed(2)}M`,
-                delay: 0.16,
-              },
-              {
-                label: "Block Height",
-                target: 1.85,
-                format: (n: number) => `${n.toFixed(2)}M`,
-                delay: 0.24,
-              },
-            ].map((s) => (
-              <div key={s.label} className="stat">
-                <span className="stat-label">{s.label}</span>
-                <span className="stat-value">
-                  <AnimatedStat target={s.target} format={s.format} delay={s.delay} />
-                </span>
-              </div>
-            ))}
+          <div className="fig02-header">
+            <span>Fig. 02 · pathUSD aggregate</span>
+            <span className="fig-value">90d rolling · 12 stables</span>
           </div>
-          <span className="stats-version">
-            Pellet · v1.3.0 · Methodology v1.0
-          </span>
+          <PegChart />
+          <div className="fig02-evidence">
+            <span>
+              $2.81M aggregate supply · $172K 24h flow · all pegs within ±4bp · captured at blk 15,279,560
+            </span>
+            <span className="stats-version">Pellet · v1.3.0 · Methodology v1.0</span>
+          </div>
         </motion.div>
       </motion.div>
     </div>
