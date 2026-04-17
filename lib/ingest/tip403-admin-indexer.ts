@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { TEMPO_ADDRESSES } from "@/lib/types";
+import { enqueueWebhookEvent } from "./webhook-deliver";
 
 // The deployed TIP-403 registry at 0x403c… doesn't implement the canonical
 // read functions (policyData / getPolicy — both revert with "unknown function
@@ -55,6 +56,8 @@ export interface BuildResult {
   policiesCreatedSeen: number;
   adminUpdatesSeen: number;
   policiesWritten: number;
+  /** Number of diff-driven webhook events enqueued on this run. */
+  webhooksEnqueued: number;
   /** Most-recent block seen in either event stream — signals crawl freshness. */
   latestBlock: number | null;
 }
@@ -121,11 +124,20 @@ export async function rebuildPolicyIndex(): Promise<BuildResult> {
     }
   }
 
-  // UPSERT the reconstructed state back into `policies`.  One statement per
-  // policy id — with ~170 rows this is a handful of ms against Neon; not
-  // worth batching into a multi-row VALUES.
+  // UPSERT the reconstructed state back into `policies`.  We compare against
+  // the previous row so we can emit webhook events only on genuine changes —
+  // every cron tick writes every policy, but subscribers only want notifying
+  // when something actually moved.
   let written = 0;
+  let webhooksEnqueued = 0;
   for (const [policyId, { type, admin }] of state) {
+    const priorResult = await db.execute(sql`
+      SELECT policy_type, admin FROM policies WHERE policy_id = ${policyId}
+    `);
+    const priorRows = ((priorResult as unknown as { rows?: Record<string, unknown>[] }).rows
+      ?? (priorResult as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+    const prior = priorRows[0] ?? null;
+
     await db.execute(sql`
       INSERT INTO policies (policy_id, policy_type, admin, updated_at)
       VALUES (${policyId}, ${type}, ${admin}, NOW())
@@ -135,6 +147,37 @@ export async function rebuildPolicyIndex(): Promise<BuildResult> {
         updated_at = NOW()
     `);
     written += 1;
+
+    // Diff-driven webhooks — new policy = policy_created; admin changed on
+    // an existing policy = policy_admin_changed.  Delivery is best-effort;
+    // failures are logged but don't abort the cron.
+    try {
+      if (!prior) {
+        await enqueueWebhookEvent(
+          "tip403.policy_created",
+          { policy_id: policyId, policy_type: type, admin },
+          null,
+        );
+        webhooksEnqueued += 1;
+      } else if (prior.admin !== admin && admin !== null) {
+        await enqueueWebhookEvent(
+          "tip403.policy_admin_changed",
+          {
+            policy_id: policyId,
+            policy_type: type,
+            previous_admin: prior.admin,
+            new_admin: admin,
+          },
+          null,
+        );
+        webhooksEnqueued += 1;
+      }
+    } catch (err) {
+      console.error(
+        `[tip403-admin-index] webhook enqueue failed for policy ${policyId}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 
   return {
@@ -142,6 +185,7 @@ export async function rebuildPolicyIndex(): Promise<BuildResult> {
     policiesCreatedSeen: created,
     adminUpdatesSeen: adminUpdated,
     policiesWritten: written,
+    webhooksEnqueued,
     latestBlock: latestBlock || null,
   };
 }
