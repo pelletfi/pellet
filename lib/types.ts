@@ -189,7 +189,10 @@ export interface BriefingResult {
   holders: HolderData;
   identity: IdentityResult;
   origin: OriginResult;
-  evaluation: string;
+  /** Deprecated.  Used to be a Claude-generated analyst note; removed 2026-04-17
+   * per OLI discipline (measurement over inference).  Always `null` on new
+   * briefings; older rows in the `briefings` table may still carry legacy text. */
+  evaluation: string | null;
   created_at: string;
 }
 

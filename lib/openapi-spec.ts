@@ -1520,7 +1520,11 @@ export const spec = {
           holders: { type: "object" },
           identity: { type: "object" },
           origin: { type: "object" },
-          evaluation: { type: "string" },
+          evaluation: {
+            type: ["string", "null"],
+            description:
+              "Deprecated — always null on briefings generated after 2026-04-17. Pellet ships measured data (market, safety, compliance, holders, etc.); consumers synthesize narrative themselves.",
+          },
           created_at: { type: "string", format: "date-time" },
         },
       },

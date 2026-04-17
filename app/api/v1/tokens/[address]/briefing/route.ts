@@ -23,7 +23,9 @@ import { getHoldersWithCache } from "@/lib/pipeline/holders";
 import { resolveIdentity } from "@/lib/pipeline/identity";
 import { scanSafety } from "@/lib/pipeline/safety";
 import { getOrigin } from "@/lib/pipeline/origin";
-import { evaluate } from "@/lib/pipeline/evaluation";
+// `evaluate` (Claude Sonnet analyst synthesis) removed 2026-04-17: per OLI
+// discipline Pellet ships measurements, not inference.  Consumers that want
+// narrative can synthesize from the measured fields themselves.
 import { db } from "@/lib/db";
 import { briefings } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
@@ -276,28 +278,14 @@ async function handler(
 
     // 5. Stablecoin enrichment (only adds value for TIP-20 stables we track)
     const enrichment = tip20 ? await loadStablecoinEnrichment(address) : null;
+    // `enrichment` is no longer consumed by a prompt-synthesis step, but we
+    // still compute it so that downstream consumers (and any future
+    // opt-in narrative step) see the same stablecoin-specific context the
+    // retired analyst note had.
+    void enrichment;
 
-    // 6. Claude evaluation
-    const evaluation = await evaluate({
-      address,
-      name: resolvedName,
-      symbol: resolvedSymbol,
-      market,
-      safety,
-      compliance,
-      holders,
-      identity,
-      origin,
-      pegStats: enrichment?.peg ?? null,
-      risk: enrichment?.risk ?? null,
-      reserves: enrichment?.reserves ?? null,
-      recentPegBreaks: enrichment?.recentPegBreaks ?? null,
-    }).catch((err) => {
-      console.error("[briefing/evaluation]", err);
-      return "Evaluation unavailable due to an error.";
-    });
-
-    // 6. Persist briefing to the database
+    // 6. Persist briefing to the database.  evaluation is null by design —
+    // OLI: ship measurements, not LLM inference.
     const payload: Omit<BriefingResult, "id" | "created_at"> = {
       token_address: address,
       market,
@@ -306,7 +294,7 @@ async function handler(
       holders,
       identity,
       origin,
-      evaluation,
+      evaluation: null,
     };
 
     const [row] = await db
@@ -327,7 +315,7 @@ async function handler(
       holders,
       identity,
       origin,
-      evaluation,
+      evaluation: null,
       created_at: row.createdAt.toISOString(),
     };
 
