@@ -279,6 +279,13 @@ export default function LandingPage() {
       <style>{`
         .landing-root {
           position: relative;
+          /* Provide an explicit backdrop color inside the stacking context so
+             mix-blend-mode on the hero video has something to blend against.
+             Without this, framer-motion's transform on <main> creates a
+             stacking context whose backdrop is the transparent initial value,
+             and mix-blend-mode: lighten on the video fails silently — the
+             rectangle appears as the raw video, not blended into the page. */
+          background-color: var(--color-bg-base);
         }
         .landing-root > * {
           position: relative;
@@ -544,34 +551,43 @@ export default function LandingPage() {
               <span className="fig-value">TIP-20 · Tempo mainnet</span>
             </div>
 
-            <video
-              ref={(el) => {
-                // Some browsers (Safari, strict autoplay policies) won't
-                // autoplay muted video unless we explicitly call .play()
-                // after metadata loads.  Belt-and-braces so the stream
-                // always animates on page load.
-                if (el && el.paused) el.play().catch(() => {});
-              }}
-              src="/hero.mp4"
-              poster="/hero-poster.jpg"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              aria-label="Ambient capture of Pellet's Tempo on-chain data stream"
+            {/*
+              Isolating wrapper so mix-blend-mode has a known backdrop color.
+              Framer-motion wraps this hero element in a transform, creating
+              a stacking context whose default backdrop is transparent — that
+              kills blend-mode math and the raw video pixels render through.
+              By giving this wrapper `isolation: isolate` + the exact page
+              bg colour, the video's lighten blends against a real dark
+              backdrop and pure-black pixels match the page exactly.
+            */}
+            <div
               style={{
+                isolation: "isolate",
+                backgroundColor: "var(--color-bg-base)",
                 width: "100%",
-                height: "auto",
-                display: "block",
                 aspectRatio: "1280 / 711",
-                // Pure-black source (luma < 48 is crushed to 0 in the
-                // encode), so `lighten` gives a clean pass-through: any
-                // black video pixel = max(0, pageBg) = pageBg.  No visible
-                // rectangle, no tint, only the white data points render.
-                mixBlendMode: "lighten",
               }}
-            />
+            >
+              <video
+                ref={(el) => {
+                  if (el && el.paused) el.play().catch(() => {});
+                }}
+                src="/hero.mp4"
+                poster="/hero-poster.jpg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                aria-label="Ambient capture of Pellet's Tempo on-chain data stream"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                  mixBlendMode: "lighten",
+                }}
+              />
+            </div>
 
             <div className="fig-footer">
               <span>measured directly · never inferred</span>
