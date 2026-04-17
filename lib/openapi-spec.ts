@@ -714,6 +714,125 @@ export const spec = {
         },
       },
     },
+    "/api/v1/tip403/simulate": {
+      get: {
+        operationId: "simulateTransfer",
+        summary:
+          "Pre-trade compliance oracle — predict if a TIP-20 transfer would revert under TIP-403 policy",
+        description:
+          "Given a proposed transfer `{from, to, token, amount?}`, returns a structured prediction of whether it would succeed, citing the specific TIP-403 policy id and type, each party's authorization status, and (if amount is provided) whether sender balance is sufficient. Read-only — issues no transactions. Intended to be called before spending gas on a transfer that would otherwise revert. Returns `willSucceed: false` with `blockedBy` = 'policy' | 'balance' | 'not_a_tip20' and `blockedParty` = 'sender' | 'recipient' | null when the transfer would fail. Every numeric value is directly measured on-chain — null when unmeasured, never inferred.",
+        parameters: [
+          {
+            name: "from",
+            in: "query",
+            required: true,
+            description: "Sender address (0x-prefixed, 42 hex chars)",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x0Ce3d541f48c5c6543b84bd2FD9CBae0Fb9FeaFe",
+            },
+          },
+          {
+            name: "to",
+            in: "query",
+            required: true,
+            description: "Recipient address (0x-prefixed, 42 hex chars)",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x6c90000000000000000000000000000000000bb09",
+            },
+          },
+          {
+            name: "token",
+            in: "query",
+            required: true,
+            description:
+              "Token contract address. TIP-20 addresses on Tempo use the 0x20c0… factory-deployed pattern.",
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x20c000000000000000000000b9537d11c60e8b50",
+            },
+          },
+          {
+            name: "amount",
+            in: "query",
+            required: false,
+            description:
+              "Optional raw uint256 decimal string (e.g. '1000000' for 1 USDC.e given 6 decimals). If provided, sender balance is checked after policy authorization.",
+            schema: { type: "string", example: "1000000" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Simulation result",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    willSucceed: { type: "boolean" },
+                    policyId: { type: ["integer", "null"] },
+                    policyType: {
+                      type: ["string", "null"],
+                      enum: ["whitelist", "blacklist", "none", null],
+                    },
+                    policyAdmin: { type: ["string", "null"] },
+                    sender: {
+                      type: "object",
+                      properties: {
+                        address: { type: "string" },
+                        authorized: { type: "boolean" },
+                      },
+                    },
+                    recipient: {
+                      type: "object",
+                      properties: {
+                        address: { type: "string" },
+                        authorized: { type: "boolean" },
+                      },
+                    },
+                    balance: {
+                      type: ["object", "null"],
+                      properties: {
+                        sufficient: { type: "boolean" },
+                        has: { type: "string" },
+                        needs: { type: "string" },
+                      },
+                    },
+                    blockedBy: {
+                      type: ["string", "null"],
+                      enum: [
+                        "policy",
+                        "balance",
+                        "not_a_tip20",
+                        "invalid_input",
+                        null,
+                      ],
+                    },
+                    blockedParty: {
+                      type: ["string", "null"],
+                      enum: ["sender", "recipient", null],
+                    },
+                    reason: { type: "string" },
+                    simulatedAtBlock: { type: "string" },
+                    coverage: {
+                      type: "string",
+                      enum: ["complete", "partial"],
+                    },
+                    coverage_note: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Missing required params or invalid address format" },
+          "502": { description: "Transient RPC error — retry" },
+        },
+      },
+    },
     // ── MPP mirror routes ──────────────────────────────────────────────────
     // Zero-charge MPP wrappers around the most useful free endpoints. Agents
     // that go through the 402 challenge (proving wallet identity via a signed
@@ -903,6 +1022,69 @@ export const spec = {
         ],
         responses: {
           "200": { description: "Reserve breakdown" },
+          "402": { description: "MPP identity challenge (no payment required)" },
+        },
+      },
+    },
+    "/api/mpp/tip403/simulate": {
+      get: {
+        operationId: "mppSimulateTransfer",
+        summary:
+          "MPP (free, identity-only) · Pre-trade compliance oracle for TIP-20 transfers",
+        description:
+          "Zero-charge MPP mirror of /api/v1/tip403/simulate. Agents go through the standard 402 identity challenge (signing a $0 voucher) and receive the same simulation result. Use this when you want the call to appear in your agent's MPP ledger or when consuming Pellet through an MPP-aware client. Protocol-level use case: every agent should call this before submitting a TIP-20 transfer, to avoid wasting gas on a revert.",
+        security: [{ MppPayment: [] }],
+        "x-payment-info": {
+          authMode: "paid",
+          price: "0.000000",
+          amount: "0",
+          currency: USDC_E,
+          protocols: ["mpp"],
+          intent: "charge",
+          method: "tempo",
+          network: "tempo",
+          description: "Pellet free route - MPP identity challenge, no charge",
+        },
+        parameters: [
+          {
+            name: "from",
+            in: "query",
+            required: true,
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x0Ce3d541f48c5c6543b84bd2FD9CBae0Fb9FeaFe",
+            },
+          },
+          {
+            name: "to",
+            in: "query",
+            required: true,
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x6c90000000000000000000000000000000000bb09",
+            },
+          },
+          {
+            name: "token",
+            in: "query",
+            required: true,
+            schema: {
+              type: "string",
+              pattern: "^0x[a-fA-F0-9]{40}$",
+              example: "0x20c000000000000000000000b9537d11c60e8b50",
+            },
+          },
+          {
+            name: "amount",
+            in: "query",
+            required: false,
+            schema: { type: "string", example: "1000000" },
+          },
+        ],
+        responses: {
+          "200": { description: "Simulation result (same schema as /api/v1/tip403/simulate)" },
           "402": { description: "MPP identity challenge (no payment required)" },
         },
       },
