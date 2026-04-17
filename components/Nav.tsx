@@ -32,16 +32,9 @@ function Logo() {
 
 export function Nav() {
   const [open, setOpen] = useState(false);
-  const [block, setBlock] = useState<string | null>(null);
 
   const [systemStatus, setSystemStatus] = useState<"ok" | "drift" | "fail" | "unknown">("unknown");
   useEffect(() => {
-    fetch("/api/v1/health")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.block) setBlock(Number(d.block).toLocaleString());
-      })
-      .catch(() => {});
     fetch("/api/v1/system/health")
       .then((r) => r.json().then((d) => ({ httpOk: r.ok, body: d })))
       .then(({ body }) => {
@@ -73,14 +66,6 @@ export function Nav() {
             {systemStatus === "ok" || systemStatus === "unknown" ? "operational" : systemStatus === "drift" ? "drift" : "incident"}
           </span>
         </Link>
-        {block && (
-          <>
-            <span className="nav-block-sep" style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
-            <span className="nav-block" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
-              blk {block}
-            </span>
-          </>
-        )}
         <span className="nav-kbd-sep" style={{ width: 1, height: 16, background: "var(--color-border-default)" }} />
         <span className="nav-kbd-badge" style={{
           display: "inline-flex", alignItems: "center", justifyContent: "center",

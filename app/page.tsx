@@ -267,6 +267,23 @@ function PegChart() {
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  // Live Tempo block height for the folio rule — polls /api/v1/health
+  // every 1s. Tempo blocks land ~570ms apart so the number visibly ticks
+  // up on every poll, giving the page an instrument-readout feel.
+  const [block, setBlock] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchBlock = async () => {
+      try {
+        const r = await fetch("/api/v1/health");
+        const d = await r.json();
+        if (typeof d.block === "number") setBlock(d.block);
+      } catch {}
+    };
+    fetchBlock();
+    const id = setInterval(fetchBlock, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div
       className="landing-root"
@@ -513,7 +530,7 @@ export default function LandingPage() {
             color: "var(--color-text-quaternary)",
           }}
         >
-          <span>MPP-Native</span>
+          <span>Pellet</span>
           <motion.span
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
@@ -525,7 +542,9 @@ export default function LandingPage() {
               transformOrigin: "left",
             }}
           />
-          <span>Tempo-Native</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            blk {block !== null ? block.toLocaleString() : "—"}
+          </span>
         </motion.div>
 
         {/* Hero grid */}
