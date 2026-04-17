@@ -19,12 +19,14 @@ export const spec = {
       "Every numeric value is a direct on-chain measurement, not an estimate. When a measurement is unavailable, the field returns null with an explanatory note — never a synthetic estimate.",
       "See https://pelletfi.com/docs/oli for the Open-Ledger Intelligence discipline specification.",
     ].join(" "),
-    // Transparent-bg, white-mark variant served to directory UIs that render
-    // on dark backgrounds. Redocly-standard x-logo field.
+    // Rounded-square mark (black P + velocity whooshes on white tile) — the
+    // same asset Next.js serves at /icon.png as the favicon. Works on both
+    // light and dark directory backgrounds because the tile carries its own
+    // contrast. Redocly-standard x-logo field.
     "x-logo": {
-      url: "https://pelletfi.com/pellet-mark.png",
+      url: "https://pelletfi.com/pellet-icon-rounded.png",
       altText: "Pellet — italic P. with velocity whooshes",
-      backgroundColor: "transparent",
+      backgroundColor: "#ffffff",
     },
   },
   "x-service-info": {
@@ -60,11 +62,12 @@ export const spec = {
     provider: { name: "Pellet Finance", url: "https://pelletfi.com" },
     realm: "pelletfi.com",
     chain: "tempo",
-    // Transparent-bg, white-mark variant for dark-UI directory listings
-    // (MPPScan, mpp.dev, etc.). Browser favicons continue to use /icon.png
-    // which is dark-on-light for light-theme tab visibility.
-    logo: "https://pelletfi.com/pellet-mark.png",
-    logoUrl: "https://pelletfi.com/pellet-mark.png",
+    // Rounded-square mark (black P + velocity whooshes on white tile) — same
+    // asset Next.js serves at /icon.png. Works on both light and dark
+    // directory listings (MPPScan renders on dark; mpp.dev on light) because
+    // the white tile carries its own contrast.
+    logo: "https://pelletfi.com/pellet-icon-rounded.png",
+    logoUrl: "https://pelletfi.com/pellet-icon-rounded.png",
   },
   servers: [
     {
