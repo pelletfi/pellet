@@ -12,13 +12,16 @@ import {
   getPegEvents,
   getRiskScore,
   getReserves,
+  getRewards,
+  getRoleHolders,
+  getFlowAnomalies,
   simulateTransfer,
   lookupWalletIntelligence,
 } from "./client.js";
 
 const server = new McpServer({
   name: "@pelletfi/mcp",
-  version: "2.1.0",
+  version: "2.4.0",
 });
 
 // ── Tools ──────────────────────────────────────────────────────────────────────
@@ -81,10 +84,16 @@ server.tool(
 
 server.tool(
   "get_peg_stats",
-  "Free · Current peg price vs pathUSD + 1h/24h/7d rolling aggregates (mean, stddev, max deviation in bps, seconds outside the 10bps/50bps bands) for a stablecoin. Supports historical time-travel via ?as_of=<ISO8601|epoch|relative>.",
-  { address: z.string().describe("Stablecoin contract address (0x...)") },
-  async ({ address }) => {
-    const result = await getPegStats(address);
+  "Free · Current peg price vs pathUSD + 1h/24h/7d rolling aggregates (mean, stddev, max deviation in bps, seconds outside the 10bps/50bps bands) for a stablecoin. Pass `as_of` for a historical snapshot (ISO-8601, Unix-epoch seconds, or relative like `-1h`).",
+  {
+    address: z.string().describe("Stablecoin contract address (0x...)"),
+    as_of: z
+      .string()
+      .optional()
+      .describe("Optional historical snapshot timestamp (ISO-8601, epoch, or relative like -1h)."),
+  },
+  async ({ address, as_of }) => {
+    const result = await getPegStats(address, as_of);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -108,20 +117,59 @@ server.tool(
 
 server.tool(
   "get_risk_score",
-  "Free · Composite risk score (0–100, higher = more risk) with explainable sub-scores: peg_risk, peg_break_risk, supply_risk, policy_risk. Each sub-score cites its input measurements. Supports historical time-travel via ?as_of=.",
-  { address: z.string().describe("Stablecoin contract address (0x...)") },
-  async ({ address }) => {
-    const result = await getRiskScore(address);
+  "Free · Composite risk score (0–100, higher = more risk) with explainable sub-scores: peg_risk, peg_break_risk, supply_risk, policy_risk. Each sub-score cites its input measurements. Pass `as_of` for a historical snapshot.",
+  {
+    address: z.string().describe("Stablecoin contract address (0x...)"),
+    as_of: z.string().optional().describe("Optional historical snapshot timestamp."),
+  },
+  async ({ address, as_of }) => {
+    const result = await getRiskScore(address, as_of);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
 
 server.tool(
   "get_reserves",
-  "Free · Reserve / backing data: total Tempo-side backing in USD + per-entry breakdown (reserve_type, attestation_source, issuer, backing_model). Curated for tracked stables only; returns empty for others. Supports historical time-travel.",
+  "Free · Reserve / backing data: total Tempo-side backing in USD + per-entry breakdown (reserve_type, attestation_source, issuer, backing_model). Curated for tracked stables only; returns empty for others. Pass `as_of` for a historical snapshot.",
+  {
+    address: z.string().describe("Stablecoin contract address (0x...)"),
+    as_of: z.string().optional().describe("Optional historical snapshot timestamp."),
+  },
+  async ({ address, as_of }) => {
+    const result = await getReserves(address, as_of);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "get_rewards",
+  "Free · TIP-20 reward distribution + effective APY for a stablecoin. Returns effective_apy_pct (annualized from last 7d distributed / opted-in supply), opted-in supply, distribution_count, per-funder attribution, and recent distributions. APY is null when no live data or no opt-ins — never inferred as zero. Pass `as_of` for a historical snapshot.",
+  {
+    address: z.string().describe("Stablecoin contract address (0x...)"),
+    as_of: z.string().optional().describe("Optional historical snapshot timestamp."),
+  },
+  async ({ address, as_of }) => {
+    const result = await getRewards(address, as_of);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "get_role_holders",
+  "Free · Forensic role-holder enumeration for a stablecoin. Returns every address that holds ISSUER_ROLE / DEFAULT_ADMIN_ROLE / PAUSE_ROLE / UNPAUSE_ROLE / BURN_BLOCKED_ROLE, derived by tracing on-chain mint/burn/burnBlocked txs and verifying each caller via hasRole(). TIP-20 doesn't emit role-change events, so this is the only current path to the complete role set. Coverage is best-effort and reflects the block range the role-holder cron has scanned.",
   { address: z.string().describe("Stablecoin contract address (0x...)") },
   async ({ address }) => {
-    const result = await getReserves(address);
+    const result = await getRoleHolders(address);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "get_flow_anomalies",
+  "Free · Cross-stable flow anomalies — 15-minute windows where net flow between two stables exceeded the 7-day rolling baseline by ≥ Z_THRESHOLD sigmas. Returns the edge (from_token, to_token), window bounds, observed/baseline flow, z-score, and tx count. Useful as early-warning for capital rotation before peg breaks show in price. Agents subscribed to flow_anomaly.detected webhook get these in real time.",
+  {},
+  async () => {
+    const result = await getFlowAnomalies();
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );

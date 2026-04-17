@@ -60,9 +60,15 @@ export async function getStablecoinFlows(hours: number = 24): Promise<unknown> {
   return apiGet(`/api/v1/stablecoins/flows?hours=${hours}`);
 }
 
-/** Current peg + 1h/24h/7d aggregates for a stablecoin */
-export async function getPegStats(address: string): Promise<unknown> {
-  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/peg`);
+function asOfQuery(asOf?: string): string {
+  return asOf ? `?as_of=${encodeURIComponent(asOf)}` : "";
+}
+
+/** Current peg + 1h/24h/7d aggregates for a stablecoin.  Pass `asOf` for a
+ * historical snapshot (ISO-8601 timestamp, Unix-epoch seconds, or relative
+ * like `-1h`); omit for current. */
+export async function getPegStats(address: string, asOf?: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/peg${asOfQuery(asOf)}`);
 }
 
 /** Detected peg-break events for a stablecoin (mild and severe) */
@@ -70,14 +76,38 @@ export async function getPegEvents(address: string, limit: number = 20): Promise
   return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/peg-events?limit=${limit}`);
 }
 
-/** Composite risk score (0-100) with explainable component breakdown */
-export async function getRiskScore(address: string): Promise<unknown> {
-  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/risk`);
+/** Composite risk score (0-100) with explainable component breakdown.  Pass
+ * `asOf` for a historical snapshot. */
+export async function getRiskScore(address: string, asOf?: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/risk${asOfQuery(asOf)}`);
 }
 
-/** Reserve / backing data: total backing USD + per-component breakdown */
-export async function getReserves(address: string): Promise<unknown> {
-  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/reserves`);
+/** Reserve / backing data: total backing USD + per-component breakdown.
+ * Pass `asOf` for a historical snapshot. */
+export async function getReserves(address: string, asOf?: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/reserves${asOfQuery(asOf)}`);
+}
+
+/** TIP-20 reward distribution + effective APY for a stablecoin.  Returns
+ * per-funder attribution, recent distributions, opted-in supply, and the
+ * effective annualized yield computed from the last 7d of distributions. */
+export async function getRewards(address: string, asOf?: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/rewards${asOfQuery(asOf)}`);
+}
+
+/** Forensic role-holder enumeration for a stablecoin — issuer, minter,
+ * pauser, burn-blocked addresses derived from on-chain action + hasRole
+ * verification.  TIP-20 doesn't emit role-change events, so this is the
+ * only path to the current role set. */
+export async function getRoleHolders(address: string): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/${encodeURIComponent(address)}/roles`);
+}
+
+/** Cross-stable flow anomalies — 15-minute windows where net flow between
+ * two stables exceeded the 7-day rolling baseline by > Z_THRESHOLD sigmas.
+ * Useful for early-warning of capital rotation events. */
+export async function getFlowAnomalies(): Promise<unknown> {
+  return apiGet(`/api/v1/stablecoins/flow-anomalies`);
 }
 
 /**
