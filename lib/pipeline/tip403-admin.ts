@@ -118,11 +118,16 @@ export async function getPoliciesAdministered(
   const matches: AdministeredPolicy[] = [];
   let scanned = 0;
   let failures = 0;
+  let firstErrorMessage: string | null = null;
 
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
     if (r.status !== "success") {
       failures++;
+      if (firstErrorMessage === null) {
+        firstErrorMessage =
+          r.error instanceof Error ? r.error.message.slice(0, 200) : String(r.error).slice(0, 200);
+      }
       continue;
     }
     scanned++;
@@ -144,10 +149,10 @@ export async function getPoliciesAdministered(
   }
 
   const coverage: PoliciesAdministeredResult["coverage"] =
-    failures === 0 ? "complete" : "partial";
+    failures === 0 ? "complete" : scanned > 0 ? "partial" : "unavailable";
   const coverage_note =
     failures > 0
-      ? `${failures} of ${KNOWN_STABLECOINS.length} tracked stablecoin policy reads failed. Results reflect the ${scanned} successful reads only.`
+      ? `${failures} of ${KNOWN_STABLECOINS.length} tracked stablecoin policy reads failed. ${scanned} successful. First-failure reason: ${firstErrorMessage ?? "unknown"}`
       : null;
 
   return {
