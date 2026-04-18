@@ -43,12 +43,15 @@ Two auth modes, pick one:
 | Tool | Endpoint | Cost |
 | --- | --- | --- |
 | `list_stablecoins` | `GET /v1/stablecoins` | Free |
-| `get_stablecoin` | `GET /v1/stablecoins/{address}` | Free |
-| `analyze_stablecoin` | `GET /v1/stablecoins/{address}/analysis` | $0.05 |
-| `get_flows` | `GET /v1/stablecoins/flows` | Free |
-| `get_flow_history` | `GET /v1/stablecoins/flows/history` | $0.02 |
-| `search_stablecoin` | symbol or address lookup | Free |
-| `get_peg_status` | peg + spread snapshot | Free |
+| `simulate_transfer` | `GET /v1/tip403/simulate` | Free |
+| `get_peg` | `GET /v1/stablecoins/{addr}/peg` | $0.010 |
+| `get_flows` | `GET /v1/stablecoins/flows` | $0.010 |
+| `get_address` | `GET /v1/addresses/{addr}` | $0.010 |
+| `get_flow_anomalies` | `GET /v1/stablecoins/flow-anomalies` | $0.020 |
+| `get_reserves` | `GET /v1/stablecoins/{addr}/reserves` | $0.020 |
+| `get_risk_score` | `GET /v1/stablecoins/{addr}/risk` | $0.050 |
+| `get_rewards` | `GET /v1/stablecoins/{addr}/rewards` | $0.100 |
+| `analyze_token` | `GET /v1/tokens/{addr}/briefing` | $0.200 |
 
 ## Example session
 
@@ -56,8 +59,8 @@ Once installed, ask Claude anything natural:
 
 > "Which Tempo stable has the widest peg spread right now?"
 
-Claude calls `list_stablecoins`, compares `peg.spread_bps` across the returned set, and responds. No extra glue code.
+Claude calls `list_stablecoins` (free), compares `peg.spread_bps` across the returned set, and responds. No extra glue code.
 
 > "Analyze frxUSD for me."
 
-Claude calls `analyze_stablecoin`. If you're on Pro, the call is free. If you're paying per request, $0.05 pathUSD is debited from your wallet and Claude returns the full briefing.
+Claude calls `analyze_token`. If you're on Pro, the call is free. If you're paying per request, $0.200 USDC.e is debited from your wallet and Claude returns the full briefing — 8 on-chain aggregators plus the coverage & provenance ledger.

@@ -120,8 +120,8 @@ Do both. MPPScan indexes Pellet immediately for agents using `tempo wallet servi
     // ─── Paid: deep briefing ───────────────────────────────────────────
     {
       route: "GET /api/v1/tokens/{address}/briefing",
-      desc: "Full Pellet Briefing — market, safety, compliance, holders, identity, origin, risk enrichment, and Claude-authored evaluation. 8 aggregators + model synthesis.",
-      amount: "50000", // 0.05 USDC.e
+      desc: "Full Pellet Briefing — market, safety, compliance, holders, identity, origin, peg/risk/reserves enrichment, plus a coverage & provenance ledger (block-pinned, per-section complete|partial flags, on-chain data lineage). 8 on-chain aggregators, null-on-unmeasured, no model synthesis.",
+      amount: "200000", // 0.200 USDC.e — v2 pricing (2026-04-17)
     },
   ],
 }

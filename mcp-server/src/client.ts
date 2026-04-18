@@ -45,7 +45,9 @@ export async function lookupToken(address: string): Promise<unknown> {
   return apiGet(`/api/v1/tokens/${encodeURIComponent(address)}`);
 }
 
-/** Deep briefing: origin, holders, compliance, analyst note ($0.05 pathUSD) */
+/** Deep briefing: market, safety, compliance, holders, identity, origin, plus
+ * the coverage & provenance ledger (block-pinned, per-section complete|partial
+ * flags, on-chain data lineage). Paid MPP endpoint. */
 export async function analyzeToken(address: string): Promise<unknown> {
   return apiGet(`/api/v1/tokens/${encodeURIComponent(address)}/briefing`);
 }

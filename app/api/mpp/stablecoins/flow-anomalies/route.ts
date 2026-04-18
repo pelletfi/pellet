@@ -1,12 +1,14 @@
 /**
  * GET /api/mpp/stablecoins/flow-anomalies
  *
- * Zero-charge MPP mirror of /api/v1/stablecoins/flow-anomalies.
+ * $0.020 MPP analytics — ≥3σ flow anomalies in 15-minute windows. Derived
+ * from the flows feed + rolling z-score baseline; priced above raw flows
+ * per the v2 pricing schedule.
  */
 
-import { identityCharge } from "@/lib/mpp/server";
+import { analyticsCharge } from "@/lib/mpp/server";
 import { GET as freeGET } from "../../../v1/stablecoins/flow-anomalies/route";
 
 export const dynamic = "force-dynamic";
 
-export const GET = identityCharge(freeGET);
+export const GET = analyticsCharge(freeGET);

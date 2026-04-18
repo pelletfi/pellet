@@ -37,12 +37,12 @@ curl https://pelletfi.com/api/v1/stablecoins/0x20c0...0000
 
 Response includes peg, supply, policy, role holders, and recent supply events. See [Tempo Primer](/docs/tempo-primer) for field definitions.
 
-## `GET /v1/stablecoins/{address}/analysis`
+## `GET /v1/tokens/{address}/briefing`
 
-Full editorial briefing — origin story, issuer context, risk assessment, backing structure. **Paid endpoint.** $0.05 pathUSD via MPP.
+Deep briefing — market, safety, compliance, holders, identity, origin, peg + risk + reserves enrichment, plus the **coverage & provenance ledger** (block-pinned reproducibility, per-section complete|partial|unavailable flags, on-chain data lineage for every section). Pure measurement, no model synthesis. **Paid endpoint.** $0.200 USDC.e via MPP.
 
 ```bash
-mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000/analysis
+mppx GET https://pelletfi.com/api/v1/tokens/0x20c0...0000/briefing
 ```
 
 Without a payment header, the server responds `402 Payment Required` with MPP instructions. With `mppx` (or any MPP client), the payment is signed and attached automatically.

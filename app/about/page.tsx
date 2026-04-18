@@ -838,7 +838,7 @@ export default function AboutPage() {
             Everything runs natively on Tempo. No external indexers, no subgraphs. Direct RPC calls to TIP-20 precompiles for supply and policy data, DEX quote swaps for real-time peg pricing, event log replay for flow analysis.
           </p>
           <p style={{ marginBottom: 0 }}>
-            Deep stablecoin analysis is paid via MPP — $0.05 in pathUSD, settled at the protocol layer. No accounts, no API keys. Just a payment and a report. Available as an API, an MCP server for AI agents, and this site.
+            Paid endpoints settle via MPP in USDC.e on Tempo, tiered by depth — $0.010 lookups, $0.020 analytics, $0.050 composite scores, $0.100 first-mover reward attribution, $0.200 deep briefing. No accounts, no API keys. Just a payment and a report. Available as an API, an MCP server for AI agents, and this site.
           </p>
         </motion.div>
 
@@ -879,7 +879,7 @@ export default function AboutPage() {
               <><span style={{ color: "var(--color-text-quaternary)" }}># Analyze a stablecoin via MPP</span></>,
               <><span style={{ color: "rgba(255,255,255,0.93)" }}>$</span> mppx GET https://pelletfi.com/api/v1/stablecoins/0x20c0...0000</>,
               <>&nbsp;</>,
-              <><span style={{ color: "var(--color-text-quaternary)" }}># $0.05 pathUSD settled on-chain</span></>,
+              <><span style={{ color: "var(--color-text-quaternary)" }}># $0.200 USDC.e settled on Tempo</span></>,
               <><span style={{ color: "rgba(255,255,255,0.93)" }}>{'{'}</span></>,
               <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;symbol&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>&quot;pathUSD&quot;</span>,</>,
               <>&nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;peg&quot;</span>: {'{'} <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;price&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>1.0000</span>, <span style={{ color: "rgba(255,255,255,0.7)" }}>&quot;spread_bps&quot;</span>: <span style={{ color: "rgba(255,255,255,0.93)" }}>0</span> {'}'},</>,

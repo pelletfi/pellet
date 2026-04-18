@@ -1,0 +1,54 @@
+---
+title: Changelog
+description: Product, pricing, and methodology updates. Dated, in reverse chronological order.
+icon: ScrollText
+---
+
+Entries are written in the first person of the project, not of an author. Material changes only — not every commit. Each entry is a durable anchor; once published, it is not edited.
+
+---
+
+## 2026-04-17 · v2 pricing — measurement has a price
+
+Pellet's v1 schedule priced every MPP endpoint at `$0.000000` and the deep briefing at `$0.05`. That was the right call at zero: it put Pellet in the Tempo MPP directory, unblocked MPPScan indexing, and landed the [first paid tx](https://mppscan.com/server/29f5b7b1) within 48 hours. Free parity across nine measurement endpoints also signals that the category is commoditized, and after a week of operating data we know it isn't — Pellet is the only service on Tempo offering TIP-20 reward attribution, TIP-403 policy state, sub-basis-point peg measurement, and ERC-8004 + TIP-403 wallet intelligence, and none of those have a peer anywhere.
+
+From today, Pellet prices by **value delivered**, not by Allium or Nansen parity. The schedule below reflects the cost of measurement — not the cost of inference, which other aggregators substitute when the chain read is hard.
+
+### Schedule
+
+| Tier | Endpoints | Price (USDC.e · Tempo) |
+| --- | --- | --- |
+| **Free** | `/stablecoins`, `/tip403/simulate` | `$0` |
+| **Lookup** | `/addresses/{addr}`, `/stablecoins/{addr}/peg`, `/stablecoins/flows` | `$0.010` |
+| **Analytics** | `/stablecoins/flow-anomalies`, `/stablecoins/{addr}/reserves` | `$0.020` |
+| **Composite** | `/stablecoins/{addr}/risk` | `$0.050` |
+| **First-mover** | `/stablecoins/{addr}/rewards` | `$0.100` |
+| **Deep briefing** | `/tokens/{addr}/briefing` | `$0.200` |
+
+The two free endpoints stay free on purpose. `/tip403/simulate` is protocol plumbing — every agent should call it before every TIP-20 transfer to avoid wasting gas on a revert that could have been predicted. `/stablecoins` is the directory funnel. Volume beats margin for both.
+
+### Deep briefing · Section 06
+
+The deep briefing at `$0.200` ships today with a new final section: the **Coverage & Provenance ledger**. For every briefing, Pellet emits:
+
+- **Block pin** — the exact Tempo block height at which every field was measured, so any consumer can re-verify against an archive node.
+- **Coverage flags** — per-section `complete | partial | unavailable` status with the pipeline's own `coverage_note` explaining every partial. No hidden gaps.
+- **Data lineage** — the on-chain primitive (precompile, contract, event table) that produced each section. Nothing inferred.
+
+This replaces the natural-language analyst note that earlier versions shipped, retired on 2026-04-17 per OLI discipline: Pellet ships measurements, not model synthesis. The briefing's defensibility at `$0.200` now rests on the composite — eight parallel on-chain aggregators plus a re-verifiable receipt — rather than on a prose paragraph that could be read from any source.
+
+### Principles
+
+Three rules drove the schedule:
+
+1. **Protocol plumbing is free.** If every agent should call it, every agent must be able to call it without thinking about cost.
+2. **Lookups are priced at parity, analytics above it.** Allium-tier pricing for equivalent work. Derivation and synthesis cost more than reads.
+3. **First-mover data is priced against value, not competition.** There is no competitor on Tempo for TIP-20 reward attribution, and Pellet is the only service indexing the reward precompile. `$0.100` is the price of knowing the effective APY before deploying capital; the number would be roughly the same with or without a peer, because the buyer's alternative is guessing.
+
+### For existing integrations
+
+- **MPP clients** (`mppx`, `@pelletfi/mcp`) auto-handle the challenge and pay whatever the server asks. Nothing to change.
+- **Pellet Pro** subscribers see no per-call charge — the $49/mo tier continues to cover every endpoint.
+- **MPPScan directory** will re-crawl on the next paid tx against Pellet, typically within an hour of the deploy. Agents that route on price may briefly see a stale $0.05 display for the briefing until the re-crawl lands; the live 402 challenge always reflects the current schedule.
+
+See [Pricing](/docs/pricing) for the full live schedule and [OLI](/docs/oli) for the measurement discipline the prices are anchored against.

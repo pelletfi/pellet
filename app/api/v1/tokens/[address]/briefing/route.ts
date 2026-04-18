@@ -1,20 +1,23 @@
 /**
  * GET /api/v1/tokens/[address]/briefing
  *
- * MPP-gated full briefing endpoint — $0.05 pathUSD per call.
+ * MPP-gated full briefing endpoint.
  *
  * Pipeline:
  *   1. Validate address
- *   2. Check TIP-20 status + fetch on-chain name/symbol
- *   3. Run market, compliance, holders, identity in parallel
- *   4. Run safety (needs pools from market) and origin (needs creator from holders) in parallel
- *   5. Run Claude evaluation with all data
- *   6. Persist briefing to DB
- *   7. Return full BriefingResult JSON
+ *   2. Check TIP-20 status + pin the measurement block (parallel)
+ *   3. Fetch on-chain name/symbol/decimals
+ *   4. Run market, compliance, holders, identity in parallel
+ *   5. Run safety (needs pools from market) and origin (needs creator from holders) in parallel
+ *   6. Build the coverage & provenance ledger (Section 06 — replaces the
+ *      retired analyst note)
+ *   7. Persist briefing to DB
+ *   8. Return full BriefingResult JSON
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "viem";
+import { getBlockNumber } from "viem/actions";
 import { briefingCharge } from "@/lib/mpp/server";
 import { tempoClient } from "@/lib/rpc";
 import { isTip20, getCompliance } from "@/lib/pipeline/compliance";
@@ -23,13 +26,15 @@ import { getHoldersWithCache } from "@/lib/pipeline/holders";
 import { resolveIdentity } from "@/lib/pipeline/identity";
 import { scanSafety } from "@/lib/pipeline/safety";
 import { getOrigin } from "@/lib/pipeline/origin";
-// `evaluate` (Claude Sonnet analyst synthesis) removed 2026-04-17: per OLI
-// discipline Pellet ships measurements, not inference.  Consumers that want
-// narrative can synthesize from the measured fields themselves.
+// Model-based analyst synthesis was removed 2026-04-17 per OLI discipline
+// (measurement over inference). Section 06 of the briefing now surfaces the
+// coverage & provenance ledger — a product-grade reproducibility receipt —
+// instead of a narrative note.
 import { db } from "@/lib/db";
 import { briefings } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
-import type { BriefingResult } from "@/lib/types";
+import { METHODOLOGY_VERSION } from "@/lib/reproducibility";
+import type { BriefingProvenance, BriefingResult } from "@/lib/types";
 
 // ── Stablecoin enrichment for the briefing prompt ───────────────────────────
 async function loadStablecoinEnrichment(address: string) {
@@ -138,8 +143,14 @@ async function handler(
   const checksumAddress = address as `0x${string}`;
 
   try {
-    // 2. Check TIP-20 and fetch on-chain name/symbol + decimals
-    const tip20 = await isTip20(checksumAddress);
+    // 2. Check TIP-20 and pin the measurement block in parallel.  The pinned
+    // block becomes part of the briefing's `provenance` so consumers can
+    // independently re-verify every on-chain field at the exact block.
+    const [tip20, pinnedBlock] = await Promise.all([
+      isTip20(checksumAddress),
+      getBlockNumber(tempoClient).catch(() => 0n),
+    ]);
+    const measuredAt = new Date().toISOString();
 
     let onChainName = "Unknown Token";
     let onChainSymbol = "???";
@@ -276,16 +287,44 @@ async function handler(
       }),
     ]);
 
-    // 5. Stablecoin enrichment (only adds value for TIP-20 stables we track)
+    // 5. Stablecoin enrichment (only adds value for TIP-20 stables we track).
+    // Not surfaced in the response today; retained so downstream consumers
+    // can opt into richer stable-specific context without a second round-trip.
     const enrichment = tip20 ? await loadStablecoinEnrichment(address) : null;
-    // `enrichment` is no longer consumed by a prompt-synthesis step, but we
-    // still compute it so that downstream consumers (and any future
-    // opt-in narrative step) see the same stablecoin-specific context the
-    // retired analyst note had.
     void enrichment;
 
-    // 6. Persist briefing to the database.  evaluation is null by design —
-    // OLI: ship measurements, not LLM inference.
+    // 6. Build the coverage & provenance ledger — the Section 06 product
+    // surface that replaces the retired analyst note. Every field is an
+    // observation about the measurement run itself; never synthesized.
+    const provenance: BriefingProvenance = {
+      block_number: pinnedBlock.toString(),
+      measured_at: measuredAt,
+      methodology_version: METHODOLOGY_VERSION,
+      coverage: {
+        market: market.coverage,
+        // SafetyResult doesn't carry a coverage field today, but the pipeline
+        // sets `SAFETY_SCAN_FAILED` on the flags array when the eth_call
+        // simulation never returned — surface that as `unavailable` so the
+        // Section 06 ledger stays honest.
+        safety: safety.flags.includes("SAFETY_SCAN_FAILED") ? "unavailable" : "complete",
+        compliance: compliance.coverage,
+        holders: holders.coverage,
+        origin: origin.coverage,
+      },
+      sources: {
+        market: "GeckoTerminal pool aggregator",
+        safety: "tempo eth_call simulation + bytecode scan",
+        compliance: tip20
+          ? "TIP-20 factory + TIP-403 registry (on-chain reads)"
+          : "ERC-20 multicall (name/symbol/decimals)",
+        holders: "Transfer event replay",
+        identity: "CoinGecko + DefiLlama cross-reference",
+        origin: "Transfer event log + deployer tx walk",
+      },
+    };
+
+    // 7. Persist briefing.  evaluation is null by design (OLI: ship
+    // measurements, not LLM inference); provenance is the new ledger.
     const payload: Omit<BriefingResult, "id" | "created_at"> = {
       token_address: address,
       market,
@@ -294,6 +333,7 @@ async function handler(
       holders,
       identity,
       origin,
+      provenance,
       evaluation: null,
     };
 
@@ -305,7 +345,7 @@ async function handler(
       })
       .returning({ id: briefings.id, createdAt: briefings.createdAt });
 
-    // 7. Return full briefing
+    // 8. Return full briefing
     const result: BriefingResult = {
       id: row.id,
       token_address: address,
@@ -315,6 +355,7 @@ async function handler(
       holders,
       identity,
       origin,
+      provenance,
       evaluation: null,
       created_at: row.createdAt.toISOString(),
     };

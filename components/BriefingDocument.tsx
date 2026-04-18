@@ -5,6 +5,7 @@ import type {
   HolderData,
   OriginResult,
   IdentityResult,
+  BriefingProvenance,
 } from "@/lib/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -388,24 +389,242 @@ function OriginSection({ origin }: { origin: OriginResult }) {
   );
 }
 
-function AnalystSection({ text }: { text: string }) {
+// ── Section 06: Coverage & Provenance ──────────────────────────────────────
+// The measurement-ledger surface that replaced the retired analyst note on
+// 2026-04-17.  Every briefing field is block-pinned, coverage-tagged, and
+// sourced from an on-chain primitive we can name — this section makes that
+// legible to consumers as a first-class product surface (not just an
+// out-of-band header).
+
+function CoverageDot({
+  status,
+}: {
+  status: "complete" | "partial" | "unavailable";
+}) {
+  const color =
+    status === "complete"
+      ? "var(--color-success)"
+      : status === "partial"
+      ? "var(--color-warning)"
+      : "var(--color-text-quaternary)";
+  const glyph = status === "complete" ? "●" : status === "partial" ? "◐" : "○";
   return (
-    <section style={{ marginBottom: "28px" }}>
-      <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
-      <p
+    <span
+      style={{
+        color,
+        fontFamily: "var(--font-mono)",
+        fontSize: "11px",
+        marginRight: "8px",
+      }}
+      aria-label={status}
+    >
+      {glyph}
+    </span>
+  );
+}
+
+function CoverageLedgerRow({
+  label,
+  status,
+  note,
+}: {
+  label: string;
+  status: "complete" | "partial" | "unavailable";
+  note?: string | null;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        padding: "5px 0",
+        borderBottom: "1px solid var(--color-border-subtle)",
+      }}
+    >
+      <span
         style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "14px",
-          lineHeight: 1.7,
-          color: "var(--color-text-secondary)",
-          margin: 0,
-          borderLeft: "2px solid var(--color-border-default)",
-          paddingLeft: "16px",
-          fontStyle: "italic",
+          fontFamily: "var(--font-mono)",
+          fontSize: "12px",
+          color: "var(--color-text-tertiary)",
+          textTransform: "uppercase",
         }}
       >
-        {text}
-      </p>
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "12px",
+          color: "var(--color-text-primary)",
+          display: "flex",
+          alignItems: "baseline",
+          gap: "6px",
+        }}
+      >
+        <CoverageDot status={status} />
+        <span>{status}</span>
+        {note && (
+          <span
+            style={{
+              color: "var(--color-text-quaternary)",
+              fontSize: "11px",
+              marginLeft: "4px",
+            }}
+          >
+            — {note}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function SourceMapRow({ label, source }: { label: string; source: string }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "110px 1fr",
+        padding: "4px 0",
+        borderBottom: "1px solid var(--color-border-subtle)",
+        alignItems: "baseline",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          color: "var(--color-text-tertiary)",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "12px",
+          color: "var(--color-text-secondary)",
+        }}
+      >
+        {source}
+      </span>
+    </div>
+  );
+}
+
+function SubHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: "10px",
+        color: "var(--color-text-quaternary)",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        marginTop: "16px",
+        marginBottom: "6px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CoverageSection({
+  provenance,
+  compliance,
+  holders,
+  origin,
+  market,
+}: {
+  provenance: BriefingProvenance;
+  compliance: ComplianceResult;
+  holders: HolderData;
+  origin: OriginResult;
+  market: TokenMarketData;
+}) {
+  // Pull coverage_note strings from each aggregator so partial/unavailable
+  // states carry the explanation the aggregator itself produced — no extra
+  // inference, just surfacing what the pipeline already said.
+  const notes: Record<string, string | null | undefined> = {
+    market: market.coverage_note,
+    compliance: compliance.coverage_note,
+    holders: holders.coverage_note,
+    origin: origin.coverage_note,
+  };
+
+  return (
+    <section style={{ marginBottom: "28px" }}>
+      <SectionHeader
+        n="06"
+        title="Coverage & Provenance"
+        source={`Pellet OLI v${provenance.methodology_version}`}
+      />
+
+      <DataRow
+        label="Block"
+        value={Number(provenance.block_number).toLocaleString()}
+      />
+      <DataRow
+        label="Measured at"
+        value={
+          provenance.measured_at
+            .replace("T", " ")
+            .slice(0, 19) + " UTC"
+        }
+      />
+      <DataRow
+        label="Methodology"
+        value={`v${provenance.methodology_version}`}
+      />
+
+      <SubHeader>Coverage ledger</SubHeader>
+      <CoverageLedgerRow label="Market" status={provenance.coverage.market} note={notes.market} />
+      <CoverageLedgerRow label="Safety" status={provenance.coverage.safety} />
+      <CoverageLedgerRow
+        label="Compliance"
+        status={provenance.coverage.compliance}
+        note={notes.compliance}
+      />
+      <CoverageLedgerRow
+        label="Holders"
+        status={provenance.coverage.holders}
+        note={notes.holders}
+      />
+      <CoverageLedgerRow
+        label="Origin"
+        status={provenance.coverage.origin}
+        note={notes.origin}
+      />
+
+      <SubHeader>Data lineage</SubHeader>
+      <SourceMapRow label="Market" source={provenance.sources.market} />
+      <SourceMapRow label="Safety" source={provenance.sources.safety} />
+      <SourceMapRow label="Compliance" source={provenance.sources.compliance} />
+      <SourceMapRow label="Holders" source={provenance.sources.holders} />
+      <SourceMapRow label="Identity" source={provenance.sources.identity} />
+      <SourceMapRow label="Origin" source={provenance.sources.origin} />
+
+      <div
+        style={{
+          marginTop: "14px",
+          padding: "10px 12px",
+          background: "var(--color-bg-subtle)",
+          border: "1px solid var(--color-border-subtle)",
+          borderRadius: "4px",
+          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          lineHeight: 1.6,
+          color: "var(--color-text-tertiary)",
+        }}
+      >
+        Every numeric field in this briefing is a direct on-chain measurement
+        pinned at block {Number(provenance.block_number).toLocaleString()}.
+        Re-verifiable against any Tempo archive node. Null means unmeasured,
+        never inferred.
+      </div>
     </section>
   );
 }
@@ -420,7 +639,7 @@ interface BriefingDocumentProps {
   compliance: ComplianceResult;
   holders: HolderData;
   origin?: OriginResult | null;
-  evaluation?: string | null;
+  provenance?: BriefingProvenance | null;
   createdAt?: string;
 }
 
@@ -432,7 +651,7 @@ export default function BriefingDocument({
   compliance,
   holders,
   origin,
-  evaluation,
+  provenance,
   createdAt,
 }: BriefingDocumentProps) {
   return (
@@ -521,20 +740,36 @@ export default function BriefingDocument({
           <PendingRow label="Funding source" />
         </section>
       )}
-      {evaluation ? (
-        <AnalystSection text={evaluation} />
+      {provenance ? (
+        <CoverageSection
+          provenance={provenance}
+          compliance={compliance}
+          holders={holders}
+          origin={origin ?? {
+            deployer: null,
+            deployer_tx_count: null,
+            deployer_age_days: null,
+            funding_source: null,
+            funding_label: null,
+            funding_hops: 0,
+            prior_tokens: [],
+            coverage: "unavailable",
+            coverage_note: null,
+          }}
+          market={market}
+        />
       ) : (
         <section style={{ marginBottom: "28px" }}>
-          <SectionHeader n="06" title="Analyst Note" source="Claude Sonnet" />
+          <SectionHeader n="06" title="Coverage & Provenance" source="Pellet OLI" />
           <p
             style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
               color: "var(--color-text-tertiary)",
-              fontStyle: "italic",
             }}
           >
-            Analyst note not yet generated. Access via the deep briefing endpoint.
+            Provenance ledger not available on this record. Briefings generated
+            after 2026-04-17 include block-pinned coverage and data lineage.
           </p>
         </section>
       )}

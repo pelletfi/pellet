@@ -43,7 +43,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ### Paid (MPP — pathUSD on Tempo)
 | Tool | Cost |
 | --- | --- |
-| `analyze_token` | $0.05 deep briefing: origin, holders, compliance, analyst note (now incorporates peg + risk + reserves data when applicable) |
+| `analyze_token` | Deep briefing: market, safety, compliance, holders, identity, origin, plus peg + risk + reserves enrichment and a coverage & provenance ledger (block-pinned, per-section complete\|partial flags, on-chain data lineage) |
 
 ## Example session
 
@@ -57,7 +57,7 @@ Claude calls `get_peg_events` across stables, filters for `ongoing: true`, summa
 
 > "Give me a deep analysis of pathUSD."
 
-Claude calls `analyze_token`, which auto-settles the $0.05 micropayment via your `EVM_PRIVATE_KEY`. Returns a briefing that quotes real peg stats, risk score, and Tempo-side backing.
+Claude calls `analyze_token`, which auto-settles the MPP micropayment via your `EVM_PRIVATE_KEY`. Returns a briefing that quotes real peg stats, risk score, Tempo-side backing, and the coverage & provenance ledger — every numeric field block-pinned and independently re-verifiable.
 
 ## Auth modes
 

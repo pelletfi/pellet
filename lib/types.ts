@@ -180,6 +180,46 @@ export interface StablecoinFlow {
   hour: string;
 }
 
+/**
+ * Coverage & provenance ledger attached to every briefing.
+ *
+ * This is the OLI discipline surfaced as a first-class product field:
+ *   - `block_number` makes every briefing re-verifiable against an archive
+ *     node (consumers can replay any numeric field at the exact pinned block).
+ *   - `coverage` exposes which sections are complete vs. partial vs. missing
+ *     without having to introspect each aggregator payload.
+ *   - `sources` is the data-lineage map: which on-chain primitive or external
+ *     feed produced each section.
+ *
+ * Never synthesized, never inferred — these are observations about the
+ * measurement run itself.
+ */
+export interface BriefingProvenance {
+  /** Tempo mainnet block height at the start of the measurement run. */
+  block_number: string;
+  /** ISO timestamp of the measurement run. */
+  measured_at: string;
+  /** Pellet methodology version — governs how derived fields are computed. */
+  methodology_version: string;
+  /** Per-section coverage status, mirroring each aggregator's `coverage`. */
+  coverage: {
+    market: "complete" | "partial" | "unavailable";
+    safety: "complete" | "partial" | "unavailable";
+    compliance: "complete" | "partial" | "unavailable";
+    holders: "complete" | "partial" | "unavailable";
+    origin: "complete" | "partial" | "unavailable";
+  };
+  /** Short human-readable data lineage string per section. */
+  sources: {
+    market: string;
+    safety: string;
+    compliance: string;
+    holders: string;
+    identity: string;
+    origin: string;
+  };
+}
+
 export interface BriefingResult {
   id: number;
   token_address: string;
@@ -189,9 +229,14 @@ export interface BriefingResult {
   holders: HolderData;
   identity: IdentityResult;
   origin: OriginResult;
-  /** Deprecated.  Used to be a Claude-generated analyst note; removed 2026-04-17
-   * per OLI discipline (measurement over inference).  Always `null` on new
-   * briefings; older rows in the `briefings` table may still carry legacy text. */
+  /**
+   * Per-briefing coverage & provenance ledger. Null on legacy rows written
+   * before 2026-04-17; always populated on new briefings.
+   */
+  provenance: BriefingProvenance | null;
+  /** @deprecated Removed 2026-04-17 per OLI discipline (measurement over
+   * inference). Always `null` on new briefings; older rows may still carry
+   * legacy text. Retained on the type only so stored payloads round-trip. */
   evaluation: string | null;
   created_at: string;
 }

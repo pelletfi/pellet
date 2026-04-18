@@ -1,10 +1,13 @@
 /**
  * lib/mpp/server.ts
  *
- * Singleton mppx instance configured for Tempo pathUSD payments.
+ * Singleton mppx instance configured for Tempo USDC.e payments.
  *
- * The `briefingCharge` export is a higher-order function that wraps a Next.js
- * route handler with $0.05 pathUSD MPP payment gating.
+ * Exposes tiered charge wrappers (see "Pellet MPP charge tiers" below) for
+ * the v2 pricing schedule (2026-04-17): identity/free, lookup ($0.010),
+ * analytics ($0.020), composite ($0.050), first-mover ($0.100), and
+ * briefing ($0.200). Each wrapper takes a Next.js route handler and returns
+ * one that runs the MPP 402 challenge before dispatching.
  *
  * Usage:
  *   export const GET = briefingCharge(async (req, ctx) => {
@@ -13,7 +16,7 @@
  *
  * Environment variables required in production:
  *   MPP_SECRET_KEY   — HMAC key for binding challenges (auto-read from env)
- *   MPP_RECIPIENT    — 0x address to receive pathUSD payments
+ *   MPP_RECIPIENT    — 0x address to receive USDC.e payments
  */
 
 import { Mppx, tempo } from "mppx/server";
@@ -160,25 +163,45 @@ export function mppCharge(
 }
 
 /**
- * $0.05 MPP charge — the paid /briefing route.
- */
-export const briefingCharge = mppCharge("0.05", "Pellet deep briefing");
-
-/**
- * $0 MPP charge — mirrors free endpoints under /api/mpp/* so they appear in
- * the MPPScan directory alongside paid routes. Clients still go through the
- * 402 challenge flow (identity proof via wallet signature) but transfer no
- * USDC.e. Matches the pattern used by GovLaws, StableEnrich, and others
- * whose free routes show up with a "FREE" tag in the MPPScan UI.
+ * Pellet MPP charge tiers (v2, set 2026-04-17).
  *
- * Description must be pure ASCII — mppx stuffs it into the www-authenticate
+ * Rationale — Pellet is the only service on Tempo offering stablecoin-specific
+ * measurement (TIP-20 reward attribution, TIP-403 policy state, sub-bp peg
+ * accuracy, ERC-8004 wallet intelligence). The earlier v1 schedule priced
+ * every MPP endpoint at $0 on the theory that identity-only challenges would
+ * drive MPPScan discovery. That worked — but also left category-defining
+ * data economically indistinguishable from a generic chain aggregator.
+ *
+ * v2 prices against *value delivered*, not against Allium/Codex parity.
+ * Protocol plumbing (list, simulate) stays free to keep the every-agent-
+ * every-call loop unbounded; everything else gets a tier that reflects
+ * whether the endpoint is a lookup, analytics, synthesis, or first-mover.
+ *
+ * Descriptions must be pure ASCII — mppx stuffs them into the www-authenticate
  * response header and HTTP headers reject any byte > 0xFF (so em-dashes,
  * smart quotes, etc. will throw at response-construction time).
  */
+
+/** $0 — mirrors free endpoints for MPPScan indexing (identity-only). */
 export const identityCharge = mppCharge(
   "0",
   "Pellet free route - MPP identity challenge, no charge"
 );
+
+/** $0.010 — simple lookups (addresses, peg, flows). */
+export const lookupCharge = mppCharge("0.010", "Pellet lookup - on-chain measurement");
+
+/** $0.020 — derived analytics (flow anomalies, reserve composition). */
+export const analyticsCharge = mppCharge("0.020", "Pellet analytics - on-chain measurement");
+
+/** $0.050 — composite synthesis (risk score + sub-scores). */
+export const compositeCharge = mppCharge("0.050", "Pellet composite score - on-chain measurement");
+
+/** $0.100 — first-mover category endpoints (TIP-20 reward attribution). */
+export const firstMoverCharge = mppCharge("0.100", "Pellet first-mover - on-chain measurement");
+
+/** $0.200 — deep briefing. 8 on-chain aggregators + coverage and provenance ledger. */
+export const briefingCharge = mppCharge("0.200", "Pellet deep briefing");
 
 // Re-export for callers that need the raw mppx instance (e.g. session endpoints)
 export { getMppx as mppx };

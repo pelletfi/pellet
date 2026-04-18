@@ -7,7 +7,7 @@ export const spec = {
     title: "Pellet API",
     version: "1.0.0",
     description:
-      "Open-Ledger Interface (OLI) on Tempo. Direct on-chain measurement for every TIP-20 stablecoin — peg spread vs pathUSD, TIP-403 policy enforcement (allowlist / blocklist / compound), supply cap + headroom, reserve composition + attestation, TIP-20 reward attribution + effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores, DEX flow topology, cross-stable flow anomalies (z-score thresholds), peg-break events, role-holder enumeration, and historical time-travel via ?as_of=. Every numeric value is a measurement, not an estimate; null means unmeasured (never inferred as zero). 14 free endpoints + one $0.05 MPP-paid deep briefing. Aggregator-grade data without the aggregator layer — built for agents that care about the difference between a bridged token's actual peg and an oracle's idea of it.",
+      "Open-Ledger Interface (OLI) on Tempo. Direct on-chain measurement for every TIP-20 stablecoin — peg spread vs pathUSD, TIP-403 policy enforcement (allowlist / blocklist / compound), supply cap + headroom, reserve composition + attestation, TIP-20 reward attribution + effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores, DEX flow topology, cross-stable flow anomalies (z-score thresholds), peg-break events, role-holder enumeration, and historical time-travel via ?as_of=. Every numeric value is a measurement, not an estimate; null means unmeasured (never inferred as zero). MPP pricing tiers (USDC.e on Tempo): free (list + pre-trade simulate), $0.010 lookups (peg, flows, wallet intel), $0.020 analytics (flow anomalies, reserves), $0.050 composite risk, $0.100 TIP-20 reward attribution (first-mover, no peer), $0.200 deep briefing (8 aggregators + coverage & provenance ledger). Aggregator-grade data without the aggregator layer — built for agents that care about the difference between a bridged token's actual peg and an oracle's idea of it.",
     contact: {
       url: "https://pelletfi.com",
     },
@@ -853,20 +853,22 @@ export const spec = {
       get: {
         operationId: "mppGetWalletIntelligence",
         summary:
-          "MPP (free, identity-only) · Wallet intelligence — label + ERC-8004 + roles",
+          "MPP (paid) · Wallet intelligence — label + ERC-8004 + TIP-403 role forensics",
         description:
-          "Zero-charge MPP mirror of /api/v1/addresses/{address}. Same response shape; agent signs a $0 identity voucher for MPPScan-ledger accounting. Unique differentiator vs chain-generic wallet APIs (Nansen / Zerion / Codex): ERC-8004 agent status + TIP-403 role forensics in one call, on Tempo.",
+          "MPP lookup for any Tempo address: human-readable label, ERC-8004 agent status (identity + reputation registry reads), and TIP-403 role forensics (which stablecoins grant this address minter/burner/pause authority). One round-trip; all on-chain measured. Unique vs. chain-generic wallet APIs (Nansen / Zerion / Codex) — nobody else indexes ERC-8004 + TIP-403 together on Tempo.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.010",
+          minPrice: "0.010",
+          maxPrice: "0.010",
+          amount: "10000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route - MPP identity challenge, no charge",
+          description: "Pellet wallet intelligence lookup",
         },
         parameters: [
           {
@@ -882,7 +884,7 @@ export const spec = {
         ],
         responses: {
           "200": { description: "Wallet intelligence (same schema as /api/v1/addresses/{address})" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "402": { description: "MPP payment required" },
         },
       },
     },
@@ -1061,20 +1063,22 @@ export const spec = {
     "/api/mpp/stablecoins/flows": {
       get: {
         operationId: "mppGetStablecoinFlows",
-        summary: "MPP (free, identity-only) · Stablecoin DEX flow topology",
+        summary: "MPP (paid) · Stablecoin DEX flow topology",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/flows. Hourly net flow data between stablecoins routed through the enshrined Tempo DEX precompile.",
+          "Hourly net flow data between Tempo stablecoins routed through the enshrined Tempo DEX precompile. (from, to, net_flow_usd, tx_count) rows at 1h granularity.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.010",
+          minPrice: "0.010",
+          maxPrice: "0.010",
+          amount: "10000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet flow topology lookup",
         },
         parameters: [
           {
@@ -1094,20 +1098,22 @@ export const spec = {
     "/api/mpp/stablecoins/flow-anomalies": {
       get: {
         operationId: "mppGetFlowAnomalies",
-        summary: "MPP (free, identity-only) · Cross-stable flow anomalies (≥3σ)",
+        summary: "MPP (paid) · Cross-stable flow anomalies (≥3σ)",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/flow-anomalies. 15-minute windows where flow on a (from, to) edge exceeded the 7-day rolling baseline by ≥3 standard deviations.",
+          "15-minute windows where flow on a (from, to) edge exceeded its 7-day rolling baseline by ≥3 standard deviations. Derived analytics on top of the hourly flow feed — priced above raw flows because it composes the z-score baseline plus the anomaly detection pass.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.020",
+          minPrice: "0.020",
+          maxPrice: "0.020",
+          amount: "20000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet flow anomalies analytics",
         },
         parameters: [
           { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 } },
@@ -1121,20 +1127,22 @@ export const spec = {
     "/api/mpp/stablecoins/{address}/peg": {
       get: {
         operationId: "mppGetStablecoinPeg",
-        summary: "MPP (free, identity-only) · Peg + 1h/24h/7d aggregates",
+        summary: "MPP (paid) · Peg sample + 1h/24h/7d aggregates",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/peg. Current peg sample + rolling-window stats. Supports historical snapshots via `?as_of=`.",
+          "Current peg sample vs. pathUSD (direct on-chain DEX quote, sub-bp accuracy — not oracle estimate) plus rolling 1h/24h/7d aggregates. Supports historical snapshots via `?as_of=`. The sub-bp accuracy vs aggregator oracle feeds is the category story.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.010",
+          minPrice: "0.010",
+          maxPrice: "0.010",
+          amount: "10000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet peg lookup",
         },
         parameters: [
           { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
@@ -1149,20 +1157,22 @@ export const spec = {
     "/api/mpp/stablecoins/{address}/risk": {
       get: {
         operationId: "mppGetStablecoinRisk",
-        summary: "MPP (free, identity-only) · Composite risk score 0–100",
+        summary: "MPP (paid) · Composite risk score 0–100",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/risk. Composite risk score with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk). Supports historical snapshots via `?as_of=`.",
+          "Composite risk score (0–100) with four explainable sub-scores: peg_risk, peg_break_risk, supply_risk, policy_risk. Each sub-score is measured independently, then combined into the composite. Supports historical snapshots via `?as_of=`.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.050",
+          minPrice: "0.050",
+          maxPrice: "0.050",
+          amount: "50000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet composite risk score",
         },
         parameters: [
           { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
@@ -1177,20 +1187,22 @@ export const spec = {
     "/api/mpp/stablecoins/{address}/reserves": {
       get: {
         operationId: "mppGetStablecoinReserves",
-        summary: "MPP (free, identity-only) · Reserve / backing breakdown",
+        summary: "MPP (paid) · Reserve / backing breakdown",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/reserves. Total backing + per-reserve-type entries with attestation source and issuer. Supports historical snapshots via `?as_of=`.",
+          "Total backing + per-reserve-type composition with attestation source and issuer. Priced at the analytics tier because each record resolves an attestation source plus the issuer-provided backing breakdown. Supports historical snapshots via `?as_of=`.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.020",
+          minPrice: "0.020",
+          maxPrice: "0.020",
+          amount: "20000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet reserves analytics",
         },
         parameters: [
           { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
@@ -1268,20 +1280,22 @@ export const spec = {
     "/api/mpp/stablecoins/{address}/rewards": {
       get: {
         operationId: "mppGetStablecoinRewards",
-        summary: "MPP (free, identity-only) · TIP-20 reward attribution + APY",
+        summary: "MPP (paid, first-mover) · TIP-20 reward attribution + APY",
         description:
-          "Zero-charge MPP mirror of /api/v1/stablecoins/{address}/rewards. On-chain reward data via the TIP-20 reward precompile: opted-in supply, global reward-per-token, funder attribution, effective APY. First-mover category. Supports historical snapshots via `?as_of=`.",
+          "On-chain reward data via the TIP-20 reward precompile: opted-in supply, global reward-per-token accumulator, funder attribution, and effective APY. Pellet is the first and only service on Tempo indexing the TIP-20 reward precompile — no peer anywhere. This is a yield-allocation input; priced at the first-mover tier because no competitive parity exists. Supports historical snapshots via `?as_of=`.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.000000",
-          amount: "0",
+          price: "0.100",
+          minPrice: "0.100",
+          maxPrice: "0.100",
+          amount: "100000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet free route — MPP identity challenge, no charge",
+          description: "Pellet TIP-20 reward attribution",
         },
         parameters: [
           { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
@@ -1299,14 +1313,14 @@ export const spec = {
         summary:
           "MPP paid · Deep briefing for any Tempo TIP-20 stablecoin",
         description:
-          "MPP-discoverable mirror of /api/v1/tokens/{address}/briefing at the same $0.05 USDC.e price. Identical output — peg, policy, reserves, rewards, risk, flows, role holders, plus a Claude-synthesized analyst note. Lives at /api/mpp/* so MPPScan's directory crawler indexes it alongside the free identity-only routes.",
+          "MPP-discoverable mirror of /api/v1/tokens/{address}/briefing. Identical output — peg, policy, reserves, rewards, risk, flows, role holders, plus a coverage & provenance ledger (per-section complete|partial|unavailable flags, block-pinned reproducibility, and the data lineage map for every section). Pure measurement, no model synthesis. Lives at /api/mpp/* so MPPScan's directory crawler indexes it alongside the other measurement routes.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.05",
-          minPrice: "0.05",
-          maxPrice: "0.05",
-          amount: "50000",
+          price: "0.200",
+          minPrice: "0.200",
+          maxPrice: "0.200",
+          amount: "200000",
           currency: USDC_E,
           protocols: ["mpp"],
           intent: "charge",
@@ -1367,20 +1381,20 @@ export const spec = {
         summary:
           "Deep briefing for any Tempo TIP-20 stablecoin — peg, policy, reserves, rewards, risk, flows, role holders, on-chain measured",
         description:
-          "Runs the full Pellet Open-Ledger Interface (OLI) pipeline for any Tempo TIP-20 stablecoin and returns a structured briefing document covering: live peg spread vs pathUSD (direct on-chain DEX measurement, not oracle estimate), TIP-403 policy enforcement (allowlist / blocklist / compound, pause state, supply cap headroom), reserve and backing breakdown with attestation source, TIP-20 reward attribution and effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk), DEX flow topology and cross-stable flow anomalies, role-holder enumeration (admin / minter / burner), peg-break event history, and a natural-language evaluation. Every numeric value is a direct on-chain measurement — null when unmeasured, never a synthetic estimate. Requires an MPP payment of 0.05 USDC.e on Tempo mainnet.",
+          "Runs the full Pellet Open-Ledger Interface (OLI) pipeline for any Tempo TIP-20 stablecoin and returns a structured briefing document covering: live peg spread vs pathUSD (direct on-chain DEX measurement, not oracle estimate), TIP-403 policy enforcement (allowlist / blocklist / compound, pause state, supply cap headroom), reserve and backing breakdown with attestation source, TIP-20 reward attribution and effective APY, fee-token economics, composite risk score (0–100) with explainable sub-scores (peg_risk, peg_break_risk, supply_risk, policy_risk), DEX flow topology and cross-stable flow anomalies, role-holder enumeration (admin / minter / burner), peg-break event history, and a coverage & provenance ledger (per-section complete|partial|unavailable flags, block-pinned reproducibility, and the on-chain data lineage map for every section). Every numeric value is a direct on-chain measurement — null when unmeasured, never a synthetic estimate, no model synthesis.",
         security: [{ MppPayment: [] }],
         "x-payment-info": {
           authMode: "paid",
-          price: "0.05",
-          minPrice: "0.05",
-          maxPrice: "0.05",
-          amount: "50000",
+          price: "0.200",
+          minPrice: "0.200",
+          maxPrice: "0.200",
+          amount: "200000",
           currency: USDC_E,
           protocols: ["x402"],
           intent: "charge",
           method: "tempo",
           network: "tempo",
-          description: "Pellet deep briefing — 8 aggregators + model synthesis",
+          description: "Pellet deep briefing — 8 on-chain aggregators, block-pinned, coverage-flagged",
         },
         parameters: [
           {

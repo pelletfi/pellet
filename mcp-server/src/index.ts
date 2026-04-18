@@ -49,7 +49,7 @@ server.tool(
 
 server.tool(
   "analyze_token",
-  "Paid · $0.05 USDC.e on Tempo (MPP 402 challenge, mppx handles automatically). Deep briefing for any Tempo TIP-20 stablecoin: peg spread vs pathUSD, TIP-403 policy posture, reserves + attestation, TIP-20 reward APY, fee economics, composite risk score with explainable sub-scores, DEX flow topology, role-holder enumeration, and a Claude-synthesized analyst note. Every numeric field is a direct on-chain measurement; null when unmeasured.",
+  "Paid · USDC.e on Tempo (MPP 402 challenge, mppx handles automatically). Deep briefing for any Tempo TIP-20 stablecoin: peg spread vs pathUSD, TIP-403 policy posture, reserves + attestation, TIP-20 reward APY, fee economics, composite risk score with explainable sub-scores, DEX flow topology, role-holder enumeration, and a coverage & provenance ledger (per-section complete|partial|unavailable flags, block-pinned reproducibility, and the on-chain data lineage for every section). Every numeric field is a direct on-chain measurement; null when unmeasured. No model synthesis.",
   { address: z.string().describe("Token contract address (0x...)") },
   async ({ address }) => {
     const result = await analyzeToken(address);

@@ -104,7 +104,7 @@ This unlocks unlimited rate, paid endpoints (briefings) without MPP signing, and
 
 ## MPP-paid endpoints
 
-For pay-per-call access via the Micropayment Protocol (no API key, just an EVM key holding pathUSD), pass a custom `fetch` implementation built with [mppx](https://github.com/coinbase/mppx):
+For pay-per-call access via the Micropayment Protocol (no API key, just an EVM key holding USDC.e on Tempo), pass a custom `fetch` implementation built with [mppx](https://github.com/coinbase/mppx):
 
 ```ts
 import { Pellet } from "@pelletfi/sdk";

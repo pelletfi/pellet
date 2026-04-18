@@ -39,6 +39,6 @@ Pellet uses `quoteSwap` to measure peg stability. For every stable, we query the
 
 MPP is Tempo's HTTP-layer payment protocol. A client makes an HTTP request, receives a 402 response with payment instructions, signs a micropayment in any TIP-20 stable, and retries. The server verifies the payment and returns the response.
 
-Pellet uses MPP for paid endpoints. Deep stablecoin analysis costs $0.05 pathUSD, settled at the protocol layer. No accounts, no API keys, no rate limits beyond what the payment graph enforces.
+Pellet uses MPP for paid endpoints in USDC.e on Tempo — tiered from $0.010 lookups to $0.200 deep briefings, settled at the protocol layer. No accounts, no API keys, no rate limits beyond what the payment graph enforces.
 
 See [Pricing](/docs/pricing) for the full endpoint → price map.

@@ -1,12 +1,16 @@
 /**
  * GET /api/mpp/stablecoins/[address]/rewards
  *
- * Zero-charge MPP mirror of /api/v1/stablecoins/[address]/rewards.
+ * $0.100 MPP first-mover — TIP-20 reward precompile attribution (opted-in
+ * supply, global reward-per-token, funder attribution, effective APY).
+ * Pellet is the first and only service on Tempo indexing the TIP-20 reward
+ * precompile; this is a yield-allocation input with no peer. Priced at the
+ * first-mover tier per the v2 pricing schedule.
  */
 
-import { identityCharge } from "@/lib/mpp/server";
+import { firstMoverCharge } from "@/lib/mpp/server";
 import { GET as freeGET } from "../../../../v1/stablecoins/[address]/rewards/route";
 
 export const dynamic = "force-dynamic";
 
-export const GET = identityCharge(freeGET);
+export const GET = firstMoverCharge(freeGET);

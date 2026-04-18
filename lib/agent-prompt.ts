@@ -26,7 +26,7 @@ Free endpoints (no payment, GET):
 All peg/risk/reserves endpoints support ?as_of=<ISO8601|epoch|relative> for historical snapshots. See https://pelletfi.com/docs/methodology#time-travel for format.
 
 Paid endpoint (HTTP 402):
-- GET /api/v1/tokens/{address}/briefing ($0.05 USDC.e) — deep briefing: runs 8 aggregators in parallel (market, safety, compliance, holders, identity, origin, stable enrichment, Claude evaluation) and returns a structured decision-grade report. Use when a decision (hold, swap, integrate) is about to be made, not for casual lookups.
+- GET /api/v1/tokens/{address}/briefing (USDC.e on Tempo, MPP-gated) — deep briefing: runs 8 aggregators in parallel (market, safety, compliance, holders, identity, origin, peg/risk/reserves enrichment) and returns a structured decision-grade report with a coverage & provenance ledger — per-section complete|partial|unavailable flags, block-pinned reproducibility, and the on-chain data lineage. No model synthesis. Use when a decision (hold, swap, integrate) is about to be made, not for casual lookups.
 
 Every numeric value is a direct on-chain measurement — never an oracle estimate. When a value is unavailable, Pellet returns null with an explanatory note; it never synthesizes a number to fill a gap.
 

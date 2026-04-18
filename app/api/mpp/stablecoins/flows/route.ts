@@ -1,12 +1,13 @@
 /**
  * GET /api/mpp/stablecoins/flows
  *
- * Zero-charge MPP mirror of /api/v1/stablecoins/flows.
+ * $0.010 MPP lookup — hourly DEX flow topology between Tempo stables.
+ * Standard analytics lookup tier per the v2 pricing schedule.
  */
 
-import { identityCharge } from "@/lib/mpp/server";
+import { lookupCharge } from "@/lib/mpp/server";
 import { GET as freeGET } from "../../../v1/stablecoins/flows/route";
 
 export const dynamic = "force-dynamic";
 
-export const GET = identityCharge(freeGET);
+export const GET = lookupCharge(freeGET);

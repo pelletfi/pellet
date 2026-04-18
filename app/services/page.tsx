@@ -9,9 +9,9 @@ const FALLBACK_SERVICES: Service[] = [
   {
     name: "Pellet Deep Briefing",
     description:
-      "AI-powered token analysis — safety, compliance, distribution, origin. $0.05 per report.",
+      "On-chain measurement briefing — market, safety, compliance, holders, identity, origin, peg + risk + reserves, plus a block-pinned coverage & provenance ledger. $0.200 USDC.e per report.",
     url: "https://pelletfi.com/api/v1/tokens",
-    currencies: ["pathUSD"],
+    currencies: ["USDC.e"],
   },
 ];
 
