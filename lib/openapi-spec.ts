@@ -875,6 +875,7 @@ export const spec = {
             name: "address",
             in: "path",
             required: true,
+            description: "Any Tempo address (0x-prefixed, 42 hex chars). EOA, contract, or ERC-8004 agent.",
             schema: {
               type: "string",
               pattern: "^0x[a-fA-F0-9]{40}$",
@@ -883,8 +884,97 @@ export const spec = {
           },
         ],
         responses: {
-          "200": { description: "Wallet intelligence (same schema as /api/v1/addresses/{address})" },
+          "200": {
+            description: "Wallet intelligence",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    label: {
+                      type: ["object", "null"],
+                      properties: {
+                        address: { type: "string" },
+                        label: { type: "string" },
+                        category: { type: "string" },
+                        source: { type: "string" },
+                        notes: {},
+                      },
+                    },
+                    agent: {
+                      type: "object",
+                      properties: {
+                        is_erc8004_agent: { type: "boolean" },
+                        agent_count: { type: "integer" },
+                        coverage: { type: "string", enum: ["complete", "unavailable"] },
+                        coverage_note: { type: ["string", "null"] },
+                      },
+                    },
+                    roles: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          stable: { type: "string" },
+                          role_name: { type: "string" },
+                          granted_at: { type: "string", format: "date-time" },
+                          granted_tx_hash: { type: "string" },
+                        },
+                      },
+                    },
+                    is_issuer_of: { type: "array", items: { type: "string" } },
+                    is_minter_of: { type: "array", items: { type: "string" } },
+                    is_pauser_of: { type: "array", items: { type: "string" } },
+                    is_burn_blocked_by: { type: "array", items: { type: "string" } },
+                    policies_administered: {
+                      type: "object",
+                      description:
+                        "Every tracked TIP-20 stablecoin where this address is the TIP-403 policy admin. Scans all KNOWN_STABLECOINS via multicall of getPolicy(token).",
+                      properties: {
+                        policies: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              token_address: { type: "string" },
+                              token_symbol: { type: "string" },
+                              token_name: { type: "string" },
+                              policy_id: { type: "integer" },
+                              policy_type: { type: "string", enum: ["whitelist", "blacklist", "unknown"] },
+                              admin: { type: "string" },
+                            },
+                          },
+                        },
+                        stables_scanned: { type: "integer" },
+                        coverage: { type: "string", enum: ["complete", "partial", "unavailable"] },
+                        coverage_note: { type: ["string", "null"] },
+                      },
+                    },
+                    stats: {
+                      type: "object",
+                      properties: {
+                        role_count: { type: "integer" },
+                        stables_involved: { type: "integer" },
+                        erc8004_agent_count: { type: "integer" },
+                        policy_admin_count: { type: "integer" },
+                      },
+                    },
+                    deferred: {
+                      type: "array",
+                      items: { type: "string" },
+                      description:
+                        "Coverage gaps Pellet has NOT measured yet — agent should consider these open questions, not absence.",
+                    },
+                    coverage: { type: "string", enum: ["complete", "partial"] },
+                    coverage_note: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
           "402": { description: "MPP payment required" },
+          "502": { description: "Transient upstream error — retry" },
         },
       },
     },
@@ -1011,14 +1101,16 @@ export const spec = {
         },
       },
     },
-    // ── MPP mirror routes ──────────────────────────────────────────────────
-    // Zero-charge MPP wrappers around the most useful free endpoints. Agents
-    // that go through the 402 challenge (proving wallet identity via a signed
-    // voucher — no USDC.e transferred) get the same response as the free
-    // `/api/v1/*` version. Declared at `authMode: "paid"` with `price:
-    // "0.000000"` so MPPScan's activity indexer surfaces them in the
-    // directory UI with a "FREE" tag (ecosystem convention). The `/api/v1/*`
-    // variants remain available for plain-HTTP consumers.
+    // ── MPP routes ─────────────────────────────────────────────────────────
+    // Paid MPP endpoints (v2 pricing schedule, 2026-04-17): tiered from $0.010
+    // lookups through $0.200 deep briefing. Two endpoints remain free
+    // (`/stablecoins` list and `/tip403/simulate`) under authMode="paid" with
+    // `price: "0.000000"` — MPPScan's directory UI tags them "FREE". Every
+    // `/api/mpp/*` route mirrors the response of its `/api/v1/*` counterpart;
+    // the mpp mirror exists so MPPScan's crawler indexes the service alongside
+    // other Tempo paid services. Input schemas below match the v1 operation
+    // blocks (parameter descriptions + full 200 content schemas) so directory
+    // validators can construct valid payloads without consulting v1.
     "/api/mpp/stablecoins": {
       get: {
         operationId: "mppListStablecoins",
@@ -1090,8 +1182,33 @@ export const spec = {
           },
         ],
         responses: {
-          "200": { description: "Flow data" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Flow data",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    flows: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          from_token: { type: "string" },
+                          to_token: { type: "string" },
+                          net_flow_usd: { type: "number" },
+                          tx_count: { type: "integer" },
+                          hour: { type: "string", format: "date-time" },
+                        },
+                      },
+                    },
+                    hours: { type: "integer" },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
         },
       },
     },
@@ -1116,11 +1233,47 @@ export const spec = {
           description: "Pellet flow anomalies analytics",
         },
         parameters: [
-          { name: "limit", in: "query", required: false, schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 } },
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            description: "Max number of anomaly records to return (default 20, max 100).",
+            schema: { type: "integer", minimum: 1, maximum: 100, default: 20, example: 20 },
+          },
         ],
         responses: {
-          "200": { description: "Anomalies" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Anomalies",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    as_of: { type: "string", format: "date-time" },
+                    anomalies: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          from_token: { type: "string" },
+                          to_token: { type: "string" },
+                          window_start: { type: "string", format: "date-time" },
+                          window_end: { type: "string", format: "date-time" },
+                          observed_flow_usd: { type: "number" },
+                          baseline_mean_usd: { type: "number" },
+                          baseline_stddev_usd: { type: "number" },
+                          z_score: { type: "number" },
+                          tx_count: { type: "integer" },
+                          detected_at: { type: "string", format: "date-time" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
         },
       },
     },
@@ -1145,12 +1298,64 @@ export const spec = {
           description: "Pellet peg lookup",
         },
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
-          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "24h" } },
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description:
+              "Stablecoin contract address (0x-prefixed, 42 hex chars). Tempo stablecoins are deployed via the TIP-20 factory and share a 0x20c0… prefix.",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
+          },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp. ISO8601, epoch seconds, or relative (e.g. '1h', '24h', '7d').",
+            schema: { type: "string", example: "24h" },
+          },
         ],
         responses: {
-          "200": { description: "Peg statistics" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Peg statistics",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    current: {
+                      type: "object",
+                      properties: {
+                        price_vs_pathusd: { type: "number", description: "Current price vs pathUSD (1.0 = exact peg)" },
+                        spread_bps: { type: "integer", description: "Deviation in basis points; positive = above peg" },
+                        block_number: { type: "integer" },
+                        sampled_at: { type: "string", format: "date-time" },
+                      },
+                    },
+                    windows: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          window: { type: "string", enum: ["1h", "24h", "7d"] },
+                          computed_at: { type: "string", format: "date-time" },
+                          sample_count: { type: "integer" },
+                          mean_price: { type: "number" },
+                          stddev_price: { type: "number", description: "In decimal (not bps)" },
+                          max_deviation_bps: { type: "number" },
+                          seconds_outside_10bps: { type: "integer" },
+                          seconds_outside_50bps: { type: "integer" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
+          "404": { description: "Stablecoin not tracked" },
         },
       },
     },
@@ -1175,12 +1380,49 @@ export const spec = {
           description: "Pellet composite risk score",
         },
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
-          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "7d" } },
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description:
+              "Stablecoin contract address (0x-prefixed, 42 hex chars). Tempo stablecoins are deployed via the TIP-20 factory and share a 0x20c0… prefix.",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
+          },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "7d" },
+          },
         ],
         responses: {
-          "200": { description: "Risk score" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Risk score",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    composite: { type: "number", minimum: 0, maximum: 100 },
+                    components: {
+                      type: "object",
+                      properties: {
+                        peg_risk: { type: "number" },
+                        peg_break_risk: { type: "number" },
+                        supply_risk: { type: "number" },
+                        policy_risk: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
+          "404": { description: "Score not yet computed — check /api/v1/system/health for pipeline status" },
         },
       },
     },
@@ -1205,12 +1447,58 @@ export const spec = {
           description: "Pellet reserves analytics",
         },
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
-          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "30d" } },
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description:
+              "Stablecoin contract address (0x-prefixed, 42 hex chars). Tempo stablecoins are deployed via the TIP-20 factory and share a 0x20c0… prefix.",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
+          },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "30d" },
+          },
         ],
         responses: {
-          "200": { description: "Reserve breakdown" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Reserve breakdown",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    total_backing_usd: { type: ["number", "null"] },
+                    reserves: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          reserve_type: { type: "string", description: "e.g. 'fiat', 'treasury', 'crypto-collateral'" },
+                          backing_usd: { type: ["number", "null"] },
+                          attestation_source: { type: ["string", "null"], format: "uri" },
+                          attested_at: { type: ["string", "null"], format: "date-time" },
+                          notes: {
+                            type: "object",
+                            properties: {
+                              issuer: { type: "string" },
+                              backing_model: { type: "string" },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
         },
       },
     },
@@ -1238,6 +1526,7 @@ export const spec = {
             name: "from",
             in: "query",
             required: true,
+            description: "Sender address (0x-prefixed, 42 hex chars)",
             schema: {
               type: "string",
               pattern: "^0x[a-fA-F0-9]{40}$",
@@ -1248,6 +1537,7 @@ export const spec = {
             name: "to",
             in: "query",
             required: true,
+            description: "Recipient address (0x-prefixed, 42 hex chars)",
             schema: {
               type: "string",
               pattern: "^0x[a-fA-F0-9]{40}$",
@@ -1258,6 +1548,8 @@ export const spec = {
             name: "token",
             in: "query",
             required: true,
+            description:
+              "Token contract address. TIP-20 addresses on Tempo use the 0x20c0… factory-deployed pattern.",
             schema: {
               type: "string",
               pattern: "^0x[a-fA-F0-9]{40}$",
@@ -1268,12 +1560,72 @@ export const spec = {
             name: "amount",
             in: "query",
             required: false,
+            description:
+              "Optional raw uint256 decimal string (e.g. '1000000' for 1 USDC.e given 6 decimals). If provided, sender balance is checked after policy authorization.",
             schema: { type: "string", example: "1000000" },
           },
         ],
         responses: {
-          "200": { description: "Simulation result (same schema as /api/v1/tip403/simulate)" },
+          "200": {
+            description: "Simulation result",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    willSucceed: {
+                      type: ["boolean", "null"],
+                      description:
+                        "true = pass, false = blocked (see blockedBy), null = unknown (coverage:partial). Do NOT interpret null as false.",
+                    },
+                    policyId: { type: ["integer", "null"] },
+                    policyType: {
+                      type: ["string", "null"],
+                      enum: ["whitelist", "blacklist", "none", null],
+                    },
+                    policyAdmin: { type: ["string", "null"] },
+                    sender: {
+                      type: "object",
+                      properties: {
+                        address: { type: "string" },
+                        authorized: { type: "boolean" },
+                      },
+                    },
+                    recipient: {
+                      type: "object",
+                      properties: {
+                        address: { type: "string" },
+                        authorized: { type: "boolean" },
+                      },
+                    },
+                    balance: {
+                      type: ["object", "null"],
+                      properties: {
+                        sufficient: { type: "boolean" },
+                        has: { type: "string" },
+                        needs: { type: "string" },
+                      },
+                    },
+                    blockedBy: {
+                      type: ["string", "null"],
+                      enum: ["policy", "balance", "not_a_tip20", "invalid_input", null],
+                    },
+                    blockedParty: {
+                      type: ["string", "null"],
+                      enum: ["sender", "recipient", null],
+                    },
+                    reason: { type: "string" },
+                    simulatedAtBlock: { type: "string" },
+                    coverage: { type: "string", enum: ["complete", "partial"] },
+                    coverage_note: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Missing required params or invalid address format" },
           "402": { description: "MPP identity challenge (no payment required)" },
+          "502": { description: "Transient RPC error — retry" },
         },
       },
     },
@@ -1298,12 +1650,66 @@ export const spec = {
           description: "Pellet TIP-20 reward attribution",
         },
         parameters: [
-          { name: "address", in: "path", required: true, schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" } },
-          { name: "as_of", in: "query", required: false, schema: { type: "string", example: "7d" } },
+          {
+            name: "address",
+            in: "path",
+            required: true,
+            description:
+              "Stablecoin contract address (0x-prefixed, 42 hex chars). Tempo stablecoins are deployed via the TIP-20 factory and share a 0x20c0… prefix.",
+            schema: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$", example: "0x20c000000000000000000000b9537d11c60e8b50" },
+          },
+          {
+            name: "as_of",
+            in: "query",
+            required: false,
+            description: "Optional historical snapshot timestamp.",
+            schema: { type: "string", example: "7d" },
+          },
         ],
         responses: {
-          "200": { description: "Reward data" },
-          "402": { description: "MPP identity challenge (no payment required)" },
+          "200": {
+            description: "Reward data",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    address: { type: "string" },
+                    as_of: { type: ["string", "null"], format: "date-time" },
+                    opted_in_supply: { type: "string", description: "Raw uint256 — divide by decimals for human form" },
+                    global_reward_per_token: { type: ["string", "null"] },
+                    effective_apy: { type: ["number", "null"], description: "Annualized yield on opted-in supply, or null if no emissions in window" },
+                    funders: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          address: { type: "string" },
+                          label: { type: ["string", "null"] },
+                          total_funded: { type: "string" },
+                        },
+                      },
+                    },
+                    recent_distributions: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          tx_hash: { type: "string" },
+                          block_number: { type: "integer" },
+                          amount: { type: "string" },
+                          funder: { type: "string" },
+                          timestamp: { type: "string", format: "date-time" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "402": { description: "MPP payment required" },
+          "404": { description: "Stablecoin not tracked or has no reward precompile" },
         },
       },
     },
