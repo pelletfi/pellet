@@ -9,6 +9,12 @@ import { KNOWN_STABLECOINS } from "@/lib/pipeline/stablecoins";
 // role at that moment. We use debug_traceTransaction to walk the call tree of
 // each role-bearing tx, find every internal call to the stable, and verify
 // the caller via tempoClient.token.hasRole().
+//
+// This cron runs incrementally: it maintains a per-stable cursor in
+// `ingestion_cursors` (key = `role-holder:{addr}`) and only processes events
+// with block_number > cursor.  Bootstrap reads full history; every subsequent
+// run reads only what's new.  role_holders is append-only; a revocation isn't
+// automatically reflected (see note below).
 
 const TOPICS = {
   Mint: "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885",
@@ -82,39 +88,82 @@ async function probeAllRoles(stable: string, account: string): Promise<TempoRole
   return held;
 }
 
+function cursorKey(addr: string): string {
+  return `role-holder:${addr.toLowerCase()}`;
+}
+
+async function readCursor(addr: string): Promise<number> {
+  const key = cursorKey(addr);
+  const result = await db.execute(sql`
+    SELECT last_block FROM ingestion_cursors WHERE contract = ${key}
+  `);
+  const rows = ((result as unknown as { rows?: Record<string, unknown>[] }).rows
+    ?? (result as unknown as Record<string, unknown>[])) as Array<Record<string, unknown>>;
+  return Number(rows[0]?.last_block ?? 0);
+}
+
+async function writeCursor(addr: string, block: number): Promise<void> {
+  const key = cursorKey(addr);
+  await db.execute(sql`
+    INSERT INTO ingestion_cursors (contract, last_block)
+    VALUES (${key}, ${block})
+    ON CONFLICT (contract) DO UPDATE SET
+      last_block = EXCLUDED.last_block,
+      updated_at = NOW()
+  `);
+}
+
 export interface BuildResult {
   stablesProcessed: number;
   txsTraced: number;
   callersFound: number;
   roleVerifications: number;
   confirmedHolders: number;
+  eventsApplied: number;
 }
 
+/** Incrementally extend role_holders: read only events past the cursor,
+ * trace their txs, probe hasRole for each caller, and INSERT ON CONFLICT
+ * DO NOTHING to preserve existing entries.
+ *
+ * Revocation note: this cron is append-only.  If an admin revokes a role,
+ * the corresponding row stays in role_holders until a full re-probe (not
+ * wired today; would be a separate, lower-frequency cron).  This is a
+ * deliberate trade-off for Neon bandwidth — re-tracing every historical
+ * role-bearing tx on every 10-minute tick was burning ~2 GB/day of data
+ * transfer. */
 export async function rebuildRoleHolders(): Promise<BuildResult> {
   let txsTraced = 0;
   let callersFound = 0;
   let roleVerifications = 0;
   let confirmedHolders = 0;
+  let eventsApplied = 0;
 
   // Cache trace results across stables (a single tx can hit multiple stables in theory)
   const traceCache = new Map<string, Set<string>>();
 
   for (const stable of KNOWN_STABLECOINS) {
     const stableAddr = stable.address.toLowerCase();
+    const fromBlock = await readCursor(stableAddr);
 
     const evResult = await db.execute(sql`
       SELECT tx_hash, block_number, block_timestamp, event_type
       FROM events
       WHERE contract = ${stableAddr}
         AND event_type IN (${TOPICS.Mint}, ${TOPICS.Burn}, ${TOPICS.BurnBlocked})
+        AND block_number > ${fromBlock}
       ORDER BY block_number ASC, log_index ASC
     `);
     const events = ((evResult as unknown as { rows?: Record<string, unknown>[] }).rows
       ?? (evResult as unknown as Record<string, unknown>[])) as unknown as EventRow[];
-    if (events.length === 0) continue;
 
-    // Collect (caller → earliest tx) for this stable
-    const earliestByAddr = new Map<string, { tx: string; ts: string }>();
+    if (events.length === 0) continue;
+    eventsApplied += events.length;
+
+    // Advance cursor to the max block we saw, even if trace/probe fails on
+    // some txs — they won't be retried on next run, which is acceptable (a
+    // failed trace is noisy infra, not lost data — role data is inferential).
+    const maxBlock = events.reduce((m, ev) => (ev.block_number > m ? ev.block_number : m), fromBlock);
 
     // Dedupe by tx hash so we only trace each tx once per stable
     const uniqueTxs = new Map<string, EventRow>();
@@ -124,6 +173,9 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
         uniqueTxs.set(ev.tx_hash, ev);
       }
     }
+
+    // (caller → earliest tx) for this batch of new events
+    const earliestByAddr = new Map<string, { tx: string; ts: string }>();
 
     for (const [txHash, ev] of uniqueTxs) {
       const cacheKey = `${txHash}:${stableAddr}`;
@@ -142,42 +194,26 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
       }
     }
 
-    // Verify each caller against all 5 roles
-    interface Confirmed {
-      roleName: string;
-      account: string;
-      earliestTx: string;
-      earliestTs: string;
-    }
-    const confirmed: Confirmed[] = [];
-
+    // Verify each caller against all 5 roles; insert confirmed pairs.
     for (const [account, seen] of earliestByAddr) {
       roleVerifications += 5;
       const roles = await probeAllRoles(stableAddr, account);
       for (const role of roles) {
-        confirmed.push({
-          roleName: ROLE_NAMES[role],
-          account,
-          earliestTx: seen.tx,
-          earliestTs: seen.ts,
-        });
+        await db.execute(sql`
+          INSERT INTO role_holders (
+            stable, role_hash, role_name, holder, granted_at, granted_tx_hash, label
+          ) VALUES (
+            ${stableAddr}, '', ${ROLE_NAMES[role]}, ${account},
+            ${seen.ts}, ${seen.tx},
+            ${"derived from on-chain trace + hasRole verification"}
+          )
+          ON CONFLICT (stable, role_hash, holder) DO NOTHING
+        `);
+        confirmedHolders += 1;
       }
     }
 
-    await db.execute(sql`DELETE FROM role_holders WHERE stable = ${stableAddr}`);
-    for (const h of confirmed) {
-      await db.execute(sql`
-        INSERT INTO role_holders (
-          stable, role_hash, role_name, holder, granted_at, granted_tx_hash, label
-        ) VALUES (
-          ${stableAddr}, '', ${h.roleName}, ${h.account},
-          ${h.earliestTs}, ${h.earliestTx},
-          ${"derived from on-chain trace + hasRole verification"}
-        )
-        ON CONFLICT (stable, role_hash, holder) DO NOTHING
-      `);
-      confirmedHolders += 1;
-    }
+    await writeCursor(stableAddr, maxBlock);
   }
 
   return {
@@ -186,5 +222,6 @@ export async function rebuildRoleHolders(): Promise<BuildResult> {
     callersFound,
     roleVerifications,
     confirmedHolders,
+    eventsApplied,
   };
 }

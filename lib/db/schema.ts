@@ -126,6 +126,29 @@ export const roleHolders = pgTable(
   }),
 );
 
+// Per-holder balance state, rebuilt incrementally from the events table.
+// The `holder-snapshot` cron advances a per-stable cursor in `ingestion_cursors`
+// (key = `holder-snapshot:{stable_address}`), reads only events since that
+// cursor, and applies signed deltas to this table via UPSERT.  Snapshots are
+// then built by reading the top-N rows here rather than replaying history —
+// this is what lets the cron run incrementally instead of pulling every
+// Transfer/Mint/Burn event on every tick.
+//
+// `balance` is NUMERIC because TIP-20 amounts are uint256.  Rows with
+// `balance <= 0` are filtered by the snapshot builder (burn sinks, sweeps).
+export const holderBalances = pgTable(
+  "holder_balances",
+  {
+    stable: text("stable").notNull(),
+    holder: text("holder").notNull(),
+    balance: numeric("balance").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.stable, t.holder] }),
+    stableBalanceIdx: index("holder_balances_stable_balance_idx").on(t.stable, t.balance),
+  }),
+);
+
 // Holder snapshots — per-token cached holder reconstruction computed by the
 // `holder-snapshot` cron with a generous wall-time budget, so request-time
 // consumers (briefing, /api/v1/tokens) can serve a complete snapshot without
