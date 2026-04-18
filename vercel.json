@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "git diff HEAD^ HEAD --name-only | grep -qvE '^(docs/|design/|scripts/|[^/]+\\.md$)' && exit 1 || exit 0",
   "crons": [
     { "path": "/api/cron/ingest", "schedule": "*/1 * * * *" },
     { "path": "/api/cron/peg-sample", "schedule": "*/1 * * * *" },
