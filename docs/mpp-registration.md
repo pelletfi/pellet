@@ -147,3 +147,5 @@ Do both. MPPScan indexes Pellet immediately for agents using `tempo wallet servi
 ## Competitive placement
 
 After registration, `tempo wallet services --search stablecoin` should return Pellet first. Competing blockchain-data entries (Allium, Codex, Dune, Nansen) are multi-chain generalists — none Tempo-native stablecoin specialists. The category is unclaimed; registering first locks the slot.
+
+<!-- 2026-04-17: Registration is live on MPPScan; v2 pricing landed with commit 5e475416. This doc still describes the v1 schedule and needs a follow-up revision. -->
