@@ -90,24 +90,25 @@ Building the product without shipping distribution is how solo founders fail.
 
 ## Tempo posture during HL focus
 
-Maintenance mode — already shipped in [vercel.json cron schedule](../../vercel.json).
+Lights-out — Tempo is fully archived.
 
-- 14 cron pipelines running at daily/weekly cadence (down from minutely)
-- SDK @pelletfi/sdk + MCP @pelletfi/mcp remain operational on npm
-- Briefings + MPP endpoints remain live; no new features
-- Data accumulates in background
-- If DoorDash-scale enterprise stablecoin flows materialize on Tempo (6-12 month horizon), reassess whether to bring Tempo back into active development
+- Repo moved to `github.com/pelletnetwork/pellet-tempo-archive` (private + archived)
+- All Vercel cron pipelines removed from that repo's vercel.json (lights-out commit)
+- SDK @pelletfi/sdk + MCP @pelletfi/mcp remain published on npm but receive no updates
+- Briefings + MPP endpoints no longer refresh; site is frozen-at-last-deploy until takedown
+- Data in Neon DB stays as cold storage
+- If DoorDash-scale enterprise stablecoin flows materialize on Tempo (6-12 month horizon), reassess whether to resurrect
 
-**Budget:** Tempo infrastructure target <$15/mo in cloud costs (Vercel + Neon + RPC).
+**Tempo ongoing cost:** $0/mo (everything off; Neon cold, npm free, repo private).
 
 ## Technical stack
 
-### Repository + isolation
+### Repository
 
-- **Monorepo:** existing Pellet Next.js app at `/Users/jake/pellet`
-- **HL code tree:** `app/hl/` (fresh, isolated from Tempo code)
-- **Strict isolation rule:** no imports from `lib/pipeline/`, `lib/oli/`, `app/explorer/`, or any Tempo-specific library into `app/hl/*` or `lib/hl/*`. If caught importing across the boundary, refactor immediately.
-- **Shared config:** Next.js config, Vercel config, package.json dependencies are the only shared surfaces. Everything else is separate.
+- **Standalone monorepo:** `pelletnetwork/pellet` at `/Users/jake/pellet/`
+- **Structure:** `apps/web/` (Next.js 16 App Router) + `packages/hl-contracts/` (Foundry) + future `packages/hl-sdk/` + `packages/hl-mcp/`
+- **HL code tree:** `apps/web/app/hl/` (dashboard routes), `apps/web/lib/hl/` (client + types + indexers), `apps/web/components/hl/` (UI components)
+- **No Tempo code in this repo** — Tempo lives in a separate archived repo (`pelletnetwork/pellet-tempo-archive`). No cross-repo imports to worry about.
 
 ### Contracts (HyperEVM)
 
@@ -120,13 +121,13 @@ Maintenance mode — already shipped in [vercel.json cron schedule](../../vercel
 
 ### Indexer
 
-- New cron pipeline `/api/cron/hl-*` (separate from Tempo crons)
+- Cron pipeline at `apps/web/app/api/cron/hl-*` (Vercel crons)
 - Indexes:
   - HyperEVM events from the registry contracts (mints, attestations, validations)
   - HL L1 settlement data via HL's public API (for receipt generation)
   - Builder-code fee accruals (for revenue tracking)
 - Fresh Postgres tables: `hl_agent_ids`, `hl_attestations`, `hl_routed_orders`, `hl_receipts`
-- No foreign keys or joins to existing Pellet tables
+- Dedicated Neon project "pellet-hl" — separate from Tempo's (archived) Neon
 
 ### SDK
 
@@ -143,7 +144,7 @@ Maintenance mode — already shipped in [vercel.json cron schedule](../../vercel
 
 ### Dashboard
 
-- `app/hl/` route tree in Pellet Next.js app
+- `apps/web/app/hl/` route tree in the Next.js app
 - Pages:
   - `/hl` — main registry landing, public agent list, reputation leaderboard
   - `/hl/agent/[id]` — per-agent profile: attestations, routed history, reputation score
@@ -175,7 +176,7 @@ Secondary accents (from NET-inspired system, used sparingly):
 ### Mark
 
 - Blocky-tile P delivered 2026-04-22 by Logo Branda. Full rights transferred (modify + distribute without restriction).
-- Source files in repo at `public/brand/`:
+- Source files in repo at `apps/web/public/brand/`:
   - `pellet-mark.svg` — primary navy on paper
   - `pellet-mark-white.svg` — inverted for dark surfaces
   - `pellet-mark.png` — raster reference
@@ -267,7 +268,7 @@ No venture capital raised or required for Phase 1-2. Pre-seed fundraise possible
 |---|---|
 | 1 | Spec + implementation plan committed. Contracts scaffolded. Outreach begins to 5 target platforms. |
 | 2 | ERC-8004 contracts deployed to HyperEVM testnet. SDK skeleton published. |
-| 3 | MCP server working. Basic registry dashboard at `app/hl`. First partnership conversation booked. |
+| 3 | MCP server working. Basic registry dashboard at `apps/web/app/hl`. First partnership conversation booked. |
 | 4 | Phase 1 public launch. Contracts mainnet (post-audit). "Building Agents" guide published. Public X announcement. |
 | 5-8 | CoreWriter router shipped. Execution SDK methods. First integration partner work begins. |
 | 9-12 | Execution routing live. Routed volume starts. Phase 2 partnership integrations shipping. |
