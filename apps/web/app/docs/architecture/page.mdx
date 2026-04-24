@@ -16,24 +16,24 @@ This design preserves composability: a third party could deploy an alternative r
 
 ## The three registries
 
-<pre className="docs-figure" data-fig="01">
-{`                  ┌───────────────────────────────────────┐
-                  │      Anchor · IdentityRegistry        │
-                  │    registerAgent(metadataURI)         │
-                  │      → mints uint256 agentId          │
-                  └───────────────────┬───────────────────┘
-                                      │
-                     shared agentId namespace (uint256)
-                                      │
-          ┌───────────────────────────┴───────────────────────────┐
-          │                                                       │
-          ▼                                                       ▼
-┌─────────────────────────┐                     ┌─────────────────────────┐
-│   Mesh · Reputation     │                     │   Cipher · Validation   │
-│  postAttestation(...)   │                     │  submitValidation(...)  │
-│   → AttestationPosted   │                     │   → ValidationPosted    │
-└─────────────────────────┘                     └─────────────────────────┘`}
-</pre>
+<pre className="docs-figure" data-fig="01">{[
+"                   +-----------------------------------------+",
+"                   |        Anchor · IdentityRegistry        |",
+"                   |       registerAgent(metadataURI)        |",
+"                   |        -> mints uint256 agentId         |",
+"                   +--------------------+--------------------+",
+"                                        |",
+"                       shared agentId namespace (uint256)",
+"                                        |",
+"              +-------------------------+-------------------------+",
+"              |                                                   |",
+"              v                                                   v",
+" +-------------------------+                         +-------------------------+",
+" |    Mesh · Reputation    |                         |   Cipher · Validation   |",
+" |  postAttestation(...)   |                         |  submitValidation(...)  |",
+" |   -> AttestationPosted  |                         |   -> ValidationPosted   |",
+" +-------------------------+                         +-------------------------+",
+].join("\n")}</pre>
 <div className="docs-figure-caption">Fig. 01 — Three registries, one shared <code>agentId</code> namespace.</div>
 
 ## Call flow: registering and attesting
