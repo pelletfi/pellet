@@ -14,7 +14,13 @@ hyperevm_testnet = "https://rpc.hyperliquid-testnet.xyz/evm"
 hyperevm_mainnet = "https://rpc.hyperliquid.xyz/evm"
 
 [etherscan]
-# No block explorer verification yet; populate later if needed
+# HyperScan (Blockscout) — no API key required, but forge requires the `key`
+# field to exist so we pass a dummy string. Verify with:
+#   forge verify-contract \
+#     --verifier blockscout \
+#     --verifier-url https://www.hyperscan.com/api/ \
+#     --chain 999 <address> src/Foo.sol:Foo
+hyperliquid = { url = "https://www.hyperscan.com/api/", chain = 999, key = "unused" }
 
 [fmt]
 line_length = 120

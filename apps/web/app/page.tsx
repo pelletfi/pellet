@@ -1,39 +1,127 @@
+import { Architecture } from "./(components)/Architecture";
+import { Chapter } from "./(components)/Chapter";
+import { ContractRegistry } from "./(components)/ContractRegistry";
+import { Footer } from "./(components)/Footer";
+import { Hero } from "./(components)/Hero";
+import { LiveFeed } from "./(components)/LiveFeed";
+import { PullQuote } from "./(components)/PullQuote";
+import { SiteHeader } from "./(components)/SiteHeader";
+import { StatsStrip } from "./(components)/StatsStrip";
+import { HL_REGISTRY_ADDRESSES } from "@/lib/hl/addresses";
+
+const MAINNET = HL_REGISTRY_ADDRESSES.mainnet;
+
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col">
-      <nav className="flex items-center justify-between px-8 py-6 border-b border-black/10">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/pellet-mark.svg" alt="Pellet" className="h-8 w-8" />
-          <span className="font-mono text-lg font-semibold">pellet</span>
-        </div>
-        <div className="font-mono text-xs text-ink-3 uppercase tracking-wider">
-          Agent infrastructure · Hyperliquid
-        </div>
-      </nav>
+    <div className="page">
+      <SiteHeader />
 
-      <section className="flex-1 px-8 py-24 max-w-6xl mx-auto w-full">
-        <p className="font-mono text-xs text-ink-3 uppercase tracking-widest mb-6">
-          01 · Overview
-        </p>
-        <h1 className="text-5xl md:text-6xl font-mono font-semibold mb-6 leading-tight">
-          Identity. Execution.<br />Accountability.
-        </h1>
-        <p className="text-lg md:text-xl max-w-2xl leading-relaxed text-ink-2 mb-8">
-          Pellet is the middleware every AI agent on Hyperliquid uses to place orders, mint a verifiable on-chain identity, and accrue a public reputation.
-        </p>
-        <p className="font-mono text-sm text-ink-3">
-          Under construction. Phase 1 in progress.
-        </p>
-      </section>
+      {/* ── hero ── */}
+      <Hero />
 
-      <footer className="px-8 py-8 border-t border-black/10 flex items-center justify-between font-mono text-xs text-ink-4">
-        <div>© 2026 Pellet</div>
-        <div className="flex gap-4">
-          <a href="https://github.com/pelletnetwork/pellet" className="hover:text-ink-1">GitHub</a>
-          <a href="https://x.com/pelletinfra" className="hover:text-ink-1">X</a>
-        </div>
-      </footer>
-    </main>
+      {/* ── stats ── */}
+      <StatsStrip />
+
+      {/* ── chapter 01 — Anchor (Identity) ── */}
+      <Chapter
+        id="identity"
+        sectionId="§ 01"
+        title="Anchor"
+        subtitle="Identity Registry · ERC-8004"
+        addr={MAINNET.identity}
+        imageSrc="/images/identity.png"
+        imageAlt="Anchor — cliffside architecture"
+        body={
+          <>
+            <strong>Anchor</strong>
+            {" "}is Pellet&apos;s identity registry — it issues ERC-8004 compliant agent
+            IDs to autonomous systems interacting with on-chain markets. Each anchor is a
+            cryptographic handle: permissionless to mint, impossible to forge, trivially
+            resolvable.
+          </>
+        }
+        linkLabel="Anchor registry →"
+        linkHref="#"
+      />
+
+      {/* ── chapter 02 — Mesh (Reputation) ── */}
+      <Chapter
+        id="reputation"
+        sectionId="§ 02"
+        title="Mesh"
+        subtitle="Reputation Registry · ERC-8004"
+        addr={MAINNET.reputation}
+        imageSrc="/images/reputation.png"
+        imageAlt="Mesh"
+        body={
+          <>
+            <strong>Mesh</strong>
+            {" "}is Pellet&apos;s reputation registry — it indexes attestations emitted by
+            agents and counterparties. Every interaction leaves a verifiable trace. No
+            off-chain scoring, no opaque ranking — the registry stores facts, consumers
+            compose judgement. Attestations compose: an agent&apos;s reputation is the
+            closure of its neighborhood, not a number a third party hands down.
+          </>
+        }
+        linkLabel="Mesh registry →"
+        linkHref="#"
+      />
+
+      {/* ── pull quote ── */}
+      <PullQuote />
+
+      {/* ── chapter 03 — Cipher (Validation) ── */}
+      <Chapter
+        id="validation"
+        sectionId="§ 03"
+        title="Cipher"
+        subtitle="Validation Registry · ERC-8004"
+        addr={MAINNET.validation}
+        imageSrc="/images/validation.png"
+        imageAlt="Cipher — glass house in forest"
+        body={
+          <>
+            <strong>Cipher</strong>
+            {" "}is Pellet&apos;s validation registry — proofs that substantiate agent
+            claims. An agent submits a hashed assertion, references an off-chain
+            verification artifact, and settles trust on-chain. Anyone can dispute;
+            disputes are themselves ciphers. The registry is a substrate for
+            truth-maintenance, not a judge.
+          </>
+        }
+        linkLabel="Cipher registry →"
+        linkHref="#"
+      />
+
+      {/* ── architecture ── */}
+      <Architecture />
+
+      {/* ── contract registry ── */}
+      <ContractRegistry />
+
+      {/* ── live feed ── */}
+      <LiveFeed />
+
+      {/* ── chapter 04 — Commitment ── */}
+      <Chapter
+        sectionId="§ 04"
+        title="Commitment"
+        addr="open infrastructure"
+        statusLabel="Open"
+        imageSrc="/images/commitment.png"
+        imageAlt="Commitment — solar station in mountains"
+        body={
+          <>
+            Pellet is the agentic infrastructure layer on Hyperliquid. We provide the
+            modular, intelligent, and scalable foundation for the next generation of
+            on-chain systems — public registries, open contracts, verifiable state. No
+            proprietary runtime, no gated APIs, no extractive rent.
+          </>
+        }
+      />
+
+      {/* ── footer ── */}
+      <Footer />
+    </div>
   );
 }

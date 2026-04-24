@@ -1,0 +1,22 @@
+{
+  "chain": "hyperevm-mainnet",
+  "chainId": 999,
+  "rpc": "https://rpc.hyperliquid.xyz/evm",
+  "explorer": "https://www.hyperscan.com",
+  "deployer": "0x2cbd7730994D3Ee1aAc4B1d0F409b1b62d7C1834",
+  "block": 33290371,
+  "deployedAt": "2026-04-23",
+  "verifiedAt": "2026-04-24",
+  "contracts": {
+    "IdentityRegistry": "0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943",
+    "ReputationRegistry": "0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b",
+    "ValidationRegistry": "0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4"
+  },
+  "verification": {
+    "verifier": "blockscout",
+    "verifierUrl": "https://www.hyperscan.com/api/",
+    "IdentityRegistry": "https://www.hyperscan.com/address/0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943#code",
+    "ReputationRegistry": "https://www.hyperscan.com/address/0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b#code",
+    "ValidationRegistry": "https://www.hyperscan.com/address/0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4#code"
+  }
+}

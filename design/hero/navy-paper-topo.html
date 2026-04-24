@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pellet — Agent infrastructure for Hyperliquid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.min.js"></script>
+    <style>
+        :root {
+            --paper: #E8F1F3;
+            --navy:  #00006D;
+            --muted: rgba(0,0,109,0.55);
+            --rule:  rgba(0,0,109,0.14);
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: var(--paper);
+            font-family: 'Inter', sans-serif;
+            color: var(--navy);
+        }
+
+        #canvas-container { position: absolute; inset: 0; z-index: 1; }
+        .vignette {
+            position: absolute; inset: 0;
+            pointer-events: none; z-index: 2;
+            background:
+                radial-gradient(ellipse at 65% 55%, rgba(232,241,243,0) 0%, rgba(232,241,243,0.35) 70%, rgba(232,241,243,0.85) 100%),
+                linear-gradient(to bottom, rgba(232,241,243,1) 0%, rgba(232,241,243,0) 16%, rgba(232,241,243,0) 80%, rgba(232,241,243,1) 100%);
+        }
+
+        .frame {
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            padding: 28px 48px;
+            pointer-events: none;
+        }
+
+        /* ───────── top bar ───────── */
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--navy);
+            border-bottom: 1px solid var(--rule);
+            padding-bottom: 14px;
+        }
+        .top .brand { display: flex; align-items: center; gap: 10px; }
+        .top .brand svg { width: 18px; height: 18px; }
+        .top .brand-name { letter-spacing: 0.30em; }
+        .top .center { display: flex; gap: 30px; color: var(--muted); }
+        .top .right { display: flex; gap: 22px; color: var(--muted); }
+        .top .right .live { display: inline-flex; align-items: center; gap: 7px; }
+        .top .right .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--navy);
+            box-shadow: 0 0 8px rgba(0,0,109,0.5);
+            animation: pulse 2.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.35; }
+            50%      { opacity: 1; }
+        }
+
+        /* ───────── center body ───────── */
+        .body {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(280px, 42%) 1fr;
+            align-items: end;
+            gap: 56px;
+        }
+        .title-stack {
+            align-self: end;
+            padding-bottom: 56px;
+            max-width: 520px;
+        }
+        .title-stack .mark {
+            width: 88px; height: 88px;
+            display: block;
+            margin-bottom: 30px;
+        }
+        .title-stack h1 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 400;
+            font-size: clamp(30px, 3.8vw, 56px);
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
+            margin: 0 0 22px 0;
+            line-height: 1.04;
+            color: var(--navy);
+        }
+        .title-stack h1 .light { color: var(--muted); font-weight: 300; }
+        .title-stack .lede {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 13.5px;
+            line-height: 1.65;
+            letter-spacing: 0.005em;
+            max-width: 420px;
+            color: var(--muted);
+        }
+
+        /* ───────── bottom bar ───────── */
+        .bottom {
+            border-top: 1px solid var(--rule);
+            padding-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) auto;
+            gap: 32px;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--navy);
+        }
+        .reg-item .idx {
+            font-size: 10px;
+            letter-spacing: 0.32em;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 8px;
+        }
+        .reg-item .name {
+            font-size: 12px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            display: block;
+        }
+        .reg-item .addr {
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            color: var(--muted);
+            margin-top: 6px;
+            font-weight: 300;
+        }
+        .bottom .meta {
+            text-align: right;
+            font-size: 10px;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            color: var(--muted);
+            align-self: center;
+        }
+        .bottom .meta .strong { color: var(--navy); letter-spacing: 0.30em; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="vignette"></div>
+
+    <div class="frame">
+
+        <div class="top">
+            <div class="brand">
+                <svg viewBox="0 0 500 500" fill="#00006D" aria-label="Pellet"><path d="M397.75,106.78h-56.39c-11.07,0-20.04-8.97-20.04-20.04V33.24c0-11.07-8.97-20.04-20.04-20.04H196.68c-11.07,0-20.04,8.97-20.04,20.04v53.51c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v105.33c0,11.07,8.97,20.04,20.04,20.04h57.35c11.07,0,20.04,8.97,20.04,20.04v47.75c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v106.08c0,11.07,8.97,20.04,20.04,20.04h65.02c11.07,0,20.04-8.97,20.04-20.04v-98.4c0-11.07,8.97-20.04,20.04-20.04h96.94c11.07,0,20.04-8.97,20.04-20.04v-55.43c0-11.07,8.97-20.04,20.04-20.04h52.55c11.07,0,20.04-8.97,20.04-20.04V126.81C417.79,115.75,408.82,106.78,397.75,106.78z M292.66,242.58H208.2c-11.07,0-20.04-8.97-20.04-20.04v-84.22c0-11.07,8.97-20.04,20.04-20.04h84.46c11.07,0,20.04,8.97,20.04,20.04v84.22C312.69,233.61,303.72,242.58,292.66,242.58z"/></svg>
+                <span class="brand-name">Pellet</span>
+            </div>
+            <div class="center">
+                <span>Identity</span>
+                <span>Reputation</span>
+                <span>Validation</span>
+                <span>Docs</span>
+            </div>
+            <div class="right">
+                <span>HyperEVM Testnet</span>
+                <span class="live"><span class="dot"></span>Live</span>
+            </div>
+        </div>
+
+        <div class="body">
+            <div class="title-stack">
+                <svg class="mark" viewBox="0 0 500 500" fill="#00006D" aria-label="Pellet"><path d="M397.75,106.78h-56.39c-11.07,0-20.04-8.97-20.04-20.04V33.24c0-11.07-8.97-20.04-20.04-20.04H196.68c-11.07,0-20.04,8.97-20.04,20.04v53.51c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v105.33c0,11.07,8.97,20.04,20.04,20.04h57.35c11.07,0,20.04,8.97,20.04,20.04v47.75c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v106.08c0,11.07,8.97,20.04,20.04,20.04h65.02c11.07,0,20.04-8.97,20.04-20.04v-98.4c0-11.07,8.97-20.04,20.04-20.04h96.94c11.07,0,20.04-8.97,20.04-20.04v-55.43c0-11.07,8.97-20.04,20.04-20.04h52.55c11.07,0,20.04-8.97,20.04-20.04V126.81C417.79,115.75,408.82,106.78,397.75,106.78z M292.66,242.58H208.2c-11.07,0-20.04-8.97-20.04-20.04v-84.22c0-11.07,8.97-20.04,20.04-20.04h84.46c11.07,0,20.04,8.97,20.04,20.04v84.22C312.69,233.61,303.72,242.58,292.66,242.58z"/></svg>
+                <h1>Agent<br>Infrastructure<br><span class="light">for Hyperliquid.</span></h1>
+                <div class="lede">Three on-chain registries — Identity, Reputation, and Validation — forming the substrate for autonomous agents on HyperEVM. ERC-8004 compliant.</div>
+            </div>
+
+            <div></div>
+        </div>
+
+        <div class="bottom">
+            <div class="reg-item">
+                <span class="idx">01</span>
+                <span class="name">Identity</span>
+                <span class="addr">0x0000…0000</span>
+            </div>
+            <div class="reg-item">
+                <span class="idx">02</span>
+                <span class="name">Reputation</span>
+                <span class="addr">0x0000…0000</span>
+            </div>
+            <div class="reg-item">
+                <span class="idx">03</span>
+                <span class="name">Validation</span>
+                <span class="addr">0x0000…0000</span>
+            </div>
+            <div class="meta">
+                <span class="strong">ERC-8004</span><br>
+                HyperEVM · 2026
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let scene, camera, renderer, particles, count = 22000;
+        let simplex = new SimplexNoise();
+        const loopDuration = 18;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2.5, 5.2);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0xE8F1F3, 0);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            const paperR = 0.910, paperG = 0.945, paperB = 0.953;
+            const navyR  = 0.000, navyG  = 0.000, navyB  = 0.427;
+
+            for (let i = 0; i < count; i++) {
+                // slight right-weighted bias so field lives to the right of the title stack
+                positions[i * 3]     = (Math.random() - 0.35) * 18;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 2;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 18;
+
+                const tint = 0.3 + Math.random() * 0.7;
+                colors[i * 3]     = navyR * tint + paperR * (1 - tint);
+                colors[i * 3 + 1] = navyG * tint + paperG * (1 - tint);
+                colors[i * 3 + 2] = navyB * tint + paperB * (1 - tint);
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.016,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.88,
+                blending: THREE.NormalBlending,
+                depthWrite: false,
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const positions = particles.geometry.attributes.position.array;
+            const radius = 0.5;
+            const t = Date.now() / (loopDuration * 1000);
+            const angle = t * Math.PI * 2;
+            const u = Math.cos(angle) * radius;
+            const v = Math.sin(angle) * radius;
+
+            for (let i = 0; i < count; i++) {
+                const x = positions[i * 3];
+                const z = positions[i * 3 + 2];
+                const n1 = simplex.noise4D(x * 0.20, z * 0.20, u, v) * 1.0;
+                const n2 = simplex.noise4D(x * 0.55, z * 0.55, u + 1.7, v - 0.9) * 0.20;
+                const n3 = simplex.noise4D(x * 0.08, z * 0.08, u * 0.5, v * 0.5) * 0.35;
+                positions[i * 3 + 1] = n1 + n2 + n3;
+            }
+
+            particles.geometry.attributes.position.needsUpdate = true;
+            particles.rotation.y += 0.00035;
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
