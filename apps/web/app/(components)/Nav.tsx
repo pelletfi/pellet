@@ -1,22 +1,27 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Link = { label: string; href: string; active?: boolean; soon?: boolean };
 
-const LINKS: Array<Link> = [
-  { label: "Home", href: "#top", active: true },
-  { label: "Identity", href: "#identity" },
-  { label: "Reputation", href: "#reputation" },
-  { label: "Validation", href: "#validation" },
-  { label: "Docs", href: "#", soon: true },
-  { label: "Research", href: "#", soon: true },
-  { label: "Blog", href: "#", soon: true },
-];
-
 export function Nav() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const isDocs = pathname.startsWith("/docs");
+
+  // Anchor-based hrefs use absolute paths so they work from any route
+  // (clicking `Identity` from /docs/* jumps back to /#identity).
+  const LINKS: Array<Link> = [
+    { label: "Home", href: "/", active: !isDocs },
+    { label: "Identity", href: "/#identity" },
+    { label: "Reputation", href: "/#reputation" },
+    { label: "Validation", href: "/#validation" },
+    { label: "Docs", href: "/docs", active: isDocs },
+    { label: "Research", href: "#", soon: true },
+    { label: "Blog", href: "#", soon: true },
+  ];
 
   // close drawer on escape, restore body scroll on close
   useEffect(() => {

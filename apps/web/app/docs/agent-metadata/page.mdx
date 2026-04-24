@@ -1,0 +1,89 @@
+export const metadata = {
+  title: "Agent metadata",
+};
+
+<div className="docs-eyebrow">§ 02 · Reference</div>
+
+# Agent metadata
+
+The `metadataURI` recorded on Anchor at registration points to a JSON document describing the agent. This page documents Pellet's schema (v1) — the one Pellet itself uses at [`pellet.network/.well-known/agent.json`](https://pellet.network/.well-known/agent.json).
+
+The schema follows the ERC-8004 metadata convention. Consumers that expect a specific schema version should check the `schema` field first and reject unknown versions.
+
+## Canonical location
+
+Publish your agent's metadata at a stable, publicly-fetchable URL. The conventional path is:
+
+```text
+https://<your-domain>/.well-known/agent.json
+```
+
+Other schemes work (`ipfs://`, `ar://`, `https://api.example.com/agents/123`), but well-known paths are easier for third-party clients to discover.
+
+## Schema · v1
+
+```json
+{
+  "schema": "erc-8004/agent-metadata/v1",
+  "name": "Pellet",
+  "description": "Agentic infrastructure on Hyperliquid. Pellet operates the canonical ERC-8004 identity, reputation, and validation registries for autonomous agents on HyperEVM.",
+  "homepage": "https://pellet.network",
+  "version": "1.0.0",
+  "chain": {
+    "name": "HyperEVM",
+    "chainId": 999,
+    "rpc": "https://rpc.hyperliquid.xyz/evm",
+    "explorer": "https://www.hyperscan.com"
+  },
+  "registries": {
+    "identity": "0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943",
+    "reputation": "0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b",
+    "validation": "0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4"
+  },
+  "links": {
+    "github": "https://github.com/pelletnetwork/pellet",
+    "x": "https://x.com/pelletnetwork"
+  }
+}
+```
+
+## Field reference
+
+<div className="docs-table-scroll">
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `schema` | string | yes | Must be `"erc-8004/agent-metadata/v1"` for this version. |
+| `name` | string | yes | Human-readable agent name. No length cap; keep it short. |
+| `description` | string | yes | 1–3 sentence description. Plain text; no Markdown. |
+| `homepage` | string | recommended | Canonical URL for the agent's public presence. |
+| `version` | string | recommended | Semver-like version string for the agent (not the schema). |
+| `chain` | object | recommended | The chain the agent operates on. See below. |
+| `chain.name` | string | – | Display name. |
+| `chain.chainId` | number | yes (if `chain`) | Numeric chain ID. |
+| `chain.rpc` | string | – | Public RPC endpoint. |
+| `chain.explorer` | string | – | Public block explorer base URL. |
+| `registries` | object | recommended | Addresses the agent participates in. Helps consumers verify the agent is using canonical registries. |
+| `registries.identity` | string | – | IdentityRegistry address (`0x…`). |
+| `registries.reputation` | string | – | ReputationRegistry address. |
+| `registries.validation` | string | – | ValidationRegistry address. |
+| `links` | object | optional | Free-form map of label → URL. Common keys: `github`, `x`, `discord`, `docs`. |
+
+</div>
+
+## Validation · what consumers should check
+
+A conservative consumer fetching an agent's metadata should:
+
+1. **Verify the URL is reachable** and returns `200 OK` with `Content-Type: application/json`.
+2. **Check `schema`** — reject unknown versions rather than parse optimistically.
+3. **Cross-reference `registries`** — if the agent claims registries other than Pellet's canonical set, treat it as a different deployment. This does not mean it's invalid; it means it's not interoperable with Pellet's agent space.
+4. **Treat everything else as hint data** — never trust `name`, `description`, `homepage`, or `links` for authorization or billing decisions. The on-chain `controllerOf(agentId)` is the only authoritative identity fact.
+
+## Updating metadata
+
+The controller can change the `metadataURI` at any time via `IdentityRegistry.updateMetadata(agentId, newMetadataURI)`. The full history is reconstructable from `AgentMetadataUpdated` events — consumers that need stable metadata can pin a specific `metadataURI` at a specific block rather than always fetching the latest.
+
+## Content addressing
+
+For metadata that should be tamper-evident, use a content-addressed URI (`ipfs://…` or `ar://…`). The registry records the URI; the content hash provides integrity. This is stronger than HTTPS-hosted metadata, which can be silently mutated by the host.

@@ -1,0 +1,63 @@
+export const metadata = {
+  title: "Contracts",
+};
+
+<div className="docs-eyebrow">§ 01 · Reference</div>
+
+# Contracts
+
+Deployed on HyperEVM mainnet, chain `999`, block `33,290,371` (2026-04-23). Source-verified on [HyperScan](https://www.hyperscan.com) via Blockscout's `forge verify-contract --verifier blockscout` integration. Constructor args: none. Proxies: none. Admin: none.
+
+## Addresses
+
+<div className="docs-table-scroll">
+
+| Registry | Address | Source |
+| --- | --- | --- |
+| IdentityRegistry (Anchor) | `0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943` | [HyperScan](https://www.hyperscan.com/address/0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943#code) |
+| ReputationRegistry (Mesh) | `0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b` | [HyperScan](https://www.hyperscan.com/address/0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b#code) |
+| ValidationRegistry (Cipher) | `0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4` | [HyperScan](https://www.hyperscan.com/address/0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4#code) |
+
+</div>
+
+## Network
+
+<div className="docs-table-scroll">
+
+| Field | Value |
+| --- | --- |
+| Chain name | HyperEVM mainnet |
+| Chain ID | `999` |
+| Native gas token | HYPE |
+| RPC endpoint | `https://rpc.hyperliquid.xyz/evm` |
+| Block explorer | [hyperscan.com](https://www.hyperscan.com) (Blockscout) |
+| EIP-1559 support | **No** — use legacy transactions (`type: 0`) + explicit `gasPrice` |
+| `eth_getLogs` range cap | 1,000 blocks per request |
+| Default block gas limit | 2,000,000 |
+
+</div>
+
+## Deployer
+
+```text
+0x2cbd7730994D3Ee1aAc4B1d0F409b1b62d7C1834
+```
+
+Retired. This wallet signed the original deploy transactions and registered agent 1, but retains **zero special authority** over the contracts themselves — all three registries have no `owner`, no `admin`, no upgrade path. Anyone is free to call any public function; the deployer address is no more privileged than any other EOA.
+
+## Compiler settings
+
+Reproduce the exact deployed bytecode with:
+
+```toml
+# packages/hl-contracts/foundry.toml
+[profile.default]
+solc_version     = "0.8.28"
+optimizer        = true
+optimizer_runs   = 200
+via_ir           = false
+```
+
+## Deployment manifest
+
+Full deployment metadata, including verification GUIDs, first-agent registration, and explorer URLs, is tracked in [`deployments/hyperevm-mainnet.json`](https://github.com/pelletnetwork/pellet/blob/main/packages/hl-contracts/deployments/hyperevm-mainnet.json) in the repo. SDKs, indexers, and downstream consumers should read addresses from that manifest rather than hard-coding.

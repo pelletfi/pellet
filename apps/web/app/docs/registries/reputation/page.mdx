@@ -1,0 +1,139 @@
+export const metadata = {
+  title: "Mesh · Reputation",
+};
+
+<div className="docs-eyebrow">§ 02 · Registries</div>
+
+# Mesh
+
+The reputation registry. Records append-only attestations from any address to any `agentId`. No scoring, no aggregation, no privilege — the registry stores facts; consumers compose judgement.
+
+<div className="docs-address">
+  <span className="label">ReputationRegistry</span>
+  <a href="https://www.hyperscan.com/address/0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b#code" target="_blank" rel="noopener noreferrer">
+    <code>0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b</code>
+  </a>
+</div>
+
+## State
+
+```solidity
+struct Attestation {
+    uint256 agentId;
+    address attester;
+    bytes32 attestationType;
+    int256  score;
+    uint64  timestamp;
+    string  metadataURI;
+}
+
+uint256 public nextAttestationId = 1;
+mapping(uint256 => Attestation)           public attestations;
+mapping(uint256 => uint256[])             public attestationsByAgent;
+mapping(address => uint256[])             public attestationsByAttester;
+```
+
+Both `attestationsByAgent` and `attestationsByAttester` are append-only. There is no retraction — withdrawing an attestation is done at the application layer by posting a compensating attestation of the opposite sign.
+
+## Writes
+
+```solidity
+function postAttestation(
+    uint256 agentId,
+    bytes32 attestationType,
+    int256  score,
+    string calldata metadataURI
+) external returns (uint256 attestationId);
+```
+
+Permissionless. Any caller can attest to any `agentId`. The registry does **not** verify that `agentId` exists in Anchor — consumers that require existence should filter by cross-referencing `IdentityRegistry.controllerOf(agentId) != 0`.
+
+## Reads
+
+```solidity
+function getAttestation(uint256 attestationId)
+    external view returns (Attestation memory);
+
+function attestationsOf(uint256 agentId)
+    external view returns (uint256[] memory);
+
+function attestationsBy(address attester)
+    external view returns (uint256[] memory);
+```
+
+`getAttestation` reverts `AttestationNotFound` for unregistered IDs. The `attestationsOf` / `attestationsBy` views return the full append-only history for that agent or attester. For production lookups against active agents, prefer event-indexed queries — the `attestationsByAgent` array is unbounded.
+
+## Events
+
+```solidity
+event AttestationPosted(
+    uint256 indexed attestationId,
+    uint256 indexed agentId,
+    address indexed attester,
+    bytes32         attestationType,
+    int256          score,
+    string          metadataURI,
+    uint256         timestamp
+);
+```
+
+Three indexed topics (`attestationId`, `agentId`, `attester`) make filtered queries cheap: `getLogs` by agent, by attester, or by exact attestation all work without touching storage.
+
+## Attestation types
+
+`attestationType` is a free-form `bytes32` identifier chosen by the attester. By convention, use `keccak256(<canonical-string>)` where the string namespaces the attestation semantic:
+
+| String (pre-hash) | Meaning |
+| --- | --- |
+| `settlement.completed` | A settled interaction with the agent |
+| `settlement.failed` | A failed interaction |
+| `kyc.passed.<provider>` | KYC verification by `<provider>` |
+| `dispute.raised` | A dispute was raised against the agent |
+| `dispute.resolved.<resolver>` | A dispute was resolved by `<resolver>` |
+
+These are conventions, not enforced by the contract. Applications should publish their `attestationType` vocabularies in public documentation so consumers can filter meaningfully.
+
+## Score semantics
+
+`score` is `int256`, allowing negative attestations. Magnitude and scale are attester-defined. A common convention: `+100` for a strong positive attestation, `-100` for a strong negative, `0` for "neutral / just recording the event." Applications should publish their scale alongside their `attestationType` vocabulary.
+
+## Example · attesting to a settled trade
+
+```solidity
+import { ReputationRegistry } from "pellet-hl/ReputationRegistry.sol";
+
+contract SettlementHook {
+    ReputationRegistry constant REP = ReputationRegistry(
+        0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b
+    );
+
+    bytes32 constant SETTLED = keccak256("settlement.completed");
+
+    function onSettled(
+        uint256 agentId,
+        uint256 amountUsd,
+        string calldata receiptUri
+    ) external {
+        // Score scales with settled notional, clamped to +100.
+        int256 score = int256(amountUsd / 1000);
+        if (score > 100) score = 100;
+
+        REP.postAttestation(agentId, SETTLED, score, receiptUri);
+    }
+}
+```
+
+## Errors
+
+```solidity
+error AttestationNotFound();
+```
+
+## Gas
+
+| Call | Gas |
+| --- | --- |
+| `postAttestation` with 45-byte URI | ~180,000 |
+| `postAttestation` with empty URI | ~102,000 |
+| `getAttestation` (view) | 0 (off-chain) |
+| `attestationsOf` (view, 10 entries) | 0 (off-chain, but returns unbounded array) |

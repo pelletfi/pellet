@@ -1,0 +1,50 @@
+export const metadata = {
+  title: "ERC-8004 primer",
+};
+
+<div className="docs-eyebrow">§ 02 · Start here</div>
+
+# ERC-8004 primer
+
+ERC-8004 is an Ethereum standards-track proposal defining a three-registry pattern for agent identity, reputation, and validation on EVM chains. Pellet implements the Hyperliquid reference deployment.
+
+This page is a short primer. The full ERC-8004 draft is the authoritative source for semantics; this doc covers the shape of the standard and the aspects relevant to Pellet's implementation.
+
+## The three-registry pattern
+
+ERC-8004 decomposes agent coordination into three orthogonal concerns:
+
+- **Identity** — minting a portable, permanent handle for an agent. Not a name, not a DNS record — a `uint256` with a controller address and a metadata URI.
+- **Reputation** — a public, append-only ledger of attestations from one actor to another. No scoring, no aggregation — raw attestations only.
+- **Validation** — proofs that substantiate specific agent claims. The registry stores the commitment and proof pointer; verification happens off-chain.
+
+The standard keeps these strictly separate so that the three axes can evolve independently. An application can consume only the Identity registry without ever touching Reputation, or compose its own reputation semantics on top of the raw attestation stream.
+
+## What ERC-8004 specifies
+
+The standard specifies:
+
+- Function signatures for `registerAgent`, `postAttestation`, `submitValidation`, and their read-side counterparts.
+- Event signatures — `AgentRegistered`, `AttestationPosted`, `ValidationPosted` — and their indexed topic layout.
+- Metadata URI semantics (the `/.well-known/agent.json` schema, covered in [agent metadata](/docs/agent-metadata)).
+- The invariants: controllers own their agents; attestations and validations are append-only; no function has access-control beyond the controller-only mutations on Identity.
+
+## What ERC-8004 does not specify
+
+- Which chain(s) the registries run on. Pellet's deployment is on HyperEVM; other networks may deploy compatible implementations at different addresses.
+- How reputation scores compose. Applications define their own aggregation over the raw attestation stream.
+- Sybil resistance. The standard is permissionless by design; sybil filtering is an application-layer concern.
+- Off-chain verification protocols for validation proofs. The registry stores the proof URI; how consumers verify the proof is out of scope.
+
+## Pellet's implementation choices
+
+Where ERC-8004 leaves room for implementation decisions, Pellet made the following:
+
+- **Controller transfers** on Identity emit `AgentControllerTransferred`. The previous controller's `agentsByController` mapping entry is not pruned for gas reasons; consumers filtering this mapping must verify `controllerOf(agentId) == addr` to get currently-owned agents.
+- **Metadata updates** on Identity are allowed by the current controller via `updateMetadata(agentId, newMetadataURI)`. The history is reconstructable from `AgentMetadataUpdated` events.
+- **Score type** on Reputation is `int256`, allowing negative attestations. Magnitude and scale are app-defined; the registry stores the raw value.
+- **No pruning, no expiry.** Attestations and validations are permanent. Retraction, if needed, is implemented at the application layer by posting a compensating attestation.
+
+These choices follow the standard's spirit: the registry is a substrate, not a policy engine.
+
+Continue to the [registry specifications](/docs/registries/identity) for call-level detail.

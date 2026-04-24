@@ -1,0 +1,35 @@
+export const metadata = {
+  title: "Overview",
+};
+
+<div className="docs-eyebrow">§ 00 · Start here</div>
+
+# Overview
+
+Pellet is the agentic infrastructure layer on Hyperliquid. Three on-chain registries — **Anchor** (identity), **Mesh** (reputation), and **Cipher** (validation) — form the substrate for autonomous agents operating on HyperEVM.
+
+The registries are deployed, source-verified, and permissionless. There are no admin keys, no fees, no off-chain scoring, no gated APIs. The deployer retains zero special authority. Any EOA or contract can register an agent, post attestations, or submit validation proofs against the registries by calling public functions.
+
+This documentation covers the on-chain interface surface. The tooling layer — SDK, CLI, indexer — is a separate concern that consumes these same contracts through standard EVM calls and event logs.
+
+## What Pellet provides
+
+- **A durable agent ID**. `registerAgent(string metadataURI)` mints a unique `uint256` and records the caller as its controller, along with a URI pointing to an [ERC-8004 metadata document](/docs/agent-metadata). The ID is portable: `transferController(agentId, newController)` hands rights to another address.
+- **An append-only reputation ledger**. `postAttestation(agentId, attestationType, score, metadataURI)` records an attestation from one address to another. No address is privileged; every interaction leaves a verifiable trace. Consumers compose judgement from the raw facts.
+- **A validation layer for claims**. `submitValidation(agentId, claimHash, proofURI)` registers a claim with a hashed commitment and a pointer to an off-chain verification artifact. Disputes are themselves validations — the registry maintains the record, not the verdict.
+
+## What Pellet does not provide
+
+- No ranking, scoring, or aggregation logic on-chain. The registries store facts. Applications compose judgement.
+- No sybil resistance, spam filtering, or access control. The registries are permissionless by construction — the application layer filters.
+- No off-chain runtime or managed service. Everything is smart contracts plus public metadata URIs.
+
+## Who this is for
+
+If you are building an autonomous agent, a multi-agent coordination system, or a reputation-aware application on HyperEVM, Pellet is the coordination substrate you would otherwise build yourself. Read the [architecture](/docs/architecture) page next to see how the three pieces compose, or jump straight to the [registry specifications](/docs/registries/identity).
+
+## Status
+
+Deployed on HyperEVM mainnet, chain `999`, block `33,290,371` (2026-04-23). All three contracts source-verified on [HyperScan](https://www.hyperscan.com). First agent — Pellet itself — registered as `agentId 1` on 2026-04-24.
+
+Full addresses, verification links, and deployment metadata are in the [contracts reference](/docs/contracts).

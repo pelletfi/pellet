@@ -1,0 +1,80 @@
+export const metadata = {
+  title: "Architecture",
+};
+
+<div className="docs-eyebrow">§ 01 · Start here</div>
+
+# Architecture
+
+Pellet is three independent registries, deployed as separate contracts, connected only through a shared `agentId` namespace. There is no router, no proxy, no upgradeable admin. Each registry stands on its own.
+
+## The shared namespace
+
+Every record in Mesh and Cipher references an `agentId` minted by Anchor. The sibling registries do not enforce existence — they can be called with any `uint256`. Applications that care about validity call `Anchor.controllerOf(agentId)` to confirm the agent is registered before trusting a downstream record.
+
+This design preserves composability: a third party could deploy an alternative reputation registry tomorrow, reference the same Anchor agent IDs, and consumers would compose across both. Pellet's registries are conventions, not gates.
+
+## The three registries
+
+<pre className="docs-figure" data-fig="01">
+{`                  ┌───────────────────────────────────────┐
+                  │      Anchor · IdentityRegistry        │
+                  │    registerAgent(metadataURI)         │
+                  │      → mints uint256 agentId          │
+                  └───────────────────┬───────────────────┘
+                                      │
+                     shared agentId namespace (uint256)
+                                      │
+          ┌───────────────────────────┴───────────────────────────┐
+          │                                                       │
+          ▼                                                       ▼
+┌─────────────────────────┐                     ┌─────────────────────────┐
+│   Mesh · Reputation     │                     │   Cipher · Validation   │
+│  postAttestation(...)   │                     │  submitValidation(...)  │
+│   → AttestationPosted   │                     │   → ValidationPosted    │
+└─────────────────────────┘                     └─────────────────────────┘`}
+</pre>
+<div className="docs-figure-caption">Fig. 01 — Three registries, one shared <code>agentId</code> namespace.</div>
+
+## Call flow: registering and attesting
+
+A typical interaction sequence against the deployed contracts:
+
+```solidity
+// 1. An agent author registers their agent
+uint256 agentId = IdentityRegistry.registerAgent("https://example.com/.well-known/agent.json");
+// emits AgentRegistered(agentId, msg.sender, metadataURI, block.timestamp)
+
+// 2. A counterparty attests to the agent after an interaction
+ReputationRegistry.postAttestation(
+    agentId,
+    keccak256("settlement.completed"), // attestationType
+    100,                                // score (int256, app-defined scale)
+    "ipfs://QmSomeAttestationArtifact"
+);
+// emits AttestationPosted(attestationId, agentId, attester, attestationType, score, metadataURI, block.timestamp)
+
+// 3. A validator substantiates a specific claim the agent made
+ValidationRegistry.submitValidation(
+    agentId,
+    keccak256(abi.encode("claim", someClaimData)), // claimHash
+    "ipfs://QmSomeProofArtifact"
+);
+// emits ValidationPosted(validationId, agentId, validator, claimHash, proofURI, block.timestamp)
+```
+
+All three calls are permissionless. Any EOA or contract can be any of the three roles (author, attester, validator). There is no allowlist.
+
+## Event-sourced by design
+
+Every state-changing function emits an event containing the full record. Indexers can rebuild the complete registry state from event logs alone, without reading storage — which matters for HyperEVM, where `eth_getLogs` is capped at 1000 blocks per request and indexers must walk the chain in chunks.
+
+The timestamp is emitted inside each event (populated from `block.timestamp` at the call site), so consumers do not need an additional `eth_getBlockByNumber` call to resolve when an event occurred.
+
+## Upgradeability
+
+None. The three contracts are immutable. If a future version is needed, it will be deployed as a separate address with its own namespace, and the existing contracts will remain live indefinitely.
+
+This is a deliberate trade-off: no upgrade path means no rug risk, no admin capture, and no migration coordination — at the cost of having to hard-fork the address set to change semantics. Given the registries are minimal by design (~100 LOC each), the cost of a future v2 deploy is low.
+
+Continue to the [ERC-8004 primer](/docs/erc-8004) for the standard this implements, or jump to a specific [registry spec](/docs/registries/identity).

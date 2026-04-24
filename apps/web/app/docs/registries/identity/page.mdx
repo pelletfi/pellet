@@ -1,0 +1,131 @@
+export const metadata = {
+  title: "Anchor · Identity",
+};
+
+<div className="docs-eyebrow">§ 01 · Registries</div>
+
+# Anchor
+
+The identity registry. Mints portable, permanent `agentId` handles and records their controller + metadata URI. The only one of the three registries that has controller-gated mutations; everything else is permissionless.
+
+<div className="docs-address">
+  <span className="label">IdentityRegistry</span>
+  <a href="https://www.hyperscan.com/address/0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943#code" target="_blank" rel="noopener noreferrer">
+    <code>0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943</code>
+  </a>
+</div>
+
+## State
+
+```solidity
+struct Agent {
+    address controller;
+    uint64  registeredAt;
+    string  metadataURI;
+}
+
+uint256 public nextAgentId = 1;
+mapping(uint256 => Agent)        public agents;
+mapping(address => uint256[])    public agentsByController;
+```
+
+The `agentsByController` mapping is **append-only** — it is not pruned on `transferController`. Consumers iterating this mapping must filter by `agents[id].controller == addr` to get currently-owned agents. Prefer event-indexed queries for live ownership lookup.
+
+## Writes
+
+```solidity
+function registerAgent(string calldata metadataURI)
+    external returns (uint256 agentId);
+
+function updateMetadata(uint256 agentId, string calldata newMetadataURI)
+    external;
+
+function transferController(uint256 agentId, address newController)
+    external;
+```
+
+- **`registerAgent`** — permissionless. Any caller mints a new agent, becomes its controller, and emits `AgentRegistered`. The `metadataURI` may be empty — it can be set later via `updateMetadata`.
+- **`updateMetadata`** — controller-only. Reverts `NotController` otherwise.
+- **`transferController`** — controller-only. `newController` must be non-zero (`InvalidAddress`). The previous controller's `agentsByController` entry is not removed.
+
+## Reads
+
+```solidity
+function controllerOf(uint256 agentId) external view returns (address);
+function getAgent(uint256 agentId)     external view returns (Agent memory);
+function totalAgents()                 external view returns (uint256);
+```
+
+`controllerOf` is the cheap authorization lookup used by sibling registries. It returns `address(0)` for unregistered IDs rather than reverting. `getAgent` reverts with `AgentNotFound` for unregistered IDs.
+
+## Events
+
+```solidity
+event AgentRegistered(
+    uint256 indexed agentId,
+    address indexed controller,
+    string          metadataURI,
+    uint256         timestamp
+);
+
+event AgentMetadataUpdated(
+    uint256 indexed agentId,
+    string          newMetadataURI,
+    uint256         timestamp
+);
+
+event AgentControllerTransferred(
+    uint256 indexed agentId,
+    address indexed previousController,
+    address indexed newController
+);
+```
+
+Each event carries a `timestamp` (populated from `block.timestamp` at the call site). Indexers can reconstruct full registry state from events alone without reading storage.
+
+## Errors
+
+```solidity
+error NotController();
+error AgentNotFound();
+error InvalidAddress();
+```
+
+## Example · registering an agent
+
+```solidity
+import { IdentityRegistry } from "pellet-hl/IdentityRegistry.sol";
+
+contract MyAgentDeployer {
+    IdentityRegistry constant ID = IdentityRegistry(
+        0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943
+    );
+
+    function launchAgent(string calldata metadataURI)
+        external returns (uint256 agentId)
+    {
+        agentId = ID.registerAgent(metadataURI);
+        // This contract is now the controller. Transfer to the agent
+        // runtime (EOA or multisig) if needed.
+        ID.transferController(agentId, msg.sender);
+    }
+}
+```
+
+## Gas
+
+Reference figures from HyperEVM mainnet, `solc 0.8.28 --optimizer-runs 200`, no via-ir:
+
+| Call | Gas |
+| --- | --- |
+| `registerAgent("https://pellet.network/.well-known/agent.json")` | ~164,500 |
+| `registerAgent("")` (empty URI) | ~87,000 |
+| `updateMetadata` | ~28,000 + string cost |
+| `transferController` | ~52,000 |
+| `controllerOf` (view) | 0 (off-chain) |
+
+HyperEVM's default block gas limit is 2M. None of these calls exceed a single block.
+
+## First agent
+
+Pellet itself is `agentId 1`, registered 2026-04-24 in tx [`0x4f427e…147`](https://www.hyperscan.com/tx/0x4f427e4e04417f0a15072d63e89518fdc85d859d70f51ace3a4be2f332d71147). The metadata resolves at [`pellet.network/.well-known/agent.json`](https://pellet.network/.well-known/agent.json). Controller: `0x2cbd…1834`, the deployment wallet (retired, retains zero special authority beyond being the controller of agent 1 specifically).

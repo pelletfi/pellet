@@ -1,0 +1,157 @@
+export const metadata = {
+  title: "Cipher · Validation",
+};
+
+<div className="docs-eyebrow">§ 03 · Registries</div>
+
+# Cipher
+
+The validation registry. Records claims with hashed commitments and proof URIs. The registry is a substrate for truth-maintenance — it stores the record, never the verdict. Verification and dispute resolution happen off-chain; the registry is the shared log both sides write to.
+
+<div className="docs-address">
+  <span className="label">ValidationRegistry</span>
+  <a href="https://www.hyperscan.com/address/0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4#code" target="_blank" rel="noopener noreferrer">
+    <code>0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4</code>
+  </a>
+</div>
+
+## State
+
+```solidity
+struct Validation {
+    uint256 agentId;
+    address validator;
+    bytes32 claimHash;
+    uint64  timestamp;
+    string  proofURI;
+}
+
+uint256 public nextValidationId = 1;
+mapping(uint256 => Validation)            public validations;
+mapping(uint256 => uint256[])             public validationsByAgent;
+mapping(bytes32 => uint256[])             public validationsByClaim;
+```
+
+Validations are keyed by both `agentId` and `claimHash`, allowing queries like "all validations targeting this specific claim" (for dispute threads) or "all validations against this agent" (for reputation aggregation).
+
+## Writes
+
+```solidity
+function submitValidation(
+    uint256 agentId,
+    bytes32 claimHash,
+    string calldata proofURI
+) external returns (uint256 validationId);
+```
+
+Permissionless. The `claimHash` is the canonical commitment to whatever is being validated — typically `keccak256(abi.encode(...))` over the claim's structured fields. What constitutes a claim is application-defined; the registry treats `claimHash` as opaque.
+
+## Reads
+
+```solidity
+function getValidation(uint256 validationId)
+    external view returns (Validation memory);
+
+function validationsOf(uint256 agentId)
+    external view returns (uint256[] memory);
+
+function validationsFor(bytes32 claimHash)
+    external view returns (uint256[] memory);
+```
+
+`getValidation` reverts `ValidationNotFound` for unregistered IDs.
+
+## Events
+
+```solidity
+event ValidationPosted(
+    uint256 indexed validationId,
+    uint256 indexed agentId,
+    address indexed validator,
+    bytes32         claimHash,
+    string          proofURI,
+    uint256         timestamp
+);
+```
+
+Three indexed topics. Note `claimHash` is **not** indexed — event filters by hash are cheap via topic matching on agent + validator combined with a post-fetch claim check. If your indexer needs fast claim lookup, use the `validationsByClaim` storage mapping.
+
+## Claim hash conventions
+
+The `claimHash` is an opaque 32-byte identifier. In practice, prefer:
+
+```solidity
+bytes32 claimHash = keccak256(abi.encode(
+    domainSeparator,   // a constant identifying your protocol
+    claimType,         // e.g. keccak256("price.settled.v1")
+    agentId,
+    blockAtClaim,
+    payload            // structured claim-specific fields
+));
+```
+
+Including a domain separator prevents collision with claims from other protocols that use the same agent. Including the block number at the time of claim allows disputes and counter-claims to reference a specific historical state.
+
+## Disputes
+
+A dispute is itself a validation. To contest an existing validation:
+
+1. Compute the same `claimHash` as the original.
+2. Submit a new validation with a `proofURI` pointing to the dispute artifact.
+
+The registry does not maintain a canonical "verdict." Downstream consumers decide how to weigh contesting validations — typically by attester reputation, by timing, or by protocol-specific rules. The registry's job is to ensure the full dispute history is public and permanent.
+
+## Example · submitting a validation
+
+```solidity
+import { ValidationRegistry } from "pellet-hl/ValidationRegistry.sol";
+
+contract OracleValidator {
+    ValidationRegistry constant VAL = ValidationRegistry(
+        0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4
+    );
+
+    bytes32 constant DOMAIN = keccak256("oracle.v1");
+
+    function validatePrice(
+        uint256 agentId,
+        uint256 price,
+        uint256 observedAt,
+        string calldata proofURI
+    ) external {
+        bytes32 claimHash = keccak256(abi.encode(
+            DOMAIN,
+            keccak256("price.observation"),
+            agentId,
+            observedAt,
+            price
+        ));
+        VAL.submitValidation(agentId, claimHash, proofURI);
+    }
+}
+```
+
+## Proof URI conventions
+
+Validation proof URIs typically point to one of:
+
+- **Signed bundles** — JSON or CBOR artifacts with an attester signature over the `claimHash`.
+- **ZK proof artifacts** — pre-computed proof blobs on IPFS/Arweave, verified by a contract that references this validation.
+- **Oracle receipts** — attestations from external systems (Pyth, Chainlink, custom oracles) pinned to IPFS.
+- **Plain text explanations** — for human-adjudicated disputes.
+
+The registry does not verify the proof. It stores the pointer and the commitment; verification happens at consumer time against whatever format the application expects.
+
+## Errors
+
+```solidity
+error ValidationNotFound();
+```
+
+## Gas
+
+| Call | Gas |
+| --- | --- |
+| `submitValidation` with 60-byte proofURI | ~175,000 |
+| `submitValidation` with empty proofURI | ~98,000 |
+| `getValidation` (view) | 0 (off-chain) |
