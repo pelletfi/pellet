@@ -2,6 +2,23 @@
 
 ERC-8004 registries deployed on HyperEVM for agent identity, reputation, and validation.
 
+## Mainnet (live)
+
+Deployed to HyperEVM mainnet (chain 999) at block `33,290,371` on 2026-04-23.
+All three registries are source-verified on [HyperScan](https://www.hyperscan.com).
+
+| Registry | Address | Verified |
+|---|---|---|
+| IdentityRegistry | `0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943` | [HyperScan](https://www.hyperscan.com/address/0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943#code) |
+| ReputationRegistry | `0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b` | [HyperScan](https://www.hyperscan.com/address/0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b#code) |
+| ValidationRegistry | `0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4` | [HyperScan](https://www.hyperscan.com/address/0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4#code) |
+
+**First agent**: Pellet itself was registered as `agentId 1` on 2026-04-24 (tx [`0x4f427e…147`](https://www.hyperscan.com/tx/0x4f427e4e04417f0a15072d63e89518fdc85d859d70f51ace3a4be2f332d71147)). Agent metadata: [`pellet.network/.well-known/agent.json`](https://pellet.network/.well-known/agent.json).
+
+The deployer (`0x2cbd…1834`) is retired — contracts are permissionless and the deployer retains zero special authority.
+
+Full deploy + verification manifest: [`deployments/hyperevm-mainnet.json`](deployments/hyperevm-mainnet.json).
+
 ## Setup
 
 1. Install [Foundry](https://book.getfoundry.sh/getting-started/installation):
