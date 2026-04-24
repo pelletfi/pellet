@@ -18,5 +18,15 @@
     "IdentityRegistry": "https://www.hyperscan.com/address/0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943#code",
     "ReputationRegistry": "https://www.hyperscan.com/address/0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b#code",
     "ValidationRegistry": "https://www.hyperscan.com/address/0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4#code"
+  },
+  "firstAgent": {
+    "agentId": 1,
+    "name": "Pellet",
+    "controller": "0x2cbd7730994D3Ee1aAc4B1d0F409b1b62d7C1834",
+    "metadataURI": "https://pellet.network/.well-known/agent.json",
+    "registeredAt": "2026-04-24",
+    "block": 33329845,
+    "txHash": "0x4f427e4e04417f0a15072d63e89518fdc85d859d70f51ace3a4be2f332d71147",
+    "explorerTx": "https://www.hyperscan.com/tx/0x4f427e4e04417f0a15072d63e89518fdc85d859d70f51ace3a4be2f332d71147"
   }
 }

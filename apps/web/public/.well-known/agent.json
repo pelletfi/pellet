@@ -1,0 +1,22 @@
+{
+  "schema": "erc-8004/agent-metadata/v1",
+  "name": "Pellet",
+  "description": "Agentic infrastructure on Hyperliquid. Pellet operates the canonical ERC-8004 identity, reputation, and validation registries for autonomous agents on HyperEVM.",
+  "homepage": "https://pellet.network",
+  "version": "1.0.0",
+  "chain": {
+    "name": "HyperEVM",
+    "chainId": 999,
+    "rpc": "https://rpc.hyperliquid.xyz/evm",
+    "explorer": "https://www.hyperscan.com"
+  },
+  "registries": {
+    "identity": "0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943",
+    "reputation": "0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b",
+    "validation": "0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4"
+  },
+  "links": {
+    "github": "https://github.com/pelletnetwork/pellet",
+    "x": "https://x.com/pelletnetwork"
+  }
+}
