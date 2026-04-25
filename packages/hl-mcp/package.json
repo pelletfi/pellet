@@ -1,12 +1,12 @@
 {
   "name": "@pelletnetwork/hl-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Pellet's Hyperliquid agent infrastructure — expose Identity, Reputation, and Validation registries as Model Context Protocol tools.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "pellet-hl-mcp": "./bin/pellet-hl-mcp.js"
+    "pellet-hl-mcp": "bin/pellet-hl-mcp.js"
   },
   "exports": {
     ".": {
