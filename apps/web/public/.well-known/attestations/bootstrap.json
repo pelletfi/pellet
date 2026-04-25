@@ -1,0 +1,21 @@
+{
+  "schema": "erc-8004/attestation-metadata/v1",
+  "kind": "self-anchor",
+  "attestationType": "0x643aaaf338444c638f20147394abe6c33cffdca1041d9d54f860e511a06b5cc7",
+  "attestationTypeName": "pellet.bootstrap.v1",
+  "agent": {
+    "agentId": 1,
+    "metadataURI": "https://pellet.network/.well-known/agent.json"
+  },
+  "claim": "Pellet self-anchor — the operator of the Pellet registries on HyperEVM publicly affirms that agentId 1 is the canonical Pellet agent. This is a self-attestation; trust comes only from on-chain verifiability of the controller, not from the score itself.",
+  "issuedAt": "2026-04-25T00:00:00Z",
+  "registries": {
+    "identity": "0x2bfcb081c8c5F98261efcdEC3971D0b1bc7ad943",
+    "reputation": "0x8cA1f4E2335271f12E5E14Cd8378B558fd14114b",
+    "validation": "0x7c44Dc7Fb45D723455DB1b69EE08Bd718998e5B4"
+  },
+  "links": {
+    "homepage": "https://pellet.network",
+    "github": "https://github.com/pelletnetwork/pellet"
+  }
+}
