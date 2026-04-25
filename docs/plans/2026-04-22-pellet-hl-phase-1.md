@@ -1891,7 +1891,7 @@ console.log(`Minted agent #${agentId} in tx ${txHash}`);
 - `pellet.postAttestation({ agentId, attestationType, score, metadataURI })` — attest to agent behavior
 - `pellet.postValidation({ agentId, claimHash, proofURI })` — submit a validation
 
-See `pellet.fi/hl/docs` for the full guide.
+See `pellet.network/docs` for the full guide.
 ```
 
 - [ ] **Step 6: Install peer deps locally (for dev)**
@@ -3140,9 +3140,9 @@ After Phase 1 ships:
 - [ ] All 3 indexers running hourly without errors
 - [ ] `@pelletfi/hl` published to npm, installable
 - [ ] `@pelletfi/hl-mcp` published to npm, installable
-- [ ] `pellet.fi/hl` serves agent registry, loads from DB
-- [ ] `pellet.fi/hl/agent/[id]` serves per-agent profile
-- [ ] `pellet.fi/hl/docs` has working quickstart
+- [ ] `pellet.network` serves agent registry, loads from DB
+- [ ] `pellet.network/agent/[id]` serves per-agent profile
+- [ ] `pellet.network/docs` has working quickstart
 - [ ] Type-check passes across monorepo
 - [ ] At least 1 platform partnership conversation in progress
 

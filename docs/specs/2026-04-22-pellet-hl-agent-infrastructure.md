@@ -48,7 +48,7 @@ Validated by two rounds of research (ecosystem scan + protocol deep-read) and vo
 
 **Ships:**
 - ERC-8004 registry contracts on HyperEVM — Identity, Reputation, Validation
-- Public registry dashboard at `pellet.fi/hl` showing agent list + public attestations
+- Public registry dashboard at `pellet.network` showing agent list + public attestations
 - TypeScript SDK for minting IDs and reading reputation
 - MCP server with 4-5 core tools (mint_id, read_reputation, attach_attestation, query_agents)
 - Canonical "Building Agents on Hyperliquid" guide (long-form editorial content)

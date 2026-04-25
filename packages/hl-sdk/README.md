@@ -32,4 +32,4 @@ console.log(`Minted agent #${agentId} in tx ${txHash}`);
 - `pellet.postAttestation({ agentId, attestationType, score, metadataURI })` — attest to agent behavior
 - `pellet.postValidation({ agentId, claimHash, proofURI })` — submit a validation
 
-See `pellet.fi/hl/docs` for the full guide.
+See `pellet.network/docs` for the full guide.
