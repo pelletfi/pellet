@@ -9,6 +9,11 @@ import {
   type AgentRow,
 } from "@/lib/hl/queries";
 
+// Render on-demand, not at build time. HyperEVM's public RPC rate-limits
+// hard during builds; pre-rendering would fail. The underlying queries are
+// still cached via `unstable_cache` (5min for the agents list), so visitors
+// share the warmed result.
+export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 const MAINNET = HL_REGISTRY_ADDRESSES.mainnet;
