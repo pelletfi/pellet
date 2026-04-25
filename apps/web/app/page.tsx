@@ -41,7 +41,7 @@ export default function Home() {
           </>
         }
         linkLabel="Anchor registry →"
-        linkHref="#"
+        linkHref="/hl"
       />
 
       {/* ── chapter 02 — Mesh (Reputation) ── */}
@@ -64,7 +64,7 @@ export default function Home() {
           </>
         }
         linkLabel="Mesh registry →"
-        linkHref="#"
+        linkHref="/hl"
       />
 
       {/* ── pull quote ── */}
@@ -90,7 +90,7 @@ export default function Home() {
           </>
         }
         linkLabel="Cipher registry →"
-        linkHref="#"
+        linkHref="/hl"
       />
 
       {/* ── architecture ── */}
