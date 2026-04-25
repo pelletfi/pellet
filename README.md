@@ -62,10 +62,10 @@ Pellet-on-Tempo (stablecoin intelligence, TIP-20 indexing) is archived at [`pell
 ## Brand
 
 - Primary: Pellet YInMn blue `#2E5090`
-- Paper: `#FFFFFF` (`#FBFDFF` in institutional plates)
+- Paper: `#FFFFFF`
 - Typography: Courier Prime (body) + IBM Plex Mono (numeric/protocol) + Inter (sparingly)
 - Mark: [`apps/web/public/brand/pellet-mark.svg`](apps/web/public/brand/pellet-mark.svg) (also `.png` and `-white.svg` for dark surfaces)
-- Full system: [`videos/pellet-hyperframes/DESIGN.md`](videos/pellet-hyperframes/DESIGN.md) · [`videos/pellet-hyperframes/PHILOSOPHY.md`](videos/pellet-hyperframes/PHILOSOPHY.md) · live tokens in [`apps/web/app/globals.css`](apps/web/app/globals.css)
+- Live tokens: [`apps/web/app/globals.css`](apps/web/app/globals.css) · system reference: [`apps/web/public/brand/README.md`](apps/web/public/brand/README.md)
 - License: MIT — full exclusive usage rights per [`apps/web/public/brand/copyright-transfer.pdf`](apps/web/public/brand/copyright-transfer.pdf)
 
 ## Design + plans

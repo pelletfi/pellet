@@ -18,7 +18,7 @@ Jake Maynard. Founder. Operates as `@pelletnetwork` on X, `jake@pellet.network`.
 - Pellet itself registered as `agentId #1` (registration tx `0x4f427e…147`).
 - Site: `pellet.network` shipped (two-line Plex/Courier hero).
 - SDK: `@pelletfi/hl`. MCP: `@pelletfi/hl-mcp`.
-- Brand v2 locked. Launch video v5 rendered (60s, "Plate Geometry" institutional editorial).
+- Brand v2 locked. Launch video composition is being rebuilt.
 - `@pelletnetwork` on X awaiting account review for launch thread.
 
 ## What is NOT Pellet (anymore)
@@ -32,16 +32,15 @@ When asked "what is Pellet," default to the HyperEVM agent-infrastructure produc
 ## Brand voice (non-negotiable)
 
 - Institutional editorial. Observational, never promotional.
-- Plate Geometry canon — see [`videos/pellet-hyperframes/PHILOSOPHY.md`](videos/pellet-hyperframes/PHILOSOPHY.md).
 - No mock data on Pellet HL surfaces. Real numbers from real chains, always.
 - No hype, no rocket emojis, no exclamation points. *"There is no persuasion. There is only the document."*
-- Palette: paper `#FFFFFF` (or `#FBFDFF` in institutional plates) + Pellet YInMn blue `#2E5090`. No third hue, no decorative motion. Typography: Courier Prime (body), IBM Plex Mono (numeric/protocol), Inter (sparingly). Full system: `videos/pellet-hyperframes/DESIGN.md` + `apps/web/app/globals.css`.
+- Palette: paper `#FFFFFF` + Pellet YInMn blue `#2E5090`. No third hue, no decorative motion. Typography: Courier Prime (body), IBM Plex Mono (numeric/protocol), Inter (sparingly). Live tokens: [`apps/web/app/globals.css`](apps/web/app/globals.css) · system reference: [`apps/web/public/brand/README.md`](apps/web/public/brand/README.md).
 
 ## What's high leverage for agents
 
 - Reading prose + diagnosing gaps (PHILOSOPHY.md, DESIGN.md, site copy, README).
 - Drafting commit messages, PR descriptions, blog drafts, X threads — for human review.
-- Generating ambient audio matching the Plate Geometry register (drones, beds; cf. Stars of the Lid / Basinski / Loscil).
+- Generating ambient audio for video work (drones, beds — Stars of the Lid / Basinski / Loscil register).
 - Monitoring on-chain registry activity; alerting on new agent registrations, attestations, or unusual traffic.
 - Verifying deploy artifacts (broadcast files, HyperScan verification, ABI hashes, gas figures).
 
@@ -54,7 +53,7 @@ When asked "what is Pellet," default to the HyperEVM agent-infrastructure produc
 ## Key references
 
 - [`README.md`](README.md) — developer overview, repo structure, quickstart.
-- [`videos/pellet-hyperframes/PHILOSOPHY.md`](videos/pellet-hyperframes/PHILOSOPHY.md) — visual canon (Plate Geometry).
-- [`videos/pellet-hyperframes/DESIGN.md`](videos/pellet-hyperframes/DESIGN.md) — design system for the launch video.
+- [`apps/web/public/brand/README.md`](apps/web/public/brand/README.md) — brand system (colors, typography, mark assets).
+- [`apps/web/app/globals.css`](apps/web/app/globals.css) — live design tokens.
 - [`docs/specs/`](docs/specs/) — feature specs.
 - [`packages/hl-contracts/`](packages/hl-contracts/) — Foundry project, the three registries.

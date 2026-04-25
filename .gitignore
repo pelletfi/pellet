@@ -45,6 +45,3 @@ packages/hl-contracts/lib/
 packages/hl-contracts/out/
 packages/hl-contracts/cache/
 packages/hl-contracts/broadcast/
-
-# Generated audio assets — regenerate locally
-videos/pellet-hyperframes/assets/audio/

@@ -49,12 +49,6 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8780", "--directory", "/tmp"],
       "port": 8780
-    },
-    {
-      "name": "pellet-hyperframes-static",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8090", "--directory", "/Users/jake/pellet/videos/pellet-hyperframes"],
-      "port": 8090
     }
   ]
 }
