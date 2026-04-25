@@ -4,7 +4,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { PelletHlClient, CHAIN_CONFIG, CONTRACTS } from "@pelletnetwork/hl";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-const chain = (process.env.HL_CHAIN as "mainnet" | "testnet") ?? "mainnet";
+const rawChain = process.env.HL_CHAIN;
+const chain: "mainnet" | "testnet" = rawChain === "testnet" ? "testnet" : "mainnet";
 const rpcUrl = process.env.HL_RPC_URL ?? CHAIN_CONFIG[chain].rpc;
 
 const publicClient = createPublicClient({ transport: http(rpcUrl) });
