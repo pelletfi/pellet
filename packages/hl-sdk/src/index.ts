@@ -1,4 +1,4 @@
-export { PelletHlClient } from "./client";
+export { PelletHlClient } from "./client.js";
 export type {
   HlChain,
   AgentRecord,
@@ -7,5 +7,5 @@ export type {
   MintAgentResult,
   PostAttestationResult,
   PostValidationResult,
-} from "./types";
-export { CHAIN_CONFIG, CONTRACTS, IDENTITY_ABI, REPUTATION_ABI, VALIDATION_ABI } from "./constants";
+} from "./types.js";
+export { CHAIN_CONFIG, CONTRACTS, IDENTITY_ABI, REPUTATION_ABI, VALIDATION_ABI } from "./constants.js";

@@ -7,8 +7,8 @@ import type {
   MintAgentResult,
   PostAttestationResult,
   PostValidationResult,
-} from "./types";
-import { CONTRACTS, IDENTITY_ABI, REPUTATION_ABI, VALIDATION_ABI } from "./constants";
+} from "./types.js";
+import { CONTRACTS, IDENTITY_ABI, REPUTATION_ABI, VALIDATION_ABI } from "./constants.js";
 
 type ClientOptions = {
   publicClient: PublicClient;
