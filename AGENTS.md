@@ -10,7 +10,7 @@ Stripe is payment infrastructure for internet commerce. Pellet is agent infrastr
 
 ## Who's behind it
 
-Jake Maynard. Founder. Operates as `@pelletnetwork` on X, `jake@pellet.network`. Night-builder rhythm — dense iteration, terse communication, no stop-suggestions. Ships hard. Match the rhythm.
+Jake. Founder. Operates as `@pelletnetwork` on X, `jake@pellet.network`. Ships hard. Night-builder rhythm — engines-on, dense iteration, less preamble. Diagnose → execute → report. Match the rhythm.
 
 ## State (as of 2026-04-25)
 
