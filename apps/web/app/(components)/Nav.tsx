@@ -10,14 +10,16 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isDocs = pathname.startsWith("/docs");
+  const isRegistry = pathname.startsWith("/hl");
 
   // Anchor-based hrefs use absolute paths so they work from any route
   // (clicking `Identity` from /docs/* jumps back to /#identity).
   const LINKS: Array<Link> = [
-    { label: "Home", href: "/", active: !isDocs },
+    { label: "Home", href: "/", active: !isDocs && !isRegistry },
     { label: "Identity", href: "/#identity" },
     { label: "Reputation", href: "/#reputation" },
     { label: "Validation", href: "/#validation" },
+    { label: "Registry", href: "/hl", active: isRegistry },
     { label: "Docs", href: "/docs", active: isDocs },
     { label: "Research", href: "#", soon: true },
     { label: "Blog", href: "#", soon: true },
