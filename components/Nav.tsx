@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PelletMark } from "@/components/pellet-mark";
 
-// v0 nav: trimmed to the routes that actually exist post-pivot. Agents + Docs
+// v0 nav: trimmed to the routes that actually exist post-pivot. OLI + Docs
 // confirmed by the user as keepers; pricing/studies/swap/explorer/fee-economics
 // were stablecoin-OLI-era surfaces and are deferred until they get rebuilt.
 const navLinks = [
-  { label: "Agents", href: "/agents" },
+  { label: "OLI", href: "/oli" },
   { label: "Docs", href: "/docs" },
 ];
 
