@@ -25,6 +25,15 @@ const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
 
+// Tempo MPP Gateway escrow contract. Emits a Settlement event whose topic[2]
+// is the underlying provider address; capturing this directly into the
+// events table means Pattern A attribution becomes a SQL join instead of a
+// per-tx RPC walk later.
+const ESCROW_CONTRACT =
+  "0x33b901018174ddabe4841042ab76ba85d4e24f25" as Address;
+const SETTLEMENT_TOPIC =
+  "0x92ed5fe0fe56b3f4185e688efb342e92a4492b9df29ad5de596c44e64d097b51" as `0x${string}`;
+
 async function getCursor(): Promise<number> {
   const rows = await db
     .select()
@@ -108,10 +117,12 @@ export async function processEvents(): Promise<ProcessResult> {
   while (from <= endBlock) {
     const to = Math.min(from + CHUNK_BLOCKS - 1, endBlock);
 
-    // Two filtered passes: Transfer events where `from` OR `to` is a watched
-    // wallet. Filtered at RPC level via viem's args binding so we only fetch
-    // events that actually involve our agents.
-    const [logsFrom, logsTo] = await Promise.all([
+    // Three filtered passes:
+    //   1. Transfer events where `from` is a watched wallet
+    //   2. Transfer events where `to` is a watched wallet
+    //   3. Settlement events from the gateway escrow (all of them — no
+    //      wallet filter since these are routing-attribution data)
+    const [logsFrom, logsTo, logsSettlement] = await Promise.all([
       ingestClient.getLogs({
         fromBlock: BigInt(from),
         toBlock: BigInt(to),
@@ -124,12 +135,26 @@ export async function processEvents(): Promise<ProcessResult> {
         event: transferEvent,
         args: { to: wallets },
       }),
+      // viem's getLogs typing doesn't accept a raw topics array without an
+      // event ABI — fetch all logs from the escrow contract, then filter
+      // client-side by topic0. Volume is small (a few logs per 1000-block
+      // window) so the over-fetch is fine.
+      ingestClient.getLogs({
+        fromBlock: BigInt(from),
+        toBlock: BigInt(to),
+        address: ESCROW_CONTRACT,
+      }),
     ]);
 
-    // Dedupe (same log can match both passes if it's an internal transfer
-    // between two watched agents).
+    const settlementLogs = logsSettlement.filter(
+      (l) => l.topics[0]?.toLowerCase() === SETTLEMENT_TOPIC,
+    );
+
+    // Dedupe (same log can match both Transfer passes if it's an internal
+    // transfer between two watched agents). Settlement logs come from a
+    // different contract so they can't collide with the Transfer set.
     const seen = new Set<string>();
-    const allLogs = [...logsFrom, ...logsTo].filter((l) => {
+    const allLogs = [...logsFrom, ...logsTo, ...settlementLogs].filter((l) => {
       const key = `${l.transactionHash}-${l.logIndex}`;
       if (seen.has(key)) return false;
       seen.add(key);
