@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Pellet mark — clean monogram P with the counter punched out via even-odd fill.
-  Vectorized from the original Illustrator source (#000000 bg, #ffffff icon).
+  Vectorized from the original Illustrator source (#ffffff bg, #000000 icon).
 -->
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#000000"/>
+  <rect width="1024" height="1024" fill="#ffffff"/>
   <g transform="translate(112, 112) scale(1.6)">
-    <path fill="#ffffff" fill-rule="evenodd" d="M397.75,106.78h-56.39c-11.07,0-20.04-8.97-20.04-20.04V33.24c0-11.07-8.97-20.04-20.04-20.04H196.68
+    <path fill="#000000" fill-rule="evenodd" d="M397.75,106.78h-56.39c-11.07,0-20.04-8.97-20.04-20.04V33.24c0-11.07-8.97-20.04-20.04-20.04H196.68
 	c-11.07,0-20.04,8.97-20.04,20.04v53.51c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v105.33
 	c0,11.07,8.97,20.04,20.04,20.04h57.35c11.07,0,20.04,8.97,20.04,20.04v47.75c0,11.07-8.97,20.04-20.04,20.04H103.1
 	c-11.07,0-20.04,8.97-20.04,20.04v106.08c0,11.07,8.97,20.04,20.04,20.04h65.02c11.07,0,20.04-8.97,20.04-20.04v-98.4
