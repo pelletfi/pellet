@@ -1,8 +1,14 @@
 # Pellet — Agentics Terminal for Solana
 
+> **⚠ SUPERSEDED** by [`2026-04-29-pellet-oli-design.md`](./2026-04-29-pellet-oli-design.md).
+>
+> Late-night realization: the agentics terminal is the missing *interface* for the Open-Ledger Interface (OLI) we already shipped on Tempo. The two were separate boxes in our heads — they're actually the same product. v2 spec moves the build to Tempo-primary and reframes the terminal as the OLI front-end. Cross-chain Solana deferred to v0.5+.
+>
+> This file preserved as the record of where the thinking landed before the unlock.
+
 **Spec date:** 2026-04-29
 **Author:** Jake Maynard (@pelletnetwork)
-**Status:** Approved for implementation planning
+**Status:** Superseded — see note above
 **Domain:** pellet.network
 **Repo:** github.com/pelletnetwork/pellet
 
