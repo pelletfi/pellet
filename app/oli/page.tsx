@@ -4,7 +4,7 @@ import { StatStrip } from "@/components/oli/StatStrip";
 import { Leaderboard } from "@/components/oli/Leaderboard";
 import { EventStream } from "@/components/oli/EventStream";
 import { TokenStackChart } from "@/components/oli/TokenStackChart";
-import { formatUsdcAmount } from "@/lib/oli/format";
+import { formatUsdcAmount, shortAddress } from "@/lib/oli/format";
 import { TimeWindowToggle } from "@/components/oli/TimeWindowToggle";
 import { windowHoursFromParam } from "@/lib/oli/timeWindow";
 
@@ -126,6 +126,62 @@ export default async function OliDashboardPage({
           ]}
         />
       </div>
+
+      {snap.topProviders.length > 0 && (
+        <section>
+          <h2
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--color-text-tertiary)",
+              margin: "0 0 8px",
+            }}
+          >
+            Top providers · routed via gateway · {windowLabel}
+          </h2>
+          <div className="oli-providers-table">
+            <div className="oli-providers-row oli-providers-row-head">
+              <span className="oli-providers-rank">#</span>
+              <span className="oli-providers-addr">provider</span>
+              <span className="oli-providers-num">revenue</span>
+              <span className="oli-providers-num">txs</span>
+              <span className="oli-providers-time">share</span>
+            </div>
+            {(() => {
+              const total = snap.topProviders.reduce(
+                (acc, p) => acc + Number(p.amountSumWei),
+                0,
+              );
+              return snap.topProviders.map((p, i) => {
+                const share = total > 0 ? (Number(p.amountSumWei) / total) * 100 : 0;
+                return (
+                  <a
+                    key={p.address}
+                    href={`https://explore.tempo.xyz/address/${p.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="oli-providers-row oli-providers-row-link"
+                  >
+                    <span className="oli-providers-rank">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="oli-providers-addr">
+                      {p.label ? (
+                        <span className="oli-providers-addr-label">{p.label}</span>
+                      ) : (
+                        <code className="oli-providers-addr-hex">{shortAddress(p.address)}</code>
+                      )}
+                    </span>
+                    <span className="oli-providers-num">${formatUsdcAmount(p.amountSumWei, 6)}</span>
+                    <span className="oli-providers-num">{p.txCount.toLocaleString()}</span>
+                    <span className="oli-providers-time">{share.toFixed(1)}%</span>
+                  </a>
+                );
+              });
+            })()}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2

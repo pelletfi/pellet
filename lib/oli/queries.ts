@@ -12,6 +12,13 @@ export type LeaderboardRow = {
   amountSumWei: string; // bigint as string
 };
 
+export type ProviderRow = {
+  address: string;
+  label: string | null;
+  txCount: number;
+  amountSumWei: string;
+};
+
 export type DashboardSnapshot = {
   windowHours: number;
   txCount: number;
@@ -19,6 +26,7 @@ export type DashboardSnapshot = {
   amountSumWei: string;
   topServices: LeaderboardRow[];
   topAgents: LeaderboardRow[];
+  topProviders: ProviderRow[];
   recentEvents: RecentEventRow[];
 };
 
@@ -92,6 +100,7 @@ export async function dashboardSnapshot(windowHours = 24): Promise<DashboardSnap
 
   const topServices = await leaderboard("services", windowHours, 10);
   const topAgents = await leaderboard("agents", windowHours, 10);
+  const topProviders = await topRoutedProviders(windowHours, 10);
   const recentEvents = await recentDecoded(25);
 
   return {
@@ -101,8 +110,44 @@ export async function dashboardSnapshot(windowHours = 24): Promise<DashboardSnap
     amountSumWei: top.amount_sum_wei ?? "0",
     topServices,
     topAgents,
+    topProviders,
     recentEvents,
   };
+}
+
+// Routed providers — recovered from gateway Settlement events. Only rows
+// where routed_to_address is non-null contribute. Joins address_labels so
+// once a provider is named, the label flows through to the dashboard.
+export async function topRoutedProviders(
+  windowHours: number,
+  limit: number,
+): Promise<ProviderRow[]> {
+  const sinceCutoff = HOURS(windowHours);
+  const rows = await db.execute<{
+    address: string;
+    label: string | null;
+    tx_count: string;
+    amount_sum_wei: string;
+  }>(sql`
+    SELECT
+      ae.routed_to_address                                AS address,
+      rl.label                                            AS label,
+      COUNT(*)::text                                      AS tx_count,
+      COALESCE(SUM(ae.amount_wei::numeric), 0)::text      AS amount_sum_wei
+    FROM agent_events ae
+    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
+    WHERE ae.ts > ${sinceCutoff}
+      AND ae.routed_to_address IS NOT NULL
+    GROUP BY ae.routed_to_address, rl.label
+    ORDER BY amount_sum_wei DESC
+    LIMIT ${limit}
+  `);
+  return rows.rows.map((r) => ({
+    address: r.address,
+    label: r.label,
+    txCount: Number(r.tx_count),
+    amountSumWei: r.amount_sum_wei,
+  }));
 }
 
 export async function leaderboard(
