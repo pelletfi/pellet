@@ -34,13 +34,10 @@ export function Sidebar() {
     >
       <Link
         href="/"
-        style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}
+        style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
         aria-label="Pellet — back to home"
       >
         <PelletMark size={24} />
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
-          OLI
-        </span>
       </Link>
 
       {sections.map((section) => (
