@@ -1512,6 +1512,133 @@ main {
   }
 }
 
+/* ── Rails reference page ──────────────────────────────────────────────── */
+
+.oli-rails-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.oli-rail-card {
+  border: 1px solid var(--color-border-subtle);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--color-bg-base);
+  transition: border-color var(--duration-fast) ease;
+}
+.oli-rail-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.oli-rail-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.oli-rail-card-id {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.oli-rail-card-name {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.oli-rail-card-vendor {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-quaternary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.oli-rail-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 4px 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.oli-rail-status-indexed {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: rgba(46, 80, 144, 0.08);
+}
+.oli-rail-status-documented {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-subtle);
+}
+.oli-rail-status-watching {
+  color: var(--color-text-quaternary);
+  border-color: var(--color-border-subtle);
+  border-style: dashed;
+}
+.oli-rail-card-bio {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+.oli-rail-card-fields {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+.oli-rail-field {
+  display: contents;
+}
+.oli-rail-field dt {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-quaternary);
+  padding-top: 3px;
+}
+.oli-rail-field dd {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+.oli-rail-field-accent {
+  color: var(--color-text-primary) !important;
+}
+.oli-rail-card-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-accent);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-accent);
+  align-self: flex-start;
+}
+.oli-rail-card-link:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+}
+
+@media (max-width: 600px) {
+  .oli-rail-card-fields {
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+  }
+  .oli-rail-field dt {
+    margin-top: 8px;
+  }
+  .oli-rail-card-head {
+    flex-direction: column;
+  }
+}
+
 /* ── Methodology page ──────────────────────────────────────────────────── */
 
 .oli-methodology {

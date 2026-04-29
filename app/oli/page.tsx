@@ -60,7 +60,17 @@ export default async function OliDashboardPage({
             </span>
           </h1>
           <p style={{ color: "var(--color-text-tertiary)", marginTop: 6, fontSize: 13 }}>
-            Autonomous economic activity on Tempo.
+            The open ledger of the agent economy.{" "}
+            <a
+              href="/oli/rails"
+              style={{
+                color: "var(--color-text-quaternary)",
+                textDecoration: "none",
+                borderBottom: "1px solid var(--color-border-subtle)",
+              }}
+            >
+              Tempo today, more rails as they ship.
+            </a>
           </p>
         </div>
         <TimeWindowToggle current={windowHours} />
