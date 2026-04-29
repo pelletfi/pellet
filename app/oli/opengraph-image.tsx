@@ -88,6 +88,8 @@ export default async function Image() {
         >
           <div
             style={{
+              display: "flex",
+              flexDirection: "column",
               fontFamily: "Instrument Serif",
               fontStyle: "italic",
               fontSize: 110,
@@ -96,9 +98,8 @@ export default async function Image() {
               fontWeight: 400,
             }}
           >
-            Open-Ledger
-            <br />
-            Interface
+            <span>Open-Ledger</span>
+            <span>Interface</span>
           </div>
         </div>
 
