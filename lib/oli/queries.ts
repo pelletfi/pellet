@@ -53,6 +53,8 @@ export type RecentEventRow = {
   // T10: underlying service provider for gateway-routed events
   routedToAddress: string | null;
   routedToLabel: string | null;
+  // T10.5: Pattern B fingerprint when address attribution unavailable
+  routedFingerprint: string | null;
 };
 
 export type ServiceListRow = {
@@ -280,6 +282,7 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
     methodology_version: string;
     routed_to_address: string | null;
     routed_to_label: string | null;
+    routed_fingerprint: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -297,7 +300,8 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
       ae.source_block::int                    AS source_block,
       ae.methodology_version                  AS methodology_version,
       ae.routed_to_address                    AS routed_to_address,
-      rl.label                                AS routed_to_label
+      rl.label                                AS routed_to_label,
+      ae.routed_fingerprint                   AS routed_fingerprint
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
@@ -325,6 +329,7 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
     methodologyVersion: r.methodology_version,
     routedToAddress: r.routed_to_address,
     routedToLabel: r.routed_to_label,
+    routedFingerprint: r.routed_fingerprint,
   }));
 }
 
@@ -445,6 +450,7 @@ export async function serviceDetail(id: string) {
     methodology_version: string;
     routed_to_address: string | null;
     routed_to_label: string | null;
+    routed_fingerprint: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -462,7 +468,8 @@ export async function serviceDetail(id: string) {
       ae.source_block::int                    AS source_block,
       ae.methodology_version                  AS methodology_version,
       ae.routed_to_address                    AS routed_to_address,
-      rl.label                                AS routed_to_label
+      rl.label                                AS routed_to_label,
+      ae.routed_fingerprint                   AS routed_fingerprint
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
@@ -577,6 +584,7 @@ export async function serviceDetail(id: string) {
       methodologyVersion: r.methodology_version,
       routedToAddress: r.routed_to_address,
       routedToLabel: r.routed_to_label,
+      routedFingerprint: r.routed_fingerprint,
     })),
     trend: trend.rows.map((r) => ({
       bucket: r.bucket instanceof Date ? r.bucket : new Date(r.bucket as unknown as string),
@@ -682,6 +690,7 @@ export async function providerDetail(key: string): Promise<ProviderDetail | null
     methodology_version: string;
     routed_to_address: string | null;
     routed_to_label: string | null;
+    routed_fingerprint: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -699,7 +708,8 @@ export async function providerDetail(key: string): Promise<ProviderDetail | null
       ae.source_block::int                    AS source_block,
       ae.methodology_version                  AS methodology_version,
       ae.routed_to_address                    AS routed_to_address,
-      rl.label                                AS routed_to_label
+      rl.label                                AS routed_to_label,
+      ae.routed_fingerprint                   AS routed_fingerprint
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
@@ -752,6 +762,7 @@ export async function providerDetail(key: string): Promise<ProviderDetail | null
       methodologyVersion: r.methodology_version,
       routedToAddress: r.routed_to_address,
       routedToLabel: r.routed_to_label,
+      routedFingerprint: r.routed_fingerprint,
     })),
   };
 }

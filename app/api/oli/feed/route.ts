@@ -27,6 +27,7 @@ async function fetchOneAsRecent(id: number): Promise<RecentEventRow | null> {
     methodology_version: string;
     routed_to_address: string | null;
     routed_to_label: string | null;
+    routed_fingerprint: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -44,7 +45,8 @@ async function fetchOneAsRecent(id: number): Promise<RecentEventRow | null> {
       ae.source_block::int                    AS source_block,
       ae.methodology_version                  AS methodology_version,
       ae.routed_to_address                    AS routed_to_address,
-      rl.label                                AS routed_to_label
+      rl.label                                AS routed_to_label,
+      ae.routed_fingerprint                   AS routed_fingerprint
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
@@ -71,6 +73,7 @@ async function fetchOneAsRecent(id: number): Promise<RecentEventRow | null> {
     methodologyVersion: r.methodology_version,
     routedToAddress: r.routed_to_address,
     routedToLabel: r.routed_to_label,
+    routedFingerprint: r.routed_fingerprint,
   };
 }
 

@@ -102,9 +102,13 @@ function EventRow({
     labelMap,
   );
 
-  // For gateway-routed events, show the underlying service in the summary line.
+  // For gateway-routed events, show the underlying service in the summary
+  // line. Pattern A (address) takes priority; Pattern B (fingerprint) falls
+  // back to a short fp prefix if no address was recovered.
   const routedSuffix = event.routedToAddress
     ? ` → ${event.routedToLabel ?? shortHash(event.routedToAddress)}`
+    : event.routedFingerprint
+    ? ` → fp:${event.routedFingerprint.slice(0, 6)}…${event.routedFingerprint.slice(-4)}`
     : "";
 
   const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
@@ -231,6 +235,16 @@ function EventDetailPanel({
             copy: event.routedToAddress,
             external: `https://explore.tempo.xyz/address/${event.routedToAddress}`,
             sub: routedToLabel ? null : "underlying provider",
+          } satisfies FieldDef,
+        ]
+      : event.routedFingerprint
+      ? [
+          {
+            label: "Routed to",
+            value: `fp:${event.routedFingerprint.slice(0, 6)}…${event.routedFingerprint.slice(-4)}`,
+            copy: event.routedFingerprint,
+            link: `/oli/providers/fp_${event.routedFingerprint}`,
+            sub: "pattern-b grouping (provider not yet identified)",
           } satisfies FieldDef,
         ]
       : []),

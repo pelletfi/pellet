@@ -175,7 +175,7 @@ export default async function OliDashboardPage({
                         <code className="oli-providers-addr-hex">{display}</code>
                       )}
                     </span>
-                    <span className="oli-providers-num">${formatUsdcAmount(p.amountSumWei, 6)}</span>
+                    <span className="oli-providers-num">{formatUsdcAmount(p.amountSumWei, 6)}</span>
                     <span className="oli-providers-num">{p.txCount.toLocaleString()}</span>
                     <span className="oli-providers-time">{share.toFixed(1)}%</span>
                   </a>

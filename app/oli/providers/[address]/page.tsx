@@ -88,9 +88,9 @@ export default async function OliProviderDetailPage({
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          <Stat label="Lifetime revenue" value={`$${formatUsdcAmount(detail.amountSumWei, 6)}`} />
+          <Stat label="Lifetime revenue" value={formatUsdcAmount(detail.amountSumWei, 6)} />
           <Stat label="Lifetime txs" value={detail.txCount.toLocaleString()} />
-          <Stat label="Revenue · 24h" value={`$${formatUsdcAmount(detail.amountSumWei24h, 6)}`} />
+          <Stat label="Revenue · 24h" value={formatUsdcAmount(detail.amountSumWei24h, 6)} />
           <Stat label="Last seen" value={detail.lastSeen ? formatTimeAgo(detail.lastSeen) : "—"} />
         </div>
       </header>

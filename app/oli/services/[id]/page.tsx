@@ -86,7 +86,7 @@ export default async function OliServiceDetailPage({
                     );
                   })()}
                 </span>
-                <span className="oli-providers-num">${formatUsdcAmount(p.amountSumWei, 6)}</span>
+                <span className="oli-providers-num">{formatUsdcAmount(p.amountSumWei, 6)}</span>
                 <span className="oli-providers-num">{p.txCount.toLocaleString()}</span>
                 <span className="oli-providers-time">{formatTimeAgo(p.lastTs)}</span>
               </a>
