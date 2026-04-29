@@ -67,17 +67,24 @@ export default async function OliServiceDetailPage({
             </div>
             {detail.providers.map((p, i) => (
               <a
-                key={p.address}
-                href={`/oli/providers/${p.address}`}
+                key={p.key}
+                href={`/oli/providers/${p.key}`}
                 className="oli-providers-row oli-providers-row-link"
               >
                 <span className="oli-providers-rank">{String(i + 1).padStart(2, "0")}</span>
                 <span className="oli-providers-addr">
-                  {p.label ? (
-                    <span className="oli-providers-addr-label">{p.label}</span>
-                  ) : (
-                    <code className="oli-providers-addr-hex">{shortAddress(p.address)}</code>
-                  )}
+                  {(() => {
+                    const display = p.label
+                      ? p.label
+                      : p.kind === "address" && p.address
+                      ? shortAddress(p.address)
+                      : `fp:${p.fingerprint?.slice(0, 6)}…${p.fingerprint?.slice(-4)}`;
+                    return p.label ? (
+                      <span className="oli-providers-addr-label">{display}</span>
+                    ) : (
+                      <code className="oli-providers-addr-hex">{display}</code>
+                    );
+                  })()}
                 </span>
                 <span className="oli-providers-num">${formatUsdcAmount(p.amountSumWei, 6)}</span>
                 <span className="oli-providers-num">{p.txCount.toLocaleString()}</span>

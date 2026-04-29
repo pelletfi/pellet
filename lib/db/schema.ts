@@ -112,6 +112,11 @@ export const agentEvents = pgTable(
     // Settlement event. Populated by lib/ingest/gateway-attribution.ts during
     // a separate enrichment cron, only for rows where agent_id='tempo-gateway-mpp'.
     routedToAddress: text("routed_to_address"),
+    // NEW (T10.5): Pattern B fingerprint. For user→gateway calldata path
+    // (selector 0x95777d59), the bytes32 ref's bytes 5-14 are a stable per-
+    // service fingerprint. Captured even when the provider address can't be
+    // recovered, so we can group txs by service even pre-labeling.
+    routedFingerprint: text("routed_fingerprint"),
     sourceBlock: bigint("source_block", { mode: "number" }).notNull(),
     methodologyVersion: text("methodology_version").notNull(),
     matchedAt: timestamp("matched_at", { withTimezone: true }).defaultNow().notNull(),
@@ -122,5 +127,6 @@ export const agentEvents = pgTable(
     eventRefIdx: index("agent_events_event_ref_idx").on(t.txHash, t.logIndex),
     counterpartyIdx: index("agent_events_counterparty_idx").on(t.counterpartyAddress),
     routedToIdx: index("agent_events_routed_to_idx").on(t.routedToAddress),
+    routedFpIdx: index("agent_events_routed_fp_idx").on(t.routedFingerprint),
   }),
 );

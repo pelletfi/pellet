@@ -50,23 +50,32 @@ export default async function OliProviderDetailPage({
         >
           {detail.label ?? (
             <code style={{ fontFamily: "var(--font-mono)", fontSize: 28, color: "var(--color-accent)" }}>
-              {shortAddress(detail.address)}
+              {detail.kind === "address" && detail.address
+                ? shortAddress(detail.address)
+                : `fp:${detail.fingerprint?.slice(0, 6)}…${detail.fingerprint?.slice(-4)}`}
             </code>
           )}
         </h1>
-        {detail.label && (
-          <p
-            style={{
-              color: "var(--color-text-tertiary)",
-              fontSize: 12,
-              margin: 0,
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            <code>{detail.address}</code>
-            {detail.category && ` · ${detail.category}`}
-          </p>
-        )}
+        <p
+          style={{
+            color: "var(--color-text-tertiary)",
+            fontSize: 12,
+            margin: 0,
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          {detail.kind === "address" && detail.address ? (
+            <>
+              <code>{detail.address}</code>
+              {detail.category && ` · ${detail.category}`}
+            </>
+          ) : (
+            <>
+              <code>fingerprint 0x{detail.fingerprint}</code>
+              {" · pattern-b grouping (provider not yet identified)"}
+            </>
+          )}
+        </p>
         <div
           style={{
             marginTop: 16,

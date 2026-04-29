@@ -13,7 +13,12 @@ export type LeaderboardRow = {
 };
 
 export type ProviderRow = {
-  address: string;
+  // Unified key for both address-attributed and fingerprint-grouped providers.
+  // For address kind: hex address. For fingerprint kind: "fp_" + 20-hex-char.
+  key: string;
+  kind: "address" | "fingerprint";
+  address: string | null;
+  fingerprint: string | null;
   label: string | null;
   txCount: number;
   amountSumWei: string;
@@ -115,35 +120,67 @@ export async function dashboardSnapshot(windowHours = 24): Promise<DashboardSnap
   };
 }
 
-// Routed providers — recovered from gateway Settlement events. Only rows
-// where routed_to_address is non-null contribute. Joins address_labels so
-// once a provider is named, the label flows through to the dashboard.
+// Routed providers — combines both attribution paths:
+//   1. Pattern A: address recovered from on-chain Settlement event
+//   2. Pattern B: fingerprint extracted from user→gateway calldata bytes32 ref
+// Both surface as unified rows so the dashboard shows ~100% of gateway routing
+// even for groups we can't yet name. Joins address_labels for Pattern A so
+// a label flows through automatically once we tag a provider.
 export async function topRoutedProviders(
   windowHours: number,
   limit: number,
 ): Promise<ProviderRow[]> {
   const sinceCutoff = HOURS(windowHours);
   const rows = await db.execute<{
-    address: string;
+    key: string;
+    kind: "address" | "fingerprint";
+    address: string | null;
+    fingerprint: string | null;
     label: string | null;
     tx_count: string;
     amount_sum_wei: string;
   }>(sql`
-    SELECT
-      ae.routed_to_address                                AS address,
-      rl.label                                            AS label,
-      COUNT(*)::text                                      AS tx_count,
-      COALESCE(SUM(ae.amount_wei::numeric), 0)::text      AS amount_sum_wei
-    FROM agent_events ae
-    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
-    WHERE ae.ts > ${sinceCutoff}
-      AND ae.routed_to_address IS NOT NULL
-    GROUP BY ae.routed_to_address, rl.label
-    ORDER BY amount_sum_wei DESC
+    WITH addr AS (
+      SELECT
+        ae.routed_to_address                              AS key,
+        'address'::text                                   AS kind,
+        ae.routed_to_address                              AS address,
+        NULL::text                                        AS fingerprint,
+        rl.label                                          AS label,
+        COUNT(*)::text                                    AS tx_count,
+        COALESCE(SUM(ae.amount_wei::numeric), 0)::text    AS amount_sum_wei
+      FROM agent_events ae
+      LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
+      WHERE ae.ts > ${sinceCutoff}
+        AND ae.routed_to_address IS NOT NULL
+      GROUP BY ae.routed_to_address, rl.label
+    ),
+    fp AS (
+      SELECT
+        ('fp_' || ae.routed_fingerprint)                  AS key,
+        'fingerprint'::text                               AS kind,
+        NULL::text                                        AS address,
+        ae.routed_fingerprint                             AS fingerprint,
+        NULL::text                                        AS label,
+        COUNT(*)::text                                    AS tx_count,
+        COALESCE(SUM(ae.amount_wei::numeric), 0)::text    AS amount_sum_wei
+      FROM agent_events ae
+      WHERE ae.ts > ${sinceCutoff}
+        AND ae.routed_fingerprint IS NOT NULL
+        AND ae.routed_to_address IS NULL
+      GROUP BY ae.routed_fingerprint
+    )
+    SELECT * FROM addr
+    UNION ALL
+    SELECT * FROM fp
+    ORDER BY amount_sum_wei::numeric DESC
     LIMIT ${limit}
   `);
   return rows.rows.map((r) => ({
+    key: r.key,
+    kind: r.kind,
     address: r.address,
+    fingerprint: r.fingerprint,
     label: r.label,
     txCount: Number(r.tx_count),
     amountSumWei: r.amount_sum_wei,
@@ -451,36 +488,66 @@ export async function serviceDetail(id: string) {
     .where(eq(agents.id, id))
     .limit(1);
 
-  // Underlying-provider breakdown for gateway-style services. Empty for
-  // non-gateway services (no rows have routed_to_address set). Joins
-  // address_labels so once a provider is named, the label flows through.
+  // Underlying-provider breakdown — combines Pattern A (address) and
+  // Pattern B (fingerprint) attribution. Empty for non-gateway services.
   const providers = await db.execute<{
-    address: string;
+    key: string;
+    kind: "address" | "fingerprint";
+    address: string | null;
+    fingerprint: string | null;
     label: string | null;
     category: string | null;
     tx_count: string;
     amount_sum_wei: string;
     last_ts: Date | string;
   }>(sql`
-    SELECT
-      ae.routed_to_address                                AS address,
-      rl.label                                            AS label,
-      rl.category                                         AS category,
-      COUNT(*)::text                                      AS tx_count,
-      COALESCE(SUM(ae.amount_wei::numeric), 0)::text      AS amount_sum_wei,
-      MAX(ae.ts)                                          AS last_ts
-    FROM agent_events ae
-    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
-    WHERE ae.agent_id = ${id}
-      AND ae.routed_to_address IS NOT NULL
-    GROUP BY ae.routed_to_address, rl.label, rl.category
-    ORDER BY amount_sum_wei DESC
+    WITH addr AS (
+      SELECT
+        ae.routed_to_address                              AS key,
+        'address'::text                                   AS kind,
+        ae.routed_to_address                              AS address,
+        NULL::text                                        AS fingerprint,
+        rl.label                                          AS label,
+        rl.category                                       AS category,
+        COUNT(*)::text                                    AS tx_count,
+        COALESCE(SUM(ae.amount_wei::numeric), 0)::text    AS amount_sum_wei,
+        MAX(ae.ts)                                        AS last_ts
+      FROM agent_events ae
+      LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
+      WHERE ae.agent_id = ${id}
+        AND ae.routed_to_address IS NOT NULL
+      GROUP BY ae.routed_to_address, rl.label, rl.category
+    ),
+    fp AS (
+      SELECT
+        ('fp_' || ae.routed_fingerprint)                  AS key,
+        'fingerprint'::text                               AS kind,
+        NULL::text                                        AS address,
+        ae.routed_fingerprint                             AS fingerprint,
+        NULL::text                                        AS label,
+        NULL::text                                        AS category,
+        COUNT(*)::text                                    AS tx_count,
+        COALESCE(SUM(ae.amount_wei::numeric), 0)::text    AS amount_sum_wei,
+        MAX(ae.ts)                                        AS last_ts
+      FROM agent_events ae
+      WHERE ae.agent_id = ${id}
+        AND ae.routed_fingerprint IS NOT NULL
+        AND ae.routed_to_address IS NULL
+      GROUP BY ae.routed_fingerprint
+    )
+    SELECT * FROM addr
+    UNION ALL
+    SELECT * FROM fp
+    ORDER BY amount_sum_wei::numeric DESC
   `);
 
   return {
     head: head[0] ?? null,
     providers: providers.rows.map((r) => ({
+      key: r.key,
+      kind: r.kind,
       address: r.address,
+      fingerprint: r.fingerprint,
       label: r.label,
       category: r.category,
       txCount: Number(r.tx_count),
@@ -522,7 +589,10 @@ export async function agentDetail(id: string) {
 // ── Routed provider detail page ───────────────────────────────────────────
 
 export type ProviderDetail = {
-  address: string;
+  key: string;
+  kind: "address" | "fingerprint";
+  address: string | null;
+  fingerprint: string | null;
   label: string | null;
   category: string | null;
   txCount: number;
@@ -535,10 +605,19 @@ export type ProviderDetail = {
   recent: RecentEventRow[];
 };
 
-export async function providerDetail(address: string): Promise<ProviderDetail | null> {
-  const addr = address.toLowerCase();
+export async function providerDetail(key: string): Promise<ProviderDetail | null> {
+  // Key is either a hex address or "fp_<20-hex-char>". Dispatch to the right
+  // filter so the same page works for both attribution paths.
+  const lc = key.toLowerCase();
+  const isFingerprint = lc.startsWith("fp_");
+  const addr = isFingerprint ? null : lc;
+  const fp = isFingerprint ? lc.slice(3) : null;
+  const matchClause = isFingerprint
+    ? sql`routed_fingerprint = ${fp}`
+    : sql`routed_to_address = ${addr}`;
 
   // Header aggregates: lifetime + 24h + first/last seen.
+  const labelLookup = isFingerprint ? sql`NULL::text` : sql`rl.address = ${addr}`;
   const head = await db.execute<{
     tx_count: string;
     amount_sum_wei: string;
@@ -559,8 +638,8 @@ export async function providerDetail(address: string): Promise<ProviderDetail | 
       MAX(rl.label)                                               AS label,
       MAX(rl.category)                                            AS category
     FROM agent_events ae
-    LEFT JOIN address_labels rl ON rl.address = ${addr}
-    WHERE ae.routed_to_address = ${addr}
+    LEFT JOIN address_labels rl ON ${labelLookup}
+    WHERE ae.${matchClause}
   `);
 
   if (head.rows.length === 0 || Number(head.rows[0].tx_count) === 0) return null;
@@ -573,7 +652,7 @@ export async function providerDetail(address: string): Promise<ProviderDetail | 
       COALESCE(SUM(amount_wei::numeric), 0)::text AS amount_wei,
       COUNT(*)::text AS tx_count
     FROM agent_events
-    WHERE routed_to_address = ${addr}
+    WHERE ${matchClause}
       AND ts > now() - interval '30 days'
     GROUP BY bucket
     ORDER BY bucket ASC
@@ -619,13 +698,16 @@ export async function providerDetail(address: string): Promise<ProviderDetail | 
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
     LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
-    WHERE ae.routed_to_address = ${addr}
+    WHERE ae.${matchClause}
     ORDER BY ae.ts DESC
     LIMIT 50
   `);
 
   return {
+    key: lc,
+    kind: isFingerprint ? "fingerprint" : "address",
     address: addr,
+    fingerprint: fp,
     label: h.label,
     category: h.category,
     txCount: Number(h.tx_count),
