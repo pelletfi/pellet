@@ -33,12 +33,13 @@ export function Sidebar() {
       className="oli-sidebar"
     >
       <Link
-        href="/oli"
+        href="/"
         style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}
+        aria-label="Pellet — back to home"
       >
         <PelletMark size={24} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--color-text-primary)" }}>
-          pellet OLI
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
+          OLI
         </span>
       </Link>
 
@@ -65,14 +66,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                style={{
-                  fontSize: 13,
-                  padding: "6px 8px",
-                  borderRadius: 6,
-                  color: active ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
-                  background: active ? "var(--color-bg-emphasis)" : "transparent",
-                  textDecoration: "none",
-                }}
+                className={`oli-nav-link${active ? " oli-nav-link-active" : ""}`}
               >
                 {item.label}
               </Link>

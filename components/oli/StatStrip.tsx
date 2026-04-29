@@ -24,7 +24,7 @@ export function StatStrip({ stats }: { stats: Stat[] }) {
             {s.label}
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginTop: 4 }}>
-            <span style={{ fontSize: 32, fontWeight: 500, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            <span className="oli-stat-value" style={{ fontSize: 32, fontWeight: 500, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
               {s.value}
             </span>
             {s.delta && s.delta.tone !== "neutral" && (

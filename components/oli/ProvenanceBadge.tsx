@@ -17,7 +17,7 @@ export function ProvenanceBadge({
         cursor: "help",
       }}
     >
-      ⏚ {methodologyVersion}
+      ◍ {methodologyVersion}
     </span>
   );
 }
