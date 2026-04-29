@@ -97,9 +97,17 @@ export const agentEvents = pgTable(
     txHash: text("tx_hash").notNull(),
     logIndex: integer("log_index").notNull(),
     ts: timestamp("ts", { withTimezone: true }).notNull(),
-    kind: text("kind").notNull(), // 'transfer' | 'swap' | 'mint' | 'program_call' | 'attest' | 'custom'
+    kind: text("kind").notNull(),
     summary: text("summary").notNull(),
     targets: jsonb("targets").notNull().default({}),
+    // NEW: economic fields for OLI metrics. amount_wei is the raw uint256 from
+    // the Transfer event's data field; token_address identifies which TIP-20
+    // (USDC.e, USDT0, etc.) was moved. Both nullable for non-Transfer events.
+    amountWei: text("amount_wei"),                  // store as text — uint256 doesn't fit in JS number
+    tokenAddress: text("token_address"),
+    // NEW: counterparty (the OTHER side of the Transfer — payer when this row's
+    // agent is the recipient, or recipient when this row's agent is the payer).
+    counterpartyAddress: text("counterparty_address"),
     sourceBlock: bigint("source_block", { mode: "number" }).notNull(),
     methodologyVersion: text("methodology_version").notNull(),
     matchedAt: timestamp("matched_at", { withTimezone: true }).defaultNow().notNull(),
@@ -108,5 +116,6 @@ export const agentEvents = pgTable(
     tsIdx: index("agent_events_ts_idx").on(t.ts),
     agentTsIdx: index("agent_events_agent_ts_idx").on(t.agentId, t.ts),
     eventRefIdx: index("agent_events_event_ref_idx").on(t.txHash, t.logIndex),
+    counterpartyIdx: index("agent_events_counterparty_idx").on(t.counterpartyAddress),
   }),
 );

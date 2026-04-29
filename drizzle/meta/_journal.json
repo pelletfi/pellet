@@ -8,6 +8,13 @@
       "when": 1777467485267,
       "tag": "0000_nervous_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777476481308,
+      "tag": "0001_goofy_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }
