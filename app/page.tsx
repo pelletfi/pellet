@@ -8,7 +8,7 @@ export default function Page() {
     <main className="min-h-screen bg-bg text-fg">
       <Header agentCount={1} />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        <div className="grid gap-6 md:grid-cols-[1fr_280px]">
+        <div className="grid gap-6 md:grid-cols-[1fr_360px]">
           <div className="space-y-2 md:order-first">
             <EventCard
               event={{
