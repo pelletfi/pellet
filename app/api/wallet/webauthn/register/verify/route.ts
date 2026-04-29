@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { verifyRegistration, placeholderAddressFromCredId } from "@/lib/wallet/webauthn";
+import { verifyRegistration } from "@/lib/wallet/webauthn";
 import { readChallenge, clearChallenge, setUserSession } from "@/lib/wallet/challenge-cookie";
+import { coseToUncompressed, passkeyAddress } from "@/lib/wallet/tempo-account";
 import { db } from "@/lib/db/client";
 import { walletUsers } from "@/lib/db/schema";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
@@ -54,7 +55,24 @@ export async function POST(req: Request) {
       ? credIdRaw
       : isoBase64URL.fromBuffer(new Uint8Array(credIdRaw as Uint8Array));
   const publicKeyBuf = Buffer.from(credential.publicKey);
-  const managedAddress = placeholderAddressFromCredId(credId);
+
+  // Phase 3.B.2: derive the REAL Tempo account address from the COSE
+  // public key. Same shape as Ethereum derivation but over secp256r1.
+  // Replaces placeholderAddressFromCredId from Phase 2.
+  let managedAddress: string;
+  let publicKeyUncompressed: string;
+  try {
+    publicKeyUncompressed = coseToUncompressed(publicKeyBuf);
+    managedAddress = passkeyAddress(publicKeyUncompressed as `0x${string}`);
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error: "could not derive Tempo address from passkey public key",
+        detail: e instanceof Error ? e.message : String(e),
+      },
+      { status: 400 },
+    );
+  }
 
   // Insert the wallet_user row. Conflict on cred id should be impossible
   // (we just minted a fresh credential), but guard against re-replays.
@@ -64,6 +82,7 @@ export async function POST(req: Request) {
       passkeyCredentialId: credId,
       passkeyPublicKey: publicKeyBuf,
       managedAddress,
+      publicKeyUncompressed,
       passkeySignCount: credential.counter,
       displayName: null,
     })

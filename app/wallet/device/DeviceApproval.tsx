@@ -5,13 +5,16 @@ import {
   startRegistration,
   startAuthentication,
 } from "@simplewebauthn/browser";
+import { createWalletClient, http } from "viem";
+import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
+import { Account, Abis, withRelay } from "viem/tempo";
 
 type ApprovalState =
   | { kind: "input" }
   | { kind: "auth"; code: string }
   | { kind: "confirming"; code: string; userId: string; managedAddress: string }
-  | { kind: "submitting" }
-  | { kind: "approved" }
+  | { kind: "submitting"; stage: "init" | "signing" | "broadcasting" | "finalizing" }
+  | { kind: "approved"; txHash: string; explorerUrl: string }
   | { kind: "error"; message: string };
 
 const PRESET_CAPS = [
@@ -19,6 +22,31 @@ const PRESET_CAPS = [
   { label: "$25 / 7d", spendCapUsdc: 25, perCallUsdc: 5, ttlSeconds: 7 * 24 * 3600 },
   { label: "$100 / 30d", spendCapUsdc: 100, perCallUsdc: 10, ttlSeconds: 30 * 24 * 3600 },
 ];
+
+// transferWithMemo selector — the x402 settlement call on TIP-20.
+const TRANSFER_WITH_MEMO = "0x95777d59" as const;
+
+type InitResponse = {
+  user_id: string;
+  credential_id: string;
+  public_key_uncompressed: `0x${string}`;
+  managed_address: `0x${string}`;
+  rp_id: string;
+  agent_key_address: `0x${string}`;
+  chain: {
+    id: number;
+    name: string;
+    rpc_url: string;
+    sponsor_url: string | null;
+    explorer_url: string;
+    usdc_e: `0x${string}`;
+  };
+  account_keychain_address: `0x${string}`;
+  expiry_unix: number;
+  spend_cap_wei: string;
+  per_call_cap_wei: string;
+  session_ttl_seconds: number;
+};
 
 export function DeviceApproval({ initialCode }: { initialCode: string }) {
   const [state, setState] = useState<ApprovalState>(
@@ -93,9 +121,11 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
 
   const onApprove = async () => {
     if (state.kind !== "confirming") return;
-    setState({ kind: "submitting" });
+
+    setState({ kind: "submitting", stage: "init" });
+    let init: InitResponse;
     try {
-      const res = await fetch("/api/wallet/device/approve", {
+      const res = await fetch("/api/wallet/device/approve-init", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -107,13 +137,112 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setState({ kind: "error", message: data.error ?? "approval failed" });
+        setState({ kind: "error", message: data.error ?? "approve-init failed" });
         return;
       }
-      setState({ kind: "approved" });
+      init = data as InitResponse;
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
+      return;
     }
+
+    // Build the user's passkey-rooted Tempo account + sponsored client.
+    setState({ kind: "submitting", stage: "signing" });
+    let txHash: `0x${string}`;
+    try {
+      const userAccount = Account.fromWebAuthnP256(
+        {
+          id: init.credential_id,
+          publicKey: init.public_key_uncompressed,
+        },
+        { rpId: init.rp_id },
+      );
+
+      const chain = init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      const transport = init.chain.sponsor_url
+        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url))
+        : http(init.chain.rpc_url);
+
+      const client = createWalletClient({
+        account: userAccount,
+        chain,
+        transport,
+      });
+
+      // T3 authorizeKey call. Caps the agent key to spending USDC.e via
+      // transferWithMemo only, total spend_cap over the session window
+      // with daily reset.
+      setState({ kind: "submitting", stage: "broadcasting" });
+      txHash = await client.writeContract({
+        address: init.account_keychain_address,
+        abi: Abis.accountKeychain,
+        functionName: "authorizeKey",
+        args: [
+          init.agent_key_address,
+          0, // SignatureType.Secp256k1 — the agent key is a regular EOA
+          {
+            expiry: BigInt(init.expiry_unix),
+            enforceLimits: true,
+            limits: [
+              {
+                token: init.chain.usdc_e,
+                amount: BigInt(init.spend_cap_wei),
+                period: BigInt(86400),
+              },
+            ],
+            allowAnyCalls: false,
+            allowedCalls: [
+              {
+                target: init.chain.usdc_e,
+                selectorRules: [
+                  { selector: TRANSFER_WITH_MEMO, recipients: [] },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    } catch (e) {
+      setState({
+        kind: "error",
+        message:
+          "on-chain authorize failed: " +
+          (e instanceof Error ? e.message : String(e)),
+      });
+      return;
+    }
+
+    setState({ kind: "submitting", stage: "finalizing" });
+    try {
+      const finRes = await fetch("/api/wallet/device/approve-finalize", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: state.code, tx_hash: txHash }),
+      });
+      const finData = await finRes.json();
+      if (!finRes.ok) {
+        setState({
+          kind: "error",
+          message:
+            "tx confirmed but server rejected finalize: " + (finData.error ?? "unknown"),
+        });
+        return;
+      }
+    } catch (e) {
+      setState({
+        kind: "error",
+        message:
+          "tx confirmed but finalize POST failed: " +
+          (e instanceof Error ? e.message : String(e)),
+      });
+      return;
+    }
+
+    setState({
+      kind: "approved",
+      txHash,
+      explorerUrl: `${init.chain.explorer_url}/tx/${txHash}`,
+    });
   };
 
   return (
@@ -144,6 +273,9 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         .dev-btn-secondary:hover { color: var(--color-text-primary); border-color: rgba(255,255,255,0.18); opacity: 1; }
         .dev-rule { height: 1px; background: var(--color-border-subtle); margin: 24px 0; }
         .dev-mono-addr { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-quaternary); word-break: break-all; }
+        .dev-stage { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); line-height: 1.6; }
+        .dev-stage-active { color: var(--color-accent); }
+        .dev-stage-done { color: var(--color-text-quaternary); }
       `}</style>
 
       <span className="dev-kicker">Pellet Wallet · Connect agent</span>
@@ -251,13 +383,11 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
               margin: "0 0 16px",
             }}
           >
-            ⚠ <strong>Phase 3.A.</strong> Approving generates a fresh
-            secp256k1 agent key, encrypts it (AES-256-GCM) and stores it
-            scoped to your passkey-rooted user. The on-chain{" "}
-            <span className="dev-mono">AccountKeychain.authorizeKey</span>{" "}
-            call that gives this key spending authority on your Tempo
-            account lands in phase 3.B — until then the key has no on-chain
-            capability, just exists server-side waiting for authorization.
+            ⚠ <strong>Phase 3.B.</strong> Approving will prompt your passkey
+            to sign an{" "}
+            <span className="dev-mono">AccountKeychain.authorizeKey</span> tx
+            on Tempo Moderato testnet. Gas is sponsored. The agent key gets
+            on-chain caps — Tempo enforces them.
           </p>
 
           <button className="dev-btn" onClick={onApprove}>
@@ -267,27 +397,77 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
       )}
 
       {state.kind === "submitting" && (
-        <p style={{ color: "var(--color-text-tertiary)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
-          submitting…
-        </p>
+        <>
+          <h1 className="dev-h1">Working…</h1>
+          <p className="dev-stage">
+            <span className={state.stage === "init" ? "dev-stage-active" : "dev-stage-done"}>
+              · preparing agent key
+            </span>
+            <br />
+            <span
+              className={
+                state.stage === "signing"
+                  ? "dev-stage-active"
+                  : state.stage === "init"
+                  ? ""
+                  : "dev-stage-done"
+              }
+            >
+              · waiting for passkey
+            </span>
+            <br />
+            <span
+              className={
+                state.stage === "broadcasting"
+                  ? "dev-stage-active"
+                  : state.stage === "finalizing" || state.stage === "init" || state.stage === "signing"
+                  ? state.stage === "finalizing"
+                    ? "dev-stage-done"
+                    : ""
+                  : "dev-stage-done"
+              }
+            >
+              · broadcasting tx
+            </span>
+            <br />
+            <span className={state.stage === "finalizing" ? "dev-stage-active" : ""}>
+              · finalizing
+            </span>
+          </p>
+        </>
       )}
 
       {state.kind === "approved" && (
         <>
           <h1 className="dev-h1">Approved.</h1>
-          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, lineHeight: 1.5 }}>
-            You can close this tab. Your CLI should pick up the bearer
-            token within a couple seconds.
+          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, lineHeight: 1.5, margin: "0 0 16px" }}>
+            Agent key authorized on Tempo. Your CLI should pick up the bearer token within a couple seconds.
           </p>
+          <a
+            href={state.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="dev-mono-addr"
+            style={{ color: "var(--color-accent)", borderBottom: "1px solid var(--color-accent)", textDecoration: "none" }}
+          >
+            tx · {state.txHash.slice(0, 14)}…{state.txHash.slice(-6)} ↗
+          </a>
         </>
       )}
 
       {state.kind === "error" && (
         <>
           <h1 className="dev-h1">Something went wrong.</h1>
-          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, fontFamily: "var(--font-mono)" }}>
+          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, fontFamily: "var(--font-mono)", lineHeight: 1.6 }}>
             {state.message}
           </p>
+          <button
+            className="dev-btn dev-btn-secondary"
+            style={{ marginTop: 16 }}
+            onClick={() => setState({ kind: "input" })}
+          >
+            start over
+          </button>
         </>
       )}
     </div>
