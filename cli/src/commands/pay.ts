@@ -45,38 +45,81 @@ export async function pay(args: PayArgs): Promise<number> {
 
   process.stdout.write(`\n  ${dim("signing payment…")}\n`);
 
-  const res = await fetch(`${session.baseUrl ?? defaultBaseUrl()}/api/wallet/pay`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${session.bearer}`,
-    },
-    body: JSON.stringify({
+  // env override beats saved baseUrl — easier to point a CLI session at
+  // a different host without re-pairing.
+  const baseUrl = process.env.PELLET_BASE_URL ?? session.baseUrl ?? defaultBaseUrl();
+  const data = (await postWithAuth(
+    `${baseUrl}/api/wallet/pay`,
+    session.bearer,
+    {
       to: args.to,
       amount_wei: amountWei,
       memo: args.memo ?? null,
       token: args.token,
-    }),
-  });
-  const data = (await res.json()) as PayResponse;
+    },
+  )) as { res: Response; body: PayResponse };
+  const res = data.res;
+  const responseBody = data.body;
 
-  if (!res.ok || !data.ok) {
-    console.error(`  ${err("✗")} ${data.error ?? "payment failed"}`);
-    if (data.detail) console.error(`  ${dim(data.detail)}`);
+  if (!res.ok || !responseBody.ok) {
+    console.error(`  ${err("✗")} ${responseBody.error ?? "payment failed"}`);
+    if (responseBody.detail) console.error(`  ${dim(responseBody.detail)}`);
     return 1;
   }
 
   process.stdout.write(`  ${ok("✓")} payment confirmed.\n\n`);
-  process.stdout.write(`  ${dim("from:        ")} ${data.from}\n`);
-  process.stdout.write(`  ${dim("to:          ")} ${data.to}\n`);
-  process.stdout.write(`  ${dim("amount:      ")} $${formatUsd(data.amount_wei!)}\n`);
-  process.stdout.write(`  ${dim("memo:        ")} ${data.memo}\n`);
-  process.stdout.write(`  ${dim("tx:          ")} ${accent(data.tx_hash!)}\n`);
-  process.stdout.write(`  ${dim("explorer:    ")} ${accent(data.explorer_url!)}\n\n`);
+  process.stdout.write(`  ${dim("from:        ")} ${responseBody.from}\n`);
+  process.stdout.write(`  ${dim("to:          ")} ${responseBody.to}\n`);
+  process.stdout.write(`  ${dim("amount:      ")} $${formatUsd(responseBody.amount_wei!)}\n`);
+  process.stdout.write(`  ${dim("memo:        ")} ${responseBody.memo}\n`);
+  process.stdout.write(`  ${dim("tx:          ")} ${accent(responseBody.tx_hash!)}\n`);
+  process.stdout.write(`  ${dim("explorer:    ")} ${accent(responseBody.explorer_url!)}\n\n`);
   process.stdout.write(
-    `  ${dim("session:")} $${formatUsd(data.spend_used_wei_after!)} of $${formatUsd(data.spend_cap_wei!)} used\n`,
+    `  ${dim("session:")} $${formatUsd(responseBody.spend_used_wei_after!)} of $${formatUsd(responseBody.spend_cap_wei!)} used\n`,
   );
   return 0;
+}
+
+/**
+ * POST that follows redirects manually, preserving the Authorization
+ * header. Node's fetch (and most browsers) drops auth headers across
+ * cross-origin redirects per the Fetch spec — pellet.network →
+ * www.pellet.network is a different origin. We re-issue the POST at
+ * each Location with the same headers and body, max 5 hops.
+ */
+async function postWithAuth(
+  url: string,
+  bearer: string,
+  body: unknown,
+): Promise<{ res: Response; body: PayResponse }> {
+  let target = url;
+  const headers = {
+    "content-type": "application/json",
+    authorization: `Bearer ${bearer}`,
+  };
+  const serialized = JSON.stringify(body);
+  for (let hop = 0; hop < 5; hop++) {
+    const res = await fetch(target, {
+      method: "POST",
+      headers,
+      body: serialized,
+      redirect: "manual",
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (!loc) {
+        return {
+          res,
+          body: { ok: false, error: `redirect ${res.status} with no Location` },
+        };
+      }
+      target = new URL(loc, target).toString();
+      continue;
+    }
+    const data = (await res.json()) as PayResponse;
+    return { res, body: data };
+  }
+  return { res: new Response(null, { status: 599 }), body: { ok: false, error: "too many redirects" } };
 }
 
 function formatUsd(wei: string): string {
