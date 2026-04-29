@@ -102,6 +102,11 @@ function EventRow({
     labelMap,
   );
 
+  // For gateway-routed events, show the underlying service in the summary line.
+  const routedSuffix = event.routedToAddress
+    ? ` → ${event.routedToLabel ?? shortHash(event.routedToAddress)}`
+    : "";
+
   const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -123,7 +128,12 @@ function EventRow({
           ›
         </span>
         <span className="oli-event-row-time">{formatTimeAgo(event.ts)}</span>
-        <span className="oli-event-row-summary">{decoded.summary}</span>
+        <span className="oli-event-row-summary">
+          {decoded.summary}
+          {routedSuffix && (
+            <span className="oli-event-row-routed">{routedSuffix}</span>
+          )}
+        </span>
         <Link
           href={`/oli/event/${event.id}`}
           className="oli-event-row-tx-link"
@@ -190,6 +200,10 @@ function EventDetailPanel({
       ? `${formatUsdcAmount(event.amountWei, 6)}${event.tokenAddress ? " · USDC.e" : ""}`
       : "—";
 
+  const routedToKey = event.routedToAddress?.toLowerCase();
+  const routedToLabel =
+    event.routedToLabel ?? (routedToKey ? labelMap[routedToKey]?.label ?? null : null);
+
   const fields: FieldDef[] = [
     {
       label: "Agent",
@@ -209,6 +223,17 @@ function EventDetailPanel({
         : undefined,
       sub: cpCategory,
     },
+    ...(event.routedToAddress
+      ? [
+          {
+            label: "Routed to",
+            value: routedToLabel ?? shortHash(event.routedToAddress),
+            copy: event.routedToAddress,
+            external: `https://explore.tempo.xyz/address/${event.routedToAddress}`,
+            sub: routedToLabel ? null : "underlying provider",
+          } satisfies FieldDef,
+        ]
+      : []),
     {
       label: "Amount",
       value: amountDisplay,

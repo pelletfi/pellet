@@ -37,6 +37,9 @@ export type RecentEventRow = {
   txHash: string;
   sourceBlock: number;
   methodologyVersion: string;
+  // T10: underlying service provider for gateway-routed events
+  routedToAddress: string | null;
+  routedToLabel: string | null;
 };
 
 export type ServiceListRow = {
@@ -191,6 +194,8 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
     tx_hash: string;
     source_block: number;
     methodology_version: string;
+    routed_to_address: string | null;
+    routed_to_label: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -206,10 +211,13 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
       ae.token_address                        AS token_address,
       ae.tx_hash                              AS tx_hash,
       ae.source_block::int                    AS source_block,
-      ae.methodology_version                  AS methodology_version
+      ae.methodology_version                  AS methodology_version,
+      ae.routed_to_address                    AS routed_to_address,
+      rl.label                                AS routed_to_label
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
+    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
     ORDER BY ae.ts DESC
     LIMIT ${limit}
   `);
@@ -231,6 +239,8 @@ export async function recentDecoded(limit = 25): Promise<RecentEventRow[]> {
     txHash: r.tx_hash,
     sourceBlock: r.source_block,
     methodologyVersion: r.methodology_version,
+    routedToAddress: r.routed_to_address,
+    routedToLabel: r.routed_to_label,
   }));
 }
 
@@ -349,6 +359,8 @@ export async function serviceDetail(id: string) {
     tx_hash: string;
     source_block: number;
     methodology_version: string;
+    routed_to_address: string | null;
+    routed_to_label: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -364,10 +376,13 @@ export async function serviceDetail(id: string) {
       ae.token_address                        AS token_address,
       ae.tx_hash                              AS tx_hash,
       ae.source_block::int                    AS source_block,
-      ae.methodology_version                  AS methodology_version
+      ae.methodology_version                  AS methodology_version,
+      ae.routed_to_address                    AS routed_to_address,
+      rl.label                                AS routed_to_label
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
+    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
     WHERE ae.agent_id = ${id}
     ORDER BY ae.ts DESC
     LIMIT 50
@@ -410,6 +425,8 @@ export async function serviceDetail(id: string) {
       txHash: r.tx_hash,
       sourceBlock: r.source_block,
       methodologyVersion: r.methodology_version,
+      routedToAddress: r.routed_to_address,
+      routedToLabel: r.routed_to_label,
     })),
     trend: trend.rows.map((r) => ({
       bucket: r.bucket instanceof Date ? r.bucket : new Date(r.bucket as unknown as string),
@@ -640,6 +657,9 @@ export type EventDetail = {
   sourceBlock: number;
   methodologyVersion: string;
   matchedAt: Date;
+  routedToAddress: string | null;
+  routedToLabel: string | null;
+  routedToCategory: string | null;
   // related events: other agent_events from the same tx (excluding this one)
   related: Array<{
     id: number;
@@ -671,6 +691,9 @@ export async function eventDetail(id: number): Promise<EventDetail | null> {
     source_block: number;
     methodology_version: string;
     matched_at: Date | string;
+    routed_to_address: string | null;
+    routed_to_label: string | null;
+    routed_to_category: string | null;
   }>(sql`
     SELECT
       ae.id::int                              AS id,
@@ -689,10 +712,14 @@ export async function eventDetail(id: number): Promise<EventDetail | null> {
       ae.log_index                            AS log_index,
       ae.source_block::int                    AS source_block,
       ae.methodology_version                  AS methodology_version,
-      ae.matched_at                           AS matched_at
+      ae.matched_at                           AS matched_at,
+      ae.routed_to_address                    AS routed_to_address,
+      rl.label                                AS routed_to_label,
+      rl.category                             AS routed_to_category
     FROM agent_events ae
     JOIN agents a ON a.id = ae.agent_id
     LEFT JOIN address_labels cl ON cl.address = LOWER(ae.counterparty_address)
+    LEFT JOIN address_labels rl ON rl.address = LOWER(ae.routed_to_address)
     WHERE ae.id = ${id}
     LIMIT 1
   `);
@@ -743,6 +770,9 @@ export async function eventDetail(id: number): Promise<EventDetail | null> {
     sourceBlock: row.source_block,
     methodologyVersion: row.methodology_version,
     matchedAt: row.matched_at instanceof Date ? row.matched_at : new Date(row.matched_at as string),
+    routedToAddress: row.routed_to_address,
+    routedToLabel: row.routed_to_label,
+    routedToCategory: row.routed_to_category,
     related: relatedRows.rows.map((r) => ({
       id: r.id,
       agentId: r.agent_id,

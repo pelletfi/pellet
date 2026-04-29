@@ -108,6 +108,10 @@ export const agentEvents = pgTable(
     // NEW: counterparty (the OTHER side of the Transfer — payer when this row's
     // agent is the recipient, or recipient when this row's agent is the payer).
     counterpartyAddress: text("counterparty_address"),
+    // NEW (T10): underlying service provider address recovered from the gateway's
+    // Settlement event. Populated by lib/ingest/gateway-attribution.ts during
+    // a separate enrichment cron, only for rows where agent_id='tempo-gateway-mpp'.
+    routedToAddress: text("routed_to_address"),
     sourceBlock: bigint("source_block", { mode: "number" }).notNull(),
     methodologyVersion: text("methodology_version").notNull(),
     matchedAt: timestamp("matched_at", { withTimezone: true }).defaultNow().notNull(),
@@ -117,5 +121,6 @@ export const agentEvents = pgTable(
     agentTsIdx: index("agent_events_agent_ts_idx").on(t.agentId, t.ts),
     eventRefIdx: index("agent_events_event_ref_idx").on(t.txHash, t.logIndex),
     counterpartyIdx: index("agent_events_counterparty_idx").on(t.counterpartyAddress),
+    routedToIdx: index("agent_events_routed_to_idx").on(t.routedToAddress),
   }),
 );

@@ -1255,6 +1255,13 @@ main {
 .oli-event-row-summary {
   color: var(--color-text-primary);
 }
+.oli-event-row-routed {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
 .oli-event-row-tx {
   font-family: var(--font-mono);
   font-size: 10px;

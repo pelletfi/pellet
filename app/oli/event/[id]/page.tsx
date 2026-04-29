@@ -135,6 +135,27 @@ export default async function OliEventDetailPage({
               </span>
             )}
           </dd>
+          {detail.routedToAddress && (
+            <>
+              <dt>Routed to</dt>
+              <dd>
+                <span style={{ color: "var(--color-accent)" }}>
+                  {detail.routedToLabel ?? shortAddress(detail.routedToAddress)}
+                </span>
+                <a
+                  href={`https://explore.tempo.xyz/address/${detail.routedToAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="oli-event-page-action"
+                >
+                  ↗ explorer
+                </a>
+                <span style={{ fontSize: 11, color: "var(--color-text-quaternary)", fontFamily: "var(--font-mono)" }}>
+                  {detail.routedToCategory ? `category: ${detail.routedToCategory}` : "underlying provider"}
+                </span>
+              </dd>
+            </>
+          )}
         </dl>
       </section>
 
