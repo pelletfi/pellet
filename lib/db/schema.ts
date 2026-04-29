@@ -9,7 +9,16 @@ import {
   boolean,
   primaryKey,
   index,
+  uuid,
+  customType,
 } from "drizzle-orm/pg-core";
+
+// bytea — Drizzle doesn't ship a built-in bytea type yet; declare one.
+const bytea = customType<{ data: Buffer; default: false }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 // ── Raw chain events (port from archive 0001_ingestion_foundation.sql) ────
 // Idempotent by (tx_hash, log_index). Emitted by every contract Pellet watches.
@@ -128,5 +137,71 @@ export const agentEvents = pgTable(
     counterpartyIdx: index("agent_events_counterparty_idx").on(t.counterpartyAddress),
     routedToIdx: index("agent_events_routed_to_idx").on(t.routedToAddress),
     routedFpIdx: index("agent_events_routed_fp_idx").on(t.routedFingerprint),
+  }),
+);
+
+// ── Pellet Wallet · Phase 1 (Path B: self-custody, passkey-rooted) ────────
+// Schema only. No signing logic in this commit. See drizzle/0004_wallet_schema.sql.
+
+export const walletUsers = pgTable(
+  "wallet_users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    passkeyCredentialId: text("passkey_credential_id").notNull().unique(),
+    passkeyPublicKey: bytea("passkey_public_key").notNull(),
+    managedAddress: text("managed_address").notNull().unique(),
+    displayName: text("display_name"),
+    passkeySignCount: bigint("passkey_sign_count", { mode: "number" }).notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    managedAddressIdx: index("wallet_users_managed_address_idx").on(t.managedAddress),
+  }),
+);
+
+export const walletSessions = pgTable(
+  "wallet_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    bearerTokenHash: text("bearer_token_hash").notNull().unique(),
+    spendCapWei: text("spend_cap_wei").notNull(),
+    spendUsedWei: text("spend_used_wei").notNull().default("0"),
+    perCallCapWei: text("per_call_cap_wei").notNull(),
+    recipientAllowlist: jsonb("recipient_allowlist"),
+    // B2 mode session-key ciphertext (passkey-PRF-wrapped). NULL in B1 mode.
+    sessionKeyCiphertext: bytea("session_key_ciphertext"),
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("wallet_sessions_user_idx").on(t.userId),
+    expiresIdx: index("wallet_sessions_expires_idx").on(t.expiresAt),
+  }),
+);
+
+export const walletSpendLog = pgTable(
+  "wallet_spend_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id").notNull().references(() => walletSessions.id, { onDelete: "restrict" }),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    challengeId: text("challenge_id"),
+    recipient: text("recipient").notNull(),
+    amountWei: text("amount_wei").notNull(),
+    txHash: text("tx_hash"),
+    // 'pending' | 'signed' | 'submitted' | 'confirmed' | 'failed' | 'rejected'
+    status: text("status").notNull().default("pending"),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    sessionIdx: index("wallet_spend_log_session_idx").on(t.sessionId, t.createdAt),
+    userIdx: index("wallet_spend_log_user_idx").on(t.userId, t.createdAt),
+    txIdx: index("wallet_spend_log_tx_idx").on(t.txHash),
   }),
 );
