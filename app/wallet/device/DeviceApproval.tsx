@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  startRegistration,
+  startAuthentication,
+} from "@simplewebauthn/browser";
 
 type ApprovalState =
   | { kind: "input" }
-  | { kind: "confirming"; code: string; agentLabel: string | null }
+  | { kind: "auth"; code: string }
+  | { kind: "confirming"; code: string; userId: string; managedAddress: string }
   | { kind: "submitting" }
   | { kind: "approved" }
   | { kind: "error"; message: string };
@@ -17,12 +22,74 @@ const PRESET_CAPS = [
 
 export function DeviceApproval({ initialCode }: { initialCode: string }) {
   const [state, setState] = useState<ApprovalState>(
-    initialCode ? { kind: "confirming", code: initialCode, agentLabel: null } : { kind: "input" },
+    initialCode ? { kind: "auth", code: initialCode } : { kind: "input" },
   );
   const [code, setCode] = useState(initialCode);
   const [capIdx, setCapIdx] = useState(0);
+  const [supportsPasskey, setSupportsPasskey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setSupportsPasskey(
+      typeof window !== "undefined" &&
+        typeof window.PublicKeyCredential !== "undefined",
+    );
+  }, []);
 
   const cap = PRESET_CAPS[capIdx];
+
+  const onPasskeySignIn = async () => {
+    if (state.kind !== "auth") return;
+    try {
+      const optsRes = await fetch("/api/wallet/webauthn/auth/options", { method: "POST" });
+      const opts = await optsRes.json();
+      const assertion = await startAuthentication({ optionsJSON: opts });
+      const verifyRes = await fetch("/api/wallet/webauthn/auth/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ response: assertion }),
+      });
+      const data = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setState({ kind: "error", message: data.error ?? "sign-in failed" });
+        return;
+      }
+      setState({
+        kind: "confirming",
+        code: state.code,
+        userId: data.user_id,
+        managedAddress: data.managed_address,
+      });
+    } catch (e) {
+      setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
+    }
+  };
+
+  const onPasskeyEnroll = async () => {
+    if (state.kind !== "auth") return;
+    try {
+      const optsRes = await fetch("/api/wallet/webauthn/register/options", { method: "POST" });
+      const opts = await optsRes.json();
+      const attestation = await startRegistration({ optionsJSON: opts });
+      const verifyRes = await fetch("/api/wallet/webauthn/register/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ response: attestation }),
+      });
+      const data = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setState({ kind: "error", message: data.error ?? "enrollment failed" });
+        return;
+      }
+      setState({
+        kind: "confirming",
+        code: state.code,
+        userId: data.user_id,
+        managedAddress: data.managed_address,
+      });
+    } catch (e) {
+      setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
+    }
+  };
 
   const onApprove = async () => {
     if (state.kind !== "confirming") return;
@@ -74,7 +141,9 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         .dev-btn:hover { opacity: 0.9; }
         .dev-btn[disabled] { opacity: 0.4; cursor: wait; }
         .dev-btn-secondary { background: transparent; color: var(--color-text-tertiary); border: 1px solid var(--color-border-subtle); margin-top: 10px; }
+        .dev-btn-secondary:hover { color: var(--color-text-primary); border-color: rgba(255,255,255,0.18); opacity: 1; }
         .dev-rule { height: 1px; background: var(--color-border-subtle); margin: 24px 0; }
+        .dev-mono-addr { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-quaternary); word-break: break-all; }
       `}</style>
 
       <span className="dev-kicker">Pellet Wallet · Connect agent</span>
@@ -97,9 +166,7 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
             className="dev-btn"
             style={{ marginTop: 12 }}
             onClick={() => {
-              if (code.trim().length > 0) {
-                setState({ kind: "confirming", code: code.trim(), agentLabel: null });
-              }
+              if (code.trim().length > 0) setState({ kind: "auth", code: code.trim() });
             }}
           >
             continue
@@ -107,17 +174,40 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         </>
       )}
 
+      {state.kind === "auth" && (
+        <>
+          <h1 className="dev-h1">Sign in or enroll</h1>
+          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, lineHeight: 1.5, margin: "0 0 16px" }}>
+            Pellet Wallet is rooted in your passkey. Sign in if you've used
+            this device before; otherwise enroll a new passkey.
+          </p>
+          <p style={{ color: "var(--color-text-quaternary)", fontSize: 11, fontFamily: "var(--font-mono)", margin: "0 0 16px" }}>
+            Code: <span style={{ color: "var(--color-accent)" }}>{state.code}</span>
+          </p>
+
+          {supportsPasskey === false && (
+            <p style={{ color: "var(--color-error)", fontSize: 12, fontFamily: "var(--font-mono)" }}>
+              this browser doesn't support passkeys. try Chrome, Safari, or Edge.
+            </p>
+          )}
+
+          <button className="dev-btn" onClick={onPasskeySignIn} disabled={!supportsPasskey}>
+            sign in with passkey
+          </button>
+          <button className="dev-btn dev-btn-secondary" onClick={onPasskeyEnroll} disabled={!supportsPasskey}>
+            enroll new passkey
+          </button>
+        </>
+      )}
+
       {state.kind === "confirming" && (
         <>
           <h1 className="dev-h1">Approve agent</h1>
-          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, lineHeight: 1.5, margin: "0 0 16px" }}>
+          <p style={{ color: "var(--color-text-tertiary)", fontSize: 13, lineHeight: 1.5, margin: "0 0 12px" }}>
             Code: <span className="dev-mono" style={{ color: "var(--color-accent)" }}>{state.code}</span>
-            {state.agentLabel && (
-              <>
-                <br />
-                Agent: <span className="dev-mono">{state.agentLabel}</span>
-              </>
-            )}
+          </p>
+          <p className="dev-mono-addr">
+            wallet · {state.managedAddress.slice(0, 14)}…{state.managedAddress.slice(-6)}
           </p>
 
           <div className="dev-rule" />
@@ -161,10 +251,10 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
               margin: "0 0 16px",
             }}
           >
-            ⚠ <strong>Phase 1 placeholder</strong>. Passkey enrollment +
-            on-chain AccountKeychain authorize land in step 3 — for now
-            this just marks the pairing approved with the chosen caps so
-            the CLI poll loop can be exercised end-to-end on testnet.
+            ⚠ <strong>Phase 2.</strong> Passkey is real. The on-chain{" "}
+            AccountKeychain.authorizeKey tx that enforces these caps lands
+            in phase 3 — for now this records the approval against your
+            passkey-rooted user but doesn't yet write to Tempo.
           </p>
 
           <button className="dev-btn" onClick={onApprove}>

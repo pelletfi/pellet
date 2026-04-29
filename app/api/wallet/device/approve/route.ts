@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { walletDevicePairings, walletUsers } from "@/lib/db/schema";
+import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Phase 1 PLACEHOLDER. In step 3 this endpoint is gated behind a passkey
-// assertion + an AccountKeychain.authorizeKey tx. For now it just marks
-// the pairing approved with the chosen caps so the CLI poll loop can be
-// exercised end-to-end on testnet without real funds at risk.
-//
-// Creates a placeholder wallet_users row keyed to a synthetic credential
-// so the wallet_session foreign key is satisfied. Real users replace this
-// row when they actually enroll a passkey in step 3.
+// Phase 2 — requires an authenticated user (set via WebAuthn register or
+// auth flows). Phase 3 will additionally chain an on-chain
+// AccountKeychain.authorizeKey tx before marking the pairing approved.
 
 type ApproveBody = {
   code: string;
@@ -23,23 +19,40 @@ type ApproveBody = {
 };
 
 export async function POST(req: Request) {
+  // 1. Must be authenticated.
+  const userId = await readUserSession();
+  if (!userId) {
+    return NextResponse.json(
+      { error: "not authenticated", detail: "complete passkey enrollment first" },
+      { status: 401 },
+    );
+  }
+  const userRows = await db
+    .select({ id: walletUsers.id })
+    .from(walletUsers)
+    .where(eq(walletUsers.id, userId))
+    .limit(1);
+  if (userRows.length === 0) {
+    return NextResponse.json({ error: "user not found" }, { status: 401 });
+  }
+
+  // 2. Validate body.
   let body: ApproveBody;
   try {
     body = (await req.json()) as ApproveBody;
   } catch {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
-
   if (!body.code || !body.spend_cap_wei || !body.per_call_cap_wei || !body.session_ttl_seconds) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
+  // 3. Look up + validate the pairing.
   const rows = await db
     .select()
     .from(walletDevicePairings)
     .where(eq(walletDevicePairings.code, body.code))
     .limit(1);
-
   const pairing = rows[0];
   if (!pairing) {
     return NextResponse.json({ error: "code not found" }, { status: 404 });
@@ -55,27 +68,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "code expired" }, { status: 410 });
   }
 
-  // PLACEHOLDER user. In step 3 this is replaced by the real passkey-enrolled
-  // user. For now we create a per-pairing throwaway user so the foreign keys
-  // line up; the managed_address is a deterministic non-real address.
-  const placeholderCredId = `placeholder-${pairing.id}`;
-  const placeholderAddress = `0x0000000000000000000000000000${pairing.id.replace(/-/g, "").slice(0, 12)}`;
-  const [user] = await db
-    .insert(walletUsers)
-    .values({
-      passkeyCredentialId: placeholderCredId,
-      passkeyPublicKey: Buffer.from([]), // empty placeholder; step 3 fills this
-      managedAddress: placeholderAddress.toLowerCase(),
-      displayName: "phase-1 placeholder",
-    })
-    .returning({ id: walletUsers.id });
-
+  // 4. Mark approved against the authenticated user. (Phase 3: also submit
+  // AccountKeychain.authorizeKey on Tempo here, persist the resulting
+  // keyId on the wallet_session row.)
   await db
     .update(walletDevicePairings)
     .set({
       status: "approved",
       approvedAt: new Date(),
-      approvedUserId: user.id,
+      approvedUserId: userId,
       approvedSpendCapWei: body.spend_cap_wei,
       approvedPerCallCapWei: body.per_call_cap_wei,
       approvedSessionTtlSeconds: body.session_ttl_seconds,
