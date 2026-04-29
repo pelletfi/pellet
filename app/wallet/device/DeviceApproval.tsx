@@ -7,7 +7,7 @@ import {
 } from "@simplewebauthn/browser";
 import { createWalletClient, http } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
-import { Account, Abis, withRelay } from "viem/tempo";
+import { Account, Actions, withRelay, tempoActions } from "viem/tempo";
 
 type ApprovalState =
   | { kind: "input" }
@@ -33,6 +33,7 @@ type InitResponse = {
   managed_address: `0x${string}`;
   rp_id: string;
   agent_key_address: `0x${string}`;
+  agent_private_key: `0x${string}`;
   chain: {
     id: number;
     name: string;
@@ -158,50 +159,54 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         { rpId: init.rp_id },
       );
 
-      const chain = init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      // The access key Account — wraps the freshly-generated agent
+      // private key. `access: userAccount` tells viem this key is
+      // derived/scoped to the user account.
+      const accessKey = Account.fromSecp256k1(init.agent_private_key, {
+        access: userAccount,
+      });
+
+      const baseChain =
+        init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      // Tempo's chainConfig.prepareTransactionRequest reads chain.feeToken
+      // when feePayer is set; surface the chain's USDC.e as the fee token
+      // so sponsor accounting is well-formed.
+      const chain = { ...baseChain, feeToken: init.chain.usdc_e };
+
       const transport = init.chain.sponsor_url
-        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url))
+        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url), {
+            policy: "sign-only",
+          })
         : http(init.chain.rpc_url);
 
       const client = createWalletClient({
         account: userAccount,
         chain,
         transport,
-      });
+      }).extend(tempoActions());
 
-      // T3 authorizeKey call. Caps the agent key to spending USDC.e via
-      // transferWithMemo only, total spend_cap over the session window
-      // with daily reset.
+      // T3 authorizeKey via the high-level Tempo action. Constructs a
+      // type-0x76 envelope with keyAuthorization, signs the keyAuth
+      // payload with the access key + the outer envelope with the
+      // user's passkey, sends with feePayer:true so withRelay engages
+      // the sponsor for gas.
       setState({ kind: "submitting", stage: "broadcasting" });
-      txHash = await client.writeContract({
-        address: init.account_keychain_address,
-        abi: Abis.accountKeychain,
-        functionName: "authorizeKey",
-        args: [
-          init.agent_key_address,
-          0, // SignatureType.Secp256k1 — the agent key is a regular EOA
+      const result = await client.accessKey.authorizeSync({
+        accessKey,
+        expiry: init.expiry_unix,
+        feePayer: true,
+        limits: [
           {
-            expiry: BigInt(init.expiry_unix),
-            enforceLimits: true,
-            limits: [
-              {
-                token: init.chain.usdc_e,
-                amount: BigInt(init.spend_cap_wei),
-                period: BigInt(86400),
-              },
-            ],
-            allowAnyCalls: false,
-            allowedCalls: [
-              {
-                target: init.chain.usdc_e,
-                selectorRules: [
-                  { selector: TRANSFER_WITH_MEMO, recipients: [] },
-                ],
-              },
-            ],
+            token: init.chain.usdc_e,
+            limit: BigInt(init.spend_cap_wei),
+            period: 86400,
           },
         ],
+        scopes: [
+          { address: init.chain.usdc_e, selector: TRANSFER_WITH_MEMO },
+        ],
       });
+      txHash = result.receipt.transactionHash as `0x${string}`;
     } catch (e) {
       setState({
         kind: "error",

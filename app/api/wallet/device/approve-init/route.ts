@@ -126,6 +126,11 @@ export async function POST(req: Request) {
   });
 
   // 5. Return chain config + identity material the browser needs.
+  // The agent's private key is included in the response so the browser
+  // can construct viem's Account.fromSecp256k1 + sign the keyAuthorization
+  // payload inline. Server-side ciphertext is the durable copy; this
+  // response value is in-memory-only browser-side, transmitted over TLS,
+  // never logged. Same pattern Stripe Link uses for SPTs.
   const chain = tempoChainConfig();
   return NextResponse.json({
     user_id: user.id,
@@ -134,6 +139,7 @@ export async function POST(req: Request) {
     managed_address: user.managedAddress,
     rp_id: process.env.NEXT_PUBLIC_RP_ID ?? "pellet.network",
     agent_key_address: sessionKey.address,
+    agent_private_key: sessionKey.privateKey,
     chain: {
       id: chain.chainId,
       name: chain.name,
