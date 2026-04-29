@@ -25,7 +25,20 @@ export default async function OliDashboardPage() {
             letterSpacing: "-0.02em",
           }}
         >
-          Dashboard
+          Open-Ledger Interface{" "}
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.32em",
+              fontWeight: 400,
+              color: "var(--color-text-quaternary)",
+              letterSpacing: "0.06em",
+              marginLeft: "0.35em",
+              verticalAlign: "0",
+            }}
+          >
+            (OLI)
+          </span>
         </h1>
         <p style={{ color: "var(--color-text-tertiary)", marginTop: 6, fontSize: 13 }}>
           Autonomous economic activity on Tempo, last 24 hours.
@@ -36,17 +49,20 @@ export default async function OliDashboardPage() {
         stats={[
           {
             label: "MPP txs · 24h",
-            value: snap.txCount.toLocaleString("en-US"),
+            count: snap.txCount,
+            valueType: "integer",
             hint: "decoded transfer events",
           },
           {
             label: "Agents active · 24h",
-            value: snap.agentsActive.toLocaleString("en-US"),
+            count: snap.agentsActive,
+            valueType: "integer",
             hint: "watched entities with ≥1 event",
           },
           {
             label: "Service revenue · 24h",
-            value: formatUsdcAmount(snap.amountSumWei, 6),
+            count: Number(snap.amountSumWei),
+            valueType: "usdc",
             hint: "sum of TIP-20 inflows",
           },
         ]}
