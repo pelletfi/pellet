@@ -190,11 +190,18 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
       // payload with the access key + the outer envelope with the
       // user's passkey, sends with feePayer:true so withRelay engages
       // the sponsor for gas.
+      //
+      // Explicit gas budget — viem's default estimate (~40k) doesn't
+      // account for on-chain WebAuthn signature verification (~2M)
+      // plus AccountKeychain storage writes (~500k) plus first-tx
+      // account activation. Set generous and let the precompile use
+      // what it needs; sponsor pays the actual amount metered.
       setState({ kind: "submitting", stage: "broadcasting" });
       const result = await client.accessKey.authorizeSync({
         accessKey,
         expiry: init.expiry_unix,
         feePayer: true,
+        gas: BigInt(5_000_000),
         limits: [
           {
             token: init.chain.usdc_e,
