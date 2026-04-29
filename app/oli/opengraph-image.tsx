@@ -1,11 +1,29 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-export const runtime = "edge";
+// nodejs runtime so we can read font files from disk via fs. ImageResponse
+// (next/og) supports both runtimes; nodejs is more reliable for font loading.
+export const runtime = "nodejs";
 export const alt = "Pellet OLI — Open-Ledger Interface for Tempo";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+async function loadFont(file: string): Promise<ArrayBuffer> {
+  const path = join(process.cwd(), "public", "fonts", file);
+  const buf = await readFile(path);
+  // Node Buffer is a Uint8Array under the hood — slice into a fresh
+  // ArrayBuffer so Satori treats it as immutable binary data.
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+}
+
 export default async function Image() {
+  const [geistBold, geistMono, instrumentSerifItalic] = await Promise.all([
+    loadFont("Geist-Bold.ttf"),
+    loadFont("GeistMono-Regular.ttf"),
+    loadFont("InstrumentSerif-Italic.ttf"),
+  ]);
+
   return new ImageResponse(
     (
       <div
@@ -52,14 +70,14 @@ export default async function Image() {
               letterSpacing: "0.2em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.55)",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+              fontFamily: "Geist Mono",
             }}
           >
             PELLET · OLI
           </span>
         </div>
 
-        {/* Hero: serif headline */}
+        {/* Hero: Instrument Serif italic headline */}
         <div
           style={{
             display: "flex",
@@ -70,8 +88,9 @@ export default async function Image() {
         >
           <div
             style={{
-              fontFamily: "Georgia, serif",
-              fontSize: 100,
+              fontFamily: "Instrument Serif",
+              fontStyle: "italic",
+              fontSize: 110,
               lineHeight: 1.05,
               letterSpacing: "-0.02em",
               fontWeight: 400,
@@ -90,7 +109,7 @@ export default async function Image() {
             justifyContent: "space-between",
             alignItems: "flex-end",
             fontSize: 18,
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            fontFamily: "Geist Mono",
             color: "rgba(255,255,255,0.45)",
             letterSpacing: "0.04em",
           }}
@@ -100,6 +119,18 @@ export default async function Image() {
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Geist", data: geistBold, weight: 700, style: "normal" },
+        { name: "Geist Mono", data: geistMono, weight: 400, style: "normal" },
+        {
+          name: "Instrument Serif",
+          data: instrumentSerifItalic,
+          weight: 400,
+          style: "italic",
+        },
+      ],
+    },
   );
 }
