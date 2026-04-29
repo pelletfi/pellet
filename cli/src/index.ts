@@ -5,6 +5,7 @@
 // `pellet pay` lands in phase 4 once on-chain signing is plumbed.
 
 import { authStart, authStatus, authRevoke } from "./commands/auth.js";
+import { pay, type PayArgs } from "./commands/pay.js";
 
 const args = process.argv.slice(2);
 const [verb, sub, ...rest] = args;
@@ -30,8 +31,7 @@ async function main(): Promise<number> {
   }
 
   if (verb === "pay") {
-    console.error("pellet pay is not yet implemented (phase 4 — see docs/wallet/)");
-    return 64;
+    return pay(parsePayArgs([sub, ...rest]));
   }
 
   console.error(`unknown command: ${verb}`);
@@ -52,6 +52,26 @@ function parseAuthStartArgs(argv: string[]): { agentLabel?: string; baseUrl?: st
   return out;
 }
 
+function parsePayArgs(argv: (string | undefined)[]): PayArgs {
+  const out: PayArgs = {};
+  const args = argv.filter((a): a is string => typeof a === "string");
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--to" && args[i + 1]) {
+      out.to = args[++i];
+    } else if (a === "--amount" && args[i + 1]) {
+      out.amountUsdc = args[++i];
+    } else if (a === "--amount-wei" && args[i + 1]) {
+      out.amountWei = args[++i];
+    } else if (a === "--memo" && args[i + 1]) {
+      out.memo = args[++i];
+    } else if (a === "--token" && args[i + 1]) {
+      out.token = args[++i];
+    }
+  }
+  return out;
+}
+
 function printHelp(): void {
   process.stdout.write(`pellet — open agent wallet on Tempo
 
@@ -65,8 +85,13 @@ usage:
   pellet auth revoke
                     drop the local bearer (server revoke comes in phase 3)
 
-  pellet pay <402-url>
-                    [phase 4] sign + submit an x402 challenge
+  pellet pay --to <address> --amount <usdc> [--memo <text>] [--token <addr>]
+                    sign + submit a transferWithMemo on Tempo. uses the
+                    agent's on-chain-authorized session key; spend is
+                    capped by AccountKeychain at the chain level.
+                    --amount in USDC (e.g. 1.50 = $1.50). Use --amount-wei
+                    for raw 6-decimal wei. Defaults to chain's USDC.e
+                    unless --token is provided.
 
   pellet version    print version
 
