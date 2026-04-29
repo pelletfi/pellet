@@ -1,12 +1,16 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
+import { LeaderboardClient } from "./LeaderboardClient";
 
 export type LeaderboardCol<T> = {
   key: string;
   header: string;
-  cell: (row: T) => React.ReactNode;
+  cell: (row: T) => ReactNode;
   align?: "left" | "right";
   width?: string;
 };
+
+const RANK_WIDTH = "28px";
+const CHEVRON_WIDTH = "16px";
 
 export function Leaderboard<T extends { id: string }>({
   title,
@@ -19,52 +23,33 @@ export function Leaderboard<T extends { id: string }>({
   cols: LeaderboardCol<T>[];
   hrefFor?: (row: T) => string;
 }) {
+  const gridTemplate = [
+    RANK_WIDTH,
+    ...cols.map((c) => c.width ?? "1fr"),
+    hrefFor ? CHEVRON_WIDTH : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const headers = cols.map((c) => c.header);
+  const aligns = cols.map((c) => c.align ?? "left") as ("left" | "right")[];
+
+  const rowData = rows.map((row) => ({
+    id: row.id,
+    cells: cols.map((c) => c.cell(row)),
+    aligns,
+    href: hrefFor ? hrefFor(row) : undefined,
+  }));
+
   return (
-    <div className="oli-leaderboard">
-      <div className="oli-leaderboard-title">
-        <span>{title}</span>
-        <span style={{ color: "var(--color-text-quaternary)", fontSize: 11 }}>
-          {rows.length} rows
-        </span>
-      </div>
-
-      <div className="oli-leaderboard-table">
-        <div
-          className="oli-leaderboard-row oli-leaderboard-header"
-          style={{ gridTemplateColumns: cols.map((c) => c.width ?? "1fr").join(" ") }}
-        >
-          {cols.map((c) => (
-            <span key={c.key} style={{ textAlign: c.align ?? "left" }}>
-              {c.header}
-            </span>
-          ))}
-        </div>
-
-        {rows.map((row) => {
-          const inner = (
-            <div
-              className="oli-leaderboard-row"
-              style={{ gridTemplateColumns: cols.map((c) => c.width ?? "1fr").join(" ") }}
-            >
-              {cols.map((c) => (
-                <span
-                  key={c.key}
-                  style={{ textAlign: c.align ?? "left" }}
-                >
-                  {c.cell(row)}
-                </span>
-              ))}
-            </div>
-          );
-          return hrefFor ? (
-            <Link key={row.id} href={hrefFor(row)} className="oli-leaderboard-link">
-              {inner}
-            </Link>
-          ) : (
-            <div key={row.id}>{inner}</div>
-          );
-        })}
-      </div>
-    </div>
+    <LeaderboardClient
+      title={title}
+      rowCount={rows.length}
+      headers={headers}
+      aligns={aligns}
+      gridTemplate={gridTemplate}
+      rows={rowData}
+      hasChevron={!!hrefFor}
+    />
   );
 }

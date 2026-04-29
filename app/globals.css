@@ -1168,3 +1168,15 @@ main {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "ss01", "ss02", "tnum";
 }
+
+/* 9. Leaderboard chevron — slides right + brightens on link-row hover */
+.oli-leaderboard-chevron {
+  display: inline-block;
+  transition:
+    transform var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1),
+    color var(--duration-normal) ease;
+}
+.oli-leaderboard-link:hover .oli-leaderboard-chevron {
+  transform: translateX(4px);
+  color: var(--color-text-primary);
+}
