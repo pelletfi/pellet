@@ -275,8 +275,8 @@ type OliSnap = {
 
 export default function LandingPage() {
   // Live Tempo block height for the folio rule — polls /api/v1/health
-  // every 1s. Tempo blocks land ~570ms apart so the number visibly ticks
-  // up on every poll, giving the page an instrument-readout feel.
+  // every 5s. Tempo blocks land ~570ms apart, so 5s is plenty to feel live
+  // without burning function invocations. (Was 1s; cut for cost.)
   const [block, setBlock] = useState<number | null>(null);
   useEffect(() => {
     const fetchBlock = async () => {
@@ -287,24 +287,19 @@ export default function LandingPage() {
       } catch {}
     };
     fetchBlock();
-    const id = setInterval(fetchBlock, 1000);
+    const id = setInterval(fetchBlock, 5000);
     return () => clearInterval(id);
   }, []);
 
-  // Live OLI snapshot — drives the stats strip below the hero. Refreshed
-  // every 60s so the front page reads as a live ticker, not static copy.
+  // OLI snapshot — fetched ONCE on mount. No polling. Visitors who want
+  // live numbers click through to /oli (where they're real-time). Cuts
+  // /api/oli/dashboard load by ~60x vs the prior 60s-polling version.
   const [snap, setSnap] = useState<OliSnap | null>(null);
   useEffect(() => {
-    const fetchSnap = async () => {
-      try {
-        const r = await fetch("/api/oli/dashboard?w=24h");
-        const d = (await r.json()) as OliSnap;
-        setSnap(d);
-      } catch {}
-    };
-    fetchSnap();
-    const id = setInterval(fetchSnap, 60_000);
-    return () => clearInterval(id);
+    fetch("/api/oli/dashboard?w=24h")
+      .then((r) => r.json())
+      .then(setSnap)
+      .catch(() => {});
   }, []);
 
   return (
