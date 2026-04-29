@@ -1,0 +1,32 @@
+---
+title: REST API
+description: HTTP endpoints for stablecoin data on Tempo.
+icon: Terminal
+---
+
+All endpoints are hosted at `https://pelletfi.com/api/v1`. Responses are JSON. CORS is open.
+
+Every value returned here is an **Open-Ledger Interface (OLI)** measurement — read directly from the Tempo public ledger, never aggregated from off-chain oracles. See [What is OLI?](/docs/oli) for the discipline, and [Methodology](/docs/methodology) for the exact formulas behind each field.
+
+Three authentication modes:
+
+- **Free tier** — unauthenticated. Stablecoin matrix + pre-trade TIP-403 simulate.
+- **MPP-paid** — per-request USDC.e micropayment on Tempo. Tiered ($0.010 lookup → $0.200 deep briefing). See [Pricing](/docs/pricing).
+- **Pellet Pro** — subscription. Unlimited access to all endpoints via API key in the `Authorization: Bearer` header.
+
+## Endpoints at a glance
+
+| Endpoint | Tier | Description |
+| --- | --- | --- |
+| `GET /v1/stablecoins` | Free | Full TIP-20 stablecoin matrix on Tempo |
+| `GET /v1/tip403/simulate` | Free | Pre-trade compliance oracle — will a transfer revert? |
+| `GET /v1/stablecoins/{addr}/peg` | MPP · $0.010 | Peg sample + 1h/24h/7d aggregates |
+| `GET /v1/stablecoins/flows` | MPP · $0.010 | Hourly DEX flow topology |
+| `GET /v1/addresses/{addr}` | MPP · $0.010 | Wallet intelligence (ERC-8004 + TIP-403 roles) |
+| `GET /v1/stablecoins/flow-anomalies` | MPP · $0.020 | ≥3σ anomalies |
+| `GET /v1/stablecoins/{addr}/reserves` | MPP · $0.020 | Backing composition + attestation |
+| `GET /v1/stablecoins/{addr}/risk` | MPP · $0.050 | Composite risk score + sub-scores |
+| `GET /v1/stablecoins/{addr}/rewards` | MPP · $0.100 | TIP-20 reward attribution + APY (first-mover) |
+| `GET /v1/tokens/{addr}/briefing` | MPP · $0.200 | Deep briefing — 8 aggregators + coverage/provenance ledger |
+
+See [Stablecoins](/docs/api/stablecoins) and [Flows](/docs/api/flows) for full schemas.

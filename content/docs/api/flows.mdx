@@ -1,0 +1,50 @@
+---
+title: Flows
+description: Cross-pair movement between stables on Tempo.
+icon: ArrowRightLeft
+---
+
+Every swap, transfer, and bridge event between stables is indexed from Tempo event logs and exposed as a directed flow graph.
+
+## `GET /v1/stablecoins/flows`
+
+Aggregate flow graph for a rolling 24h window. Free tier.
+
+```bash
+curl "https://pelletfi.com/api/v1/stablecoins/flows?hours=24"
+```
+
+```json
+{
+  "window_hours": 24,
+  "edges": [
+    {
+      "from": "pathUSD",
+      "to": "USDC.e",
+      "volume_usd": "4200000",
+      "tx_count": 1240
+    }
+  ],
+  "nodes": [
+    { "symbol": "pathUSD", "inbound_usd": "12400000", "outbound_usd": "4200000" }
+  ]
+}
+```
+
+Default window is 24 hours. Valid values: `1`, `6`, `24`.
+
+## `GET /v1/stablecoins/flows/history`
+
+Historical flows with custom window. **Paid endpoint.** $0.02 pathUSD per query.
+
+```bash
+mppx GET "https://pelletfi.com/api/v1/stablecoins/flows/history?from=1712000000&to=1712100000"
+```
+
+Returns the same edge/node schema aggregated across the requested window, plus per-hour time series.
+
+Use cases:
+
+- Backtest a routing strategy across historical liquidity
+- Detect abnormal flow between stables (de-peg precursor)
+- Reconcile a cross-stable arb bot's execution history

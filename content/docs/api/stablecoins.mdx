@@ -1,0 +1,67 @@
+---
+title: Stablecoins
+description: List, inspect, and analyze every TIP-20 stable on Tempo.
+icon: Coins
+---
+
+## `GET /v1/stablecoins`
+
+Returns every TIP-20 stable currently tracked on Tempo. Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins
+```
+
+```json
+{
+  "stablecoins": [
+    {
+      "address": "0x20c0...0000",
+      "symbol": "pathUSD",
+      "name": "Tempo Path Dollar",
+      "peg": { "price": 1.0000, "spread_bps": 0 },
+      "supply": { "current": "1090000", "cap": null },
+      "policy": { "type": "blacklist" }
+    }
+  ]
+}
+```
+
+## `GET /v1/stablecoins/{address}`
+
+Current state for a single stable. Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c0...0000
+```
+
+Response includes peg, supply, policy, role holders, and recent supply events. See [Tempo Primer](/docs/tempo-primer) for field definitions.
+
+## `GET /v1/tokens/{address}/briefing`
+
+Deep briefing — market, safety, compliance, holders, identity, origin, peg + risk + reserves enrichment, plus the **coverage & provenance ledger** (block-pinned reproducibility, per-section complete|partial|unavailable flags, on-chain data lineage for every section). Pure measurement, no model synthesis. **Paid endpoint.** $0.200 USDC.e via MPP.
+
+```bash
+mppx GET https://pelletfi.com/api/v1/tokens/0x20c0...0000/briefing
+```
+
+Without a payment header, the server responds `402 Payment Required` with MPP instructions. With `mppx` (or any MPP client), the payment is signed and attached automatically.
+
+```json
+{
+  "address": "0x20c0...0000",
+  "symbol": "pathUSD",
+  "briefing": {
+    "origin": "pathUSD is Tempo's protocol-native stablecoin...",
+    "backing": "protocol-native",
+    "issuer_context": "Issued by the Tempo treasury module...",
+    "risk": {
+      "peg_risk": "low",
+      "policy_risk": "low",
+      "centralization_risk": "medium"
+    }
+  }
+}
+```
+
+Pro subscribers can skip MPP and pass `Authorization: Bearer <key>` instead.

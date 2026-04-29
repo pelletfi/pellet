@@ -1,0 +1,73 @@
+---
+title: Peg
+description: Current peg + 1h/24h/7d aggregate stats per stablecoin.
+icon: Activity
+---
+
+Returns the most recent peg sample (price vs pathUSD, spread in bps, block) plus rolling-window aggregates.
+
+## `GET /v1/stablecoins/{address}/peg`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/peg
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "current": {
+    "price_vs_pathusd": 0.9994,
+    "spread_bps": 6,
+    "block_number": 14706112,
+    "sampled_at": "2026-04-14 10:41:24+00"
+  },
+  "windows": [
+    {
+      "window": "1h",
+      "sample_count": 60,
+      "mean_price": 0.9994,
+      "stddev_price": 0.0,
+      "min_price": 0.9994,
+      "max_price": 0.9994,
+      "max_deviation_bps": 6.0,
+      "seconds_outside_10bps": 0,
+      "seconds_outside_50bps": 0
+    },
+    { "window": "24h", "...": "..." },
+    { "window": "7d",  "...": "..." }
+  ]
+}
+```
+
+## Field reference
+
+| Field | Description |
+| --- | --- |
+| `current.price_vs_pathusd` | Live DEX `quoteSwap` price (1 stable → pathUSD) |
+| `current.spread_bps` | Absolute deviation from $1.00 in basis points |
+| `windows[].stddev_price` | Standard deviation across all samples in window |
+| `windows[].max_deviation_bps` | Worst-case deviation in window |
+| `windows[].seconds_outside_10bps` | Total time spent outside ±10bps band |
+| `windows[].seconds_outside_50bps` | Total time spent outside ±50bps (severe) band |
+
+Sampled every block (~1 sample per minute). Aggregates recomputed every 5 minutes.
+
+## Time-travel (`?as_of=`)
+
+Freeze the response to any historical timestamp:
+
+```bash
+# ISO 8601
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../peg?as_of=2026-04-13T12:00:00Z'
+
+# Or a relative duration
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../peg?as_of=24h'
+```
+
+`current` is the nearest sample at or before `as_of`; the windows are **recomputed on-the-fly** from raw `peg_samples` so the returned aggregates are the exact historical slice (not a stale pre-computed row). The response echoes `as_of` and sets the `X-Pellet-As-Of` header.
+
+**Accepted formats:** ISO 8601, unix epoch seconds, `1h`/`24h`/`7d` relative.

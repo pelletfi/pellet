@@ -1,0 +1,66 @@
+---
+title: Pricing
+description: Free reads, MPP micropayments, and Pellet Pro — three tiers for three use cases.
+icon: DollarSign
+---
+
+Pellet has three access tiers. You pick based on volume and automation needs.
+
+## Free
+
+No key, no wallet. Works from any HTTP client.
+
+- `GET /v1/stablecoins` — full stablecoin matrix
+- `GET /v1/tip403/simulate` — pre-trade compliance oracle (every agent should call before every TIP-20 transfer)
+- Rate limit: 60 requests / minute / IP
+
+Both endpoints are also exposed under `/api/mpp/*` at the same price so MPP-aware clients can use them.
+
+## MPP · Per-request
+
+Pay per call with USDC.e on Tempo over the Micropayment Protocol. No accounts, no signups.
+
+| Endpoint | Tier | Price |
+| --- | --- | --- |
+| `GET /mpp/stablecoins/flows` · `{addr}/peg` · `addresses/{addr}` | Lookup | $0.010 |
+| `GET /mpp/stablecoins/flow-anomalies` · `{addr}/reserves` | Analytics | $0.020 |
+| `GET /mpp/stablecoins/{addr}/risk` | Composite | $0.050 |
+| `GET /mpp/stablecoins/{addr}/rewards` *(first-mover — no peer)* | Category | $0.100 |
+| `GET /mpp/tokens/{addr}/briefing` | Deep briefing | $0.200 |
+
+Pricing reflects value delivered, not competitive parity. Lookups are priced against Allium-tier analytics; the rewards endpoint is priced at the first-mover tier because Pellet is the only service on Tempo indexing the TIP-20 reward precompile. The deep briefing bundles eight on-chain aggregators plus the coverage & provenance ledger (block-pinned, re-verifiable against any Tempo archive node) — no model synthesis, pure measurement.
+
+How it works:
+
+1. Client makes an HTTP request
+2. Server responds `402 Payment Required` with MPP instructions
+3. Client signs a micropayment with its EVM key
+4. Client retries with the `X-Payment` header
+5. Server verifies, returns the response
+
+Use `mppx` or `@pelletfi/mcp` and steps 2–4 happen automatically. See [Tempo Primer](/docs/tempo-primer) for MPP internals.
+
+Best for: agents making sporadic high-value queries, scripts where the compute is worth more than the marginal cost.
+
+## Pellet Pro · $49 / month
+
+Subscription tier for high-volume users and long-running agents.
+
+- Unlimited access to every endpoint
+- API key authentication (`Authorization: Bearer pk_live_...`)
+- No per-request cost — predictable monthly spend
+- Priority routing (higher rate limits, dedicated queue)
+
+Best for: solo quants, DAO treasuries, agent ops teams, anyone making > 1000 calls / month.
+
+Sign up at [pelletfi.com/pro](https://pelletfi.com/pro). Cancel any time — no contract.
+
+## Which tier should I use?
+
+| If you're... | Use |
+| --- | --- |
+| Exploring the data, building a dashboard | Free |
+| An AI agent making 10–100 calls / day | MPP |
+| A team or heavy user | Pro |
+
+All three tiers hit the same endpoints and return the same data. The only difference is how you pay.

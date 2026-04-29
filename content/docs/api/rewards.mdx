@@ -1,0 +1,89 @@
+---
+title: Rewards
+description: TIP-20 reward pool tracking — effective APY, funders, opt-ins, distributions.
+icon: Coins
+---
+
+Tempo's TIP-20 standard has a built-in opt-in reward precompile. Holders call `setRecipient()` to opt in (or redirect rewards to a different address); anyone can `distribute()` rewards to the pool; opted-in holders claim via `claim()`.
+
+Pellet indexes every `RewardDistributed` and `RewardRecipientSet` event from the raw chain, decoded every 5 minutes. Effective APY is computed live from 7d distributed / opted-in supply.
+
+## `GET /v1/stablecoins/{address}/rewards`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/rewards
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "as_of": null,
+  "effective_apy_pct": 4.12,
+  "opted_in_supply": "1250000000000",
+  "opted_in_tokens": 1250000,
+  "global_reward_per_token": "847529813...",
+  "distribution_count": 18,
+  "distributed": {
+    "last_24h_tokens": 1200,
+    "last_7d_tokens": 9870,
+    "all_time_tokens": 42350
+  },
+  "opt_in": {
+    "recipient_count": 8,
+    "distinct_recipients": 7,
+    "redirected_count": 1
+  },
+  "top_funders": [
+    {
+      "address": "0xcc5785a92fc8c54d1801e35b65a004560c25d469",
+      "label": "Stargate Liquidity Incentives",
+      "distribution_count": 12,
+      "total_amount_tokens": 28500
+    }
+  ],
+  "recent_distributions": [
+    {
+      "funder": "0xcc5785a92fc8c54d1801e35b65a004560c25d469",
+      "funder_label": "Stargate Liquidity Incentives",
+      "amount_tokens": 500,
+      "block_number": 14723754,
+      "block_timestamp": "2026-04-14T13:46:58Z",
+      "tx_hash": "0xf0fb..."
+    }
+  ]
+}
+```
+
+## Field reference
+
+| Field | Description |
+| --- | --- |
+| `effective_apy_pct` | Annualized APY from `7d distributed / opted_in_tokens × (365/7) × 100`. Null when no live data. |
+| `opted_in_supply` | Raw `optedInSupply()` read (live, uint128 as string) |
+| `opted_in_tokens` | Same, divided by 1e6 for human-readable |
+| `global_reward_per_token` | Current pool accumulator (uint256 × 1e18), raw |
+| `distributed.last_24h_tokens` | Sum of `RewardDistributed.amount` in last 24h (in token units) |
+| `opt_in.recipient_count` | Total holders with an active recipient set (excludes opt-outs to zero address) |
+| `opt_in.redirected_count` | How many of those set recipient ≠ holder (redirect pattern) |
+| `top_funders[]` | All-time top funders by total tokens distributed, with address labels |
+| `recent_distributions[]` | Last 10 distribution events |
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/0x20c0.../rewards?as_of=7d'
+```
+
+Returns the distribution state as of the given timestamp. Live reads (`opted_in_supply`, `global_reward_per_token`, `effective_apy_pct`) are omitted on time-travel queries — only historical sums remain.
+
+## Why this matters
+
+- **Effective yield discovery:** discover which stables are actually paying out, vs just advertising.
+- **Funder attribution:** see which entities (issuers, liquidity incentivizers, third parties) are subsidizing which stables.
+- **Opt-in detection:** the `redirected_count` surfaces fund managers directing rewards to separate treasury addresses.
+
+Pellet is the only place this data is surfaced — Tempo's reward precompile is invisible to standard EVM indexers because it lives inside the TIP-20 precompile, not a deployed contract. We index the events directly.

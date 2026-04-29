@@ -1,0 +1,42 @@
+---
+title: Introduction
+description: Open-Ledger Interface on Tempo — every peg, every policy, every flow.
+icon: BookOpen
+---
+
+Pellet is Open-Ledger Interface on Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
+
+## What is Open-Ledger Interface (OLI)?
+
+**OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 `isAuthorized` queries, issuance and flow topology from mainnet events, role holders from forensic event replay — measured directly, not estimated from oracle aggregators.
+
+OLI has explicit scope. Transfers *inside* [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo) (private parallel ledgers) stay private by design. But zones are validiums with a rich public portal — every deposit, withdrawal, batch commitment, bounce-back, and token-enable event lands on Tempo mainnet with plaintext token + amount fields, even when the deposit itself is end-user-encrypted. OLI covers that boundary in depth: per-zone TVL, encrypted-deposit adoption rate, cross-zone flow matrix, compliance-propagation latency. The zone operator sees what's inside; Pellet sees everything that crosses in or out.
+
+When a Pellet endpoint returns a number, that number is a measurement. If the value can't be measured, the response says so explicitly via a `coverage` field — never a default masquerading as a zero. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
+
+## Why Tempo needs Open-Ledger Interface
+
+Tempo isn't another general-purpose L1. It's a payments chain with enshrined stablecoin standards (TIP-20), native compliance policies (TIP-403), an enshrined DEX, and the Micropayment Protocol (MPP) for machine-to-machine payments at the HTTP layer.
+
+Generic chain indexers don't understand these primitives. They treat TIP-20 tokens like ERC-20s, miss compliance state entirely, and can't read the enshrined DEX orderbook. Pellet was built ground-up for Tempo, reading directly from the protocol's native data structures.
+
+## What we track
+
+- **Peg stability** — real-time price via enshrined DEX quote swaps, spread in basis points
+- **Supply dynamics** — current supply, caps, mint/burn activity via TIP-20 precompile events
+- **Pre-trade compliance simulation** — TIP-403 `isAuthorized` oracle, predicts whether a transfer would revert before gas is spent
+- **Role holders** — forensic derivation of issuer, pauser, and burn-blocked admins via mint/burn event replay + `hasRole` verification
+- **Wallet intelligence** — labels, ERC-8004 agent status, role holdings, and per-address role summaries in one call
+- **Cross-pair flows** — movement between stables, routing through native DEX
+- **Backing structure** — issuer context, reserve model (protocol-native, bridged, fiat-backed)
+- **Editorial analysis** — every stable gets a written briefing covering origin, risk, context
+
+## How to use Pellet
+
+Three surfaces, same data:
+
+1. **[Explorer](/explorer)** — human-facing web UI for browsing stables and flows
+2. **[REST API](/docs/api/stablecoins)** — programmatic access, payable via MPP
+3. **[MCP Server](/docs/mcp)** — drop-in for AI agents, Claude-compatible
+
+Pricing is [transparent](/docs/pricing) — free tier for basic reads, MPP micropayments for deep analysis, a Pro subscription for high-volume agents.

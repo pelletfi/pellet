@@ -1,0 +1,332 @@
+---
+title: Methodology
+description: Every formula, threshold, and derivation Pellet uses. Versioned and public.
+icon: BookText
+---
+
+This document specifies how every metric Pellet exposes is computed. Versioned so changes to formulas don't silently mutate historical interpretations.
+
+**Methodology version: 1.0** *(2026-04-14)*
+
+> This is the reference specification for Pellet's **Open-Ledger Interface (OLI)** methodology on Tempo. Every formula, threshold, and derivation below is a direct measurement primitive OLI promises — nothing is interpolated, inferred, or sourced from third-party oracles. See [What is OLI?](/docs/oli) for the discipline-level framing.
+
+---
+
+## Scope
+
+OLI's lens is **the public Tempo ledger**. This methodology applies to:
+
+- **In scope:** every TIP-20 stablecoin on Tempo mainnet — peg, supply, policy, reserves, role holders, flows, fee-token economics, reward distributions.
+- **In scope:** the **mainnet/zone boundary** — fund locks into zone contracts, cross-zone settlements, committed validity proofs from [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo). These surface as mainnet events and are OLI-readable.
+- **Out of scope:** zone-internal transfers and balances. By design, zones host private ledgers. Only the zone operator and individual participants see them. Pellet does not infer, estimate, or claim visibility into zone-internal activity.
+- **Out of scope:** off-chain issuer operations, private counterparty agreements, any data not on the public Tempo ledger.
+
+Where a metric cannot be measured under this scope, responses return `null` with an explanatory note — never a fabricated estimate.
+
+---
+
+## Peg sampling
+
+Sampled every Vercel cron tick (~1 minute) for every TIP-20 stable.
+
+**Source:** `quoteSwapExactAmountIn(stable, pathUSD, 1_000_000)` on the enshrined DEX (`0xdec0...0000`).
+
+**Price formula:**
+```
+price_vs_pathusd = amount_out / amount_in
+                 = quoteSwap(stable → pathUSD, 1e6) / 1e6
+```
+
+**Spread formula:**
+```
+spread_bps = |price_vs_pathusd - 1| × 10_000
+```
+
+**Stored in:** `peg_samples` (one row per stable per sampled block).
+
+**pathUSD is the anchor.** It always has `price_vs_pathusd = 1.0` and `spread_bps = 0`.
+
+---
+
+## Rolling peg aggregates (1h / 24h / 7d)
+
+Recomputed every 5 minutes per stable per window.
+
+**Inputs:** all `peg_samples` for `stable` where `sampled_at >= now() - window`.
+
+**Outputs:**
+| Field | Formula |
+| --- | --- |
+| `mean_price` | `AVG(price_vs_pathusd)` |
+| `stddev_price` | `STDDEV(price_vs_pathusd)` |
+| `min_price` / `max_price` | `MIN/MAX(price_vs_pathusd)` |
+| `max_deviation_bps` | `MAX(spread_bps)` |
+| `seconds_outside_10bps` | `count(samples where spread_bps > 10) × 60` (sample interval) |
+| `seconds_outside_50bps` | `count(samples where spread_bps > 50) × 60` |
+
+**Caveat:** `seconds_outside_*` is an approximation based on sample-interval × count. Actual time-outside-band could differ slightly due to within-interval volatility we don't see.
+
+---
+
+## Peg-break detection
+
+Runs every 2 minutes. Scans the **last 24 hours** of `peg_samples` per stable. Identifies continuous windows where `spread_bps > 10`.
+
+**Severity classification:**
+
+| Severity | Threshold | Min duration |
+| --- | --- | --- |
+| `mild` | spread > 10bps | 5 minutes |
+| `severe` | spread > 50bps | 1 minute |
+
+For each elevated-spread window, classify by the worst-case combination of `max_deviation` × `duration`. Only the highest applicable severity is recorded.
+
+**State machine:**
+- Window stays open while consecutive samples exceed threshold
+- Window closes when a sample drops back into spec
+- Open windows have `ended_at: null` and update in place
+- On close, `peg_break.ended` webhook fires
+
+**Persisted to:** `peg_events` table (PK: `(stable, started_at)`).
+
+---
+
+## Composite risk score
+
+Recomputed every 5 minutes per stable. Range: `0` (no risk) → `100` (max risk).
+
+**Weighted formula:**
+```
+composite = 0.40 × peg_risk
+          + 0.30 × peg_break_risk
+          + 0.20 × supply_risk
+          + 0.10 × policy_risk
+```
+
+### Component formulas
+
+**`peg_risk`** *(40% weight)* — based on 24h aggregate.
+```
+devScore    = MIN(100, max_deviation_bps_24h)
+stddevScore = MIN(100, stddev_price_24h × 10_000)
+peg_risk    = MAX(devScore, stddevScore)
+```
+If no peg data yet → baseline 20.
+
+**`peg_break_risk`** *(30% weight)*.
+```
+score = 0
+if any peg_events with ended_at IS NULL: score += 60
+score += MIN(25, count(peg_events in last 7d) × 5)
+score += MIN(15, count(severe peg_events in last 7d) × 15)
+peg_break_risk = MIN(100, score)
+```
+
+**`supply_risk`** *(20% weight)* — based on `headroom_pct`.
+```
+if headroom_pct == -1 (uncapped): supply_risk = 15
+else:                              supply_risk = MAX(0, MIN(100, 100 - headroom_pct))
+```
+
+**`policy_risk`** *(10% weight)* — based on TIP-403 policy type.
+| Policy type | Score |
+| --- | --- |
+| `blacklist` | 50 |
+| `whitelist` | 30 |
+| (none) | 10 |
+
+> **Scope-honesty note.** TIP-403 defines two policy types per the current spec: `whitelist` and `blacklist`. (An earlier Pellet version referenced a `compound` type; that was a stale assumption from before the spec was finalized.) As of now, policy-metadata reads on the live registry revert with an unknown-function selector — only `isAuthorized(policyId, user)` and `policyIdCounter()` are callable. While that gap persists, `policy_type` reports `coverage: "unavailable"` rather than a default, and `policy_risk` falls back to its `(none)` baseline weight. The event-indexer workaround (reconstructing `(policyId → admin, type)` from `PolicyCreated` + `PolicyAdminUpdated` logs) will close this gap in a follow-up release.
+
+### Verdict thresholds *(convention, not part of API)*
+
+| Composite | Verdict |
+| --- | --- |
+| 0–15 | low |
+| 15–35 | moderate |
+| 35–60 | elevated |
+| 60+ | high |
+
+---
+
+## Flow anomaly detection
+
+Runs every 15 minutes. Z-score detector against rolling baseline.
+
+**Per `(from_token, to_token)` edge:**
+
+```
+window_hours = 0.25  # latest 15-min slice
+baseline_days = 7
+
+baseline = aggregate net_flow_usd in stablecoin_flows
+           where hour ∈ [now - 7d, now - 15min]
+           grouped by (from, to)
+           with COUNT(*) >= 10
+
+observed = SUM(net_flow_usd in last 15min for this edge)
+
+z = (observed - baseline.mean) / baseline.stddev
+
+if |z| >= 3.0  →  flow anomaly recorded
+```
+
+Anomalies emit `flow_anomaly.detected` webhook. Stored in `flow_anomalies` (PK: `(from_token, to_token, window_start)` — idempotent).
+
+**Why ≥10 historical observations:** avoids false positives on cold edges. New stable pairs need at least ~150 minutes of history before they're scored.
+
+---
+
+## Reserves backing
+
+`reserves.backing_usd` represents **Tempo-side** redeemable amount, not the issuer's worldwide reserves.
+
+**Refresh:** every hour.
+
+**Formula:**
+```
+backing_usd = on_chain_total_supply × current_peg_price
+            = totalSupply(stable) × quoteSwap_price_vs_pathusd
+```
+
+For bridged stables (USDC.e, EURC.e), this represents the slice locked in the bridge for Tempo. For protocol-native (pathUSD), the outstanding protocol liability.
+
+If you want issuer-wide attestations, follow `attestation_source` on each reserve entry to the issuer's transparency page (e.g. circle.com/transparency, tether.to/en/transparency).
+
+---
+
+## Forensic role discovery
+
+Tempo's TIP-20 doesn't emit `RoleMembershipUpdated` events for the deployed stables and doesn't expose `getRoleMember(role, idx)`. We derive role holders forensically.
+
+**Algorithm** (runs every 10 minutes per stable):
+
+```
+1. Pull all Mint, Burn, BurnBlocked events from `events` table
+2. For each unique tx_hash:
+   a. Call debug_traceTransaction with callTracer
+   b. Walk the call tree; collect every `to == stable` direct call
+   c. Record the `from` address of those internal calls (= msg.sender from stable's POV)
+3. For each unique caller:
+   a. For each of 5 Tempo TIP-20 roles (defaultAdmin, issuer, pause, unpause, burnBlocked):
+      - Call hasRole(account, role) on the stable contract
+      - If true, record (caller, role) in role_holders
+4. Replace existing role_holders for this stable with the freshly verified set
+```
+
+**Why this works:** any address whose internal call to a TIP-20 contract triggered a mint/burn/burnBlocked MUST have held the corresponding role at that moment, because the precompile would have reverted otherwise. We then verify membership is *still* current via `hasRole()`.
+
+**What we can't recover this way:**
+- `DEFAULT_ADMIN_ROLE` — only granted via genesis; no forensic action signature
+- `PAUSE_ROLE` / `UNPAUSE_ROLE` — only used when a stable is paused. None have been so far.
+
+These appear in `coverage.pending` until source events occur.
+
+---
+
+## Health monitoring
+
+Runs every 2 minutes. Two checks:
+
+**Cursor lag:** `chain_head - ingestion_cursor` blocks. Drift threshold: **600 blocks** (~10 min).
+
+**Peg sample freshness:** `now() - max(sampled_at)` seconds. Drift threshold: **300 seconds** (5 min).
+
+If either exceeds threshold, status returns `drift` (HTTP 503 on `/api/v1/system/health`) and a `system.health_drift` webhook fires.
+
+---
+
+## Fee-token economics
+
+Tempo lets users and validators elect which TIP-20 token pays transaction fees (`setUserToken`, `setValidatorToken`). When fees accumulate, anyone can call `distributeFees(validator, token)` to settle them to the validator. These elections and distributions are invisible to standard indexers because the fee manager is a chain precompile — standard ABI detection tools don't pick it up.
+
+**Events indexed** (decoded every 5 minutes):
+
+| Event | Captures | Stored in |
+| --- | --- | --- |
+| `UserTokenSet(indexed user, indexed token)` | User's fee-token election | `fee_token_users` (current state, latest wins) |
+| `ValidatorTokenSet(indexed validator, indexed token)` | Validator's fee-token election | `fee_token_validators` |
+| `FeesDistributed(indexed validator, indexed token, uint256 amount)` | Actual fee settlement | `fee_distributions` (append-only) |
+
+**Fee source contract:** `0xfeec000000000000000000000000000000000000` (Tempo fee manager precompile).
+
+**Share computation:**
+
+```
+share_of_fees_7d_pct = fees_distributed_in_token_last_7d / total_fees_all_tokens_last_7d × 100
+```
+
+**Caveats:**
+- Users / validators can elect any TIP-20 — not only the stables Pellet tracks. The overview only enumerates `KNOWN_STABLECOINS`; other elected tokens are still counted toward ecosystem totals but not given their own row.
+- `token = 0x0` means opt-out (revert to default). Filtered from election counts.
+- Fee history starts from when we added the fee manager to our ingestion watch list (`2026-04-14`). Distributions or elections prior to that aren't indexed unless we run a targeted backfill.
+
+---
+
+## Rewards & effective yield
+
+Tempo TIP-20 has an **opt-in reward precompile** on every stablecoin. Any address can fund a reward pool via `distribute(amount)`; opted-in holders accrue claimable rewards proportional to their balance. Claiming is explicit (`claim()`) — no rebase.
+
+**Events indexed** (decoded every 5 minutes from the raw `events` table):
+
+| Event | Captures | Stored in |
+| --- | --- | --- |
+| `RewardDistributed(indexed funder, uint256 amount)` | Who funded the pool, how much | `reward_distributions` |
+| `RewardRecipientSet(indexed holder, indexed recipient)` | Opt-in / opt-out / recipient redirect | `reward_recipients` (current state) |
+
+Claims do **not** emit a dedicated event — they appear as `Transfer(token_address → holder, amount)` in the `events` table, inferable but not uniquely identifiable.
+
+**Effective APY formula:**
+
+```
+distributed_7d_tokens = SUM(amount) from reward_distributions, last 7 days
+opted_in_tokens       = optedInSupply() / 10^6  (live read)
+weekly_rate           = distributed_7d_tokens / opted_in_tokens
+effective_apy_pct     = weekly_rate × (365 / 7) × 100
+```
+
+**Caveats:**
+- Only computed for live (non-time-travel) responses — historical queries return null for `effective_apy_pct`.
+- Annualization assumes last 7 days is representative. Early in a pool's life this can swing.
+- If `optedInSupply = 0` or no distributions in last 7d, APY is null.
+- Uses **token units** (6 decimals) not USD — no peg-price adjustment. Since reward amount and balance are denominated in the same stable, the ratio is peg-neutral.
+
+**Redirect pattern:** `RewardRecipientSet` allows a holder to direct their rewards to a different address (fund manager → vault, protocol treasury, etc.). `opt_in.redirected_count` is the number of opt-ins where recipient ≠ holder.
+
+---
+
+## Time-travel queries (`?as_of=`)
+
+Every time-aware endpoint accepts an `?as_of=` parameter to freeze the response to historical state:
+
+| Endpoint | Source | Availability |
+| --- | --- | --- |
+| `/stablecoins/:addr/peg` | `peg_samples` (raw) | Since peg sampling began |
+| `/stablecoins/:addr/peg-events` | `peg_events` | Since peg-break detector began |
+| `/stablecoins/:addr/risk` | `risk_scores_history` | Since 2026-04-14 |
+| `/stablecoins/:addr/reserves` | `reserves_history` | Since 2026-04-14 |
+| `/stablecoins/flow-anomalies` | `flow_anomalies` | Since anomaly detector began |
+
+**Accepted `as_of` formats:** ISO 8601 (`2026-04-14T12:00:00Z`), unix epoch seconds, relative duration (`1h`, `24h`, `7d`), or `now`.
+
+**For peg:** `/peg?as_of=X` returns the nearest sample at or before `X`, plus 1h/24h/7d windows **recomputed on-the-fly** from raw `peg_samples` ending at `X`. Live responses use pre-computed `peg_aggregates` for speed; time-travel responses recompute to guarantee the returned window is the exact historical slice.
+
+**For risk/reserves:** returned row is the most recent snapshot at or before `as_of`. Because these tables were append-only only since `2026-04-14`, queries before that date return 404. The response `note` field explains.
+
+**Reproducibility:** Every time-travel response sets the `X-Pellet-As-Of` response header and a top-level `"as_of"` field, so clients can independently confirm which frozen slice they received.
+
+---
+
+## Versioning policy
+
+When a formula changes:
+1. The `Methodology version` at the top of this page increments.
+2. A changelog entry is added at the bottom.
+3. Risk scores computed under prior versions remain in the database with the old formula's output. They're not retroactively recomputed.
+
+This means a customer comparing risk over time can know whether they're comparing apples to apples by checking when the methodology version changed.
+
+---
+
+## Changelog
+
+- **1.0** *(2026-04-14)* — Initial published methodology.

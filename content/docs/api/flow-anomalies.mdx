@@ -1,0 +1,68 @@
+---
+title: Flow anomalies
+description: Z-score-based detection of unusual flows between stablecoins.
+icon: TrendingUp
+---
+
+Flow anomalies are 15-minute windows where the volume on a `(from_token, to_token)` edge exceeded the **7-day rolling baseline by ≥3σ**.
+
+Useful for detecting:
+- Sudden arb activity between stables
+- Migration events (users rotating between stables)
+- Bridge inflows / outflows
+- Suspicious wash patterns
+
+## `GET /v1/stablecoins/flow-anomalies`
+
+Free tier.
+
+```bash
+curl "https://pelletfi.com/api/v1/stablecoins/flow-anomalies?limit=20"
+```
+
+## Response
+
+```json
+{
+  "anomalies": [
+    {
+      "from_token": "0x20c000000000000000000000b9537d11c60e8b50",
+      "to_token": "0x20c0000000000000000000000000000000000000",
+      "window_start": "2026-04-13T22:15:00Z",
+      "window_end": "2026-04-13T22:30:00Z",
+      "observed_flow_usd": 1820000,
+      "baseline_mean_usd": 240000,
+      "baseline_stddev_usd": 95000,
+      "z_score": 16.6,
+      "tx_count": 47,
+      "detected_at": "2026-04-13T22:32:18Z"
+    }
+  ]
+}
+```
+
+Sorted by `window_start DESC, ABS(z_score) DESC` so the most recent + most extreme anomalies appear first.
+
+## Webhook event
+
+Each new anomaly fires `flow_anomaly.detected`. See [Webhooks](/docs/webhooks).
+
+## Detection model
+
+```
+For each (from_token, to_token) edge:
+  baseline = aggregate flows from last 7 days (excluding the latest 15min window)
+  observed = sum(flows) in latest 15min window
+  z = (observed - baseline_mean) / baseline_stddev
+  if abs(z) >= 3.0  →  anomaly
+```
+
+Only edges with ≥10 historical observations get scored (avoids false positives on cold edges). Detector runs every 15 minutes.
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/stablecoins/flow-anomalies?as_of=24h'
+```
+
+Returns anomalies with `window_start` at or before `as_of`. Useful for reconstructing what flow signals were visible at any past moment.

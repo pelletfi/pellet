@@ -1,0 +1,85 @@
+---
+title: Fee economics
+description: Which stablecoins are elected as Tempo fee tokens, ecosystem-wide, with per-stable revenue share.
+icon: Coins
+---
+
+Tempo's fee manager precompile (`0xfeec...`) lets users and validators elect any TIP-20 to pay transaction fees in. Pellet indexes the election and distribution events directly — invisible to standard ABI-based indexers.
+
+## `GET /v1/fee-economics/overview`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/fee-economics/overview
+```
+
+## Response
+
+```json
+{
+  "as_of": null,
+  "totals": {
+    "users_electing": 142,
+    "validators_electing": 18,
+    "fees_distributed_7d_tokens": 284.5,
+    "fees_distributed_all_time_tokens": 1204.2,
+    "distribution_count": 47
+  },
+  "stablecoins": [
+    {
+      "address": "0x20c000000000000000000000b9537d11c60e8b50",
+      "symbol": "pathUSD",
+      "name": "Path USD",
+      "users_electing": 81,
+      "validators_electing": 12,
+      "fees_received_24h_tokens": 18.0,
+      "fees_received_7d_tokens": 174.0,
+      "fees_received_all_time_tokens": 812.3,
+      "share_of_fees_7d_pct": 61.2,
+      "distribution_count": 34
+    }
+    // ... one row per tracked stable, sorted by fees_received_7d_tokens DESC
+  ],
+  "recent_distributions": [
+    {
+      "validator": "0xaaa...",
+      "validator_label": "Validator Alpha",
+      "token": "0x20c0...",
+      "token_symbol": "pathUSD",
+      "amount_tokens": 12.5,
+      "block_number": 14729100,
+      "block_timestamp": "2026-04-14T15:40:12Z",
+      "tx_hash": "0x..."
+    }
+  ]
+}
+```
+
+## Field reference
+
+| Field | Description |
+| --- | --- |
+| `totals.users_electing` | Total users who have set any non-zero fee token |
+| `totals.validators_electing` | Same for validators |
+| `totals.fees_distributed_7d_tokens` | Sum of all `FeesDistributed.amount` in last 7d, across all tokens, in token units (6 decimals) |
+| `stablecoins[].users_electing` | Users who elected this specific stable |
+| `stablecoins[].fees_received_7d_tokens` | This stable's fee revenue, last 7d |
+| `stablecoins[].share_of_fees_7d_pct` | This stable's % of total fees distributed last 7d. Null when no fees yet. |
+| `recent_distributions[]` | Last 10 FeesDistributed events across all tokens, with validator labels where known |
+
+## Time-travel (`?as_of=`)
+
+```bash
+curl 'https://pelletfi.com/api/v1/fee-economics/overview?as_of=24h'
+```
+
+Returns fee state as of the given timestamp. Live reads not applicable — everything is event-derived.
+
+## Why this matters
+
+- **Adoption competition:** which stable is winning as a fee token? Surfaces real economic traction vs. marketing claims.
+- **Validator behavior:** validators receiving fees in a specific token are signaling preference. Divergences between user elections and validator acceptance show up here.
+- **Ecosystem share:** the `share_of_fees_7d_pct` is a direct read on which stablecoin is carrying the chain's economic activity.
+
+Pellet is the only place this data is assembled — the fee manager is a precompile with no deployed bytecode, so ABI-detection tools skip it. We index the events directly and aggregate per-stable.

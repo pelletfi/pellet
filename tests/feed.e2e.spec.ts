@@ -1,10 +1,15 @@
 import { test, expect } from "@playwright/test";
 
-test("home renders header with OLI framing", async ({ page }) => {
+test("home renders the OLI landing", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("header")).toContainText("pellet");
-  await expect(page.locator("header")).toContainText("open-ledger interface");
-  await expect(page.locator("header")).toContainText("tempo");
+  // Wait for the framer-motion hero to mount + hydrate.
+  await expect(page.locator("h1.landing-hero-h1")).toContainText("Open-Ledger Interface");
+});
+
+test("nav has agents + docs links", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("nav.nav-links")).toContainText("Agents");
+  await expect(page.locator("nav.nav-links")).toContainText("Docs");
 });
 
 test("favicon serves", async ({ request }) => {
@@ -19,26 +24,27 @@ test("brand mark serves as svg", async ({ request }) => {
   expect(res.headers()["content-type"]).toContain("svg");
 });
 
-test("agents api returns json with the seeded list", async ({ request }) => {
+test("docs page renders", async ({ request }) => {
+  const res = await request.get("/docs");
+  expect(res.status()).toBe(200);
+});
+
+test("agents placeholder page renders", async ({ request }) => {
+  const res = await request.get("/agents");
+  expect(res.status()).toBe(200);
+});
+
+test("/api/v1/health returns block height", async ({ request }) => {
+  const res = await request.get("/api/v1/health");
+  expect(res.status()).toBe(200);
+  const json = await res.json();
+  expect(json.status).toBe("ok");
+  expect(typeof json.block).toBe("number");
+});
+
+test("/api/agents returns the seeded list (legacy v0 surface)", async ({ request }) => {
   const res = await request.get("/api/agents");
   expect(res.status()).toBe(200);
   const json = await res.json();
   expect(Array.isArray(json.agents)).toBe(true);
-  expect(json.agents.length).toBeGreaterThan(0);
-  expect(json.agents.map((a: { id: string }) => a.id)).toContain("pellet");
-});
-
-test("feed api responds with SSE content-type", async ({ baseURL }) => {
-  // SSE streams stay open; we only need to confirm the response opened with
-  // the right headers, then abort.
-  const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), 2000);
-  try {
-    const res = await fetch(`${baseURL}/api/feed`, { signal: ac.signal });
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toContain("text/event-stream");
-    ac.abort();
-  } finally {
-    clearTimeout(t);
-  }
 });

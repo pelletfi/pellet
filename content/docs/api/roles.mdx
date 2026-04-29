@@ -1,0 +1,57 @@
+---
+title: Roles
+description: Role holders per stablecoin — admins, issuers, pausers.
+icon: KeyRound
+---
+
+Returns the addresses that hold administrative roles on a stablecoin contract.
+
+## `GET /v1/stablecoins/{address}/roles`
+
+Free tier.
+
+```bash
+curl https://pelletfi.com/api/v1/stablecoins/0x20c000000000000000000000b9537d11c60e8b50/roles
+```
+
+## Response
+
+```json
+{
+  "address": "0x20c000000000000000000000b9537d11c60e8b50",
+  "coverage": {
+    "status": "unavailable",
+    "message": "No role holders are currently knowable for this stable...",
+    "roles_tracked": [
+      { "name": "DEFAULT_ADMIN_ROLE", "powers": "Can grant and revoke other roles" },
+      { "name": "ISSUER_ROLE", "powers": "Can mint and burn tokens" },
+      { "name": "PAUSE_ROLE", "powers": "Can pause transfers (emergency stop)" },
+      { "name": "UNPAUSE_ROLE", "powers": "Can resume transfers after a pause" },
+      { "name": "BURN_BLOCKED_ROLE", "powers": "Can mark addresses as burn-blocked (compliance)" }
+    ]
+  },
+  "roles": []
+}
+```
+
+## How Tempo roles work
+
+Tempo's TIP-20 includes a built-in RBAC system distinct from Ethereum's OpenZeppelin pattern. Five roles exist (see `coverage.roles_tracked` above for what each does).
+
+## Why the response is currently empty
+
+Three reasons — all properties of Tempo, not Pellet:
+
+1. **No role events.** Tempo's TIP-20 precompile does not emit `RoleMembershipUpdated` events for the deployed stables. Standard event-replay can't recover historical grants.
+2. **No enumeration methods.** Unlike OpenZeppelin's `AccessControlEnumerable`, Tempo's TIP-20 does not expose `getRoleMember(role, index)` or `getRoleMemberCount(role)`. We can only verify membership for a specific address via `hasRole(role, account)`.
+3. **No TIP-403 policies are attached.** All 12 currently-tracked stables have `policy_id: 0`, so even the policy admin (which we surface for any stable with a registered policy) is unavailable.
+
+Until issuers publish their admin/minter addresses or Tempo exposes role enumeration, this endpoint will return empty for most stables. The infrastructure is ready to populate the moment we have probe targets to verify.
+
+## What to use instead
+
+For the most useful proxy of "who can change what" today:
+
+- **Compliance** (`/v1/stablecoins/:addr` field `policy_admin`) — populated for stables with TIP-403 policies attached
+- **Reserves** (`/v1/stablecoins/:addr/reserves`) — issuer + attestation source per backing component
+- **Briefings** ($0.200 MPP-paid, `/v1/tokens/:addr/briefing`) — measurement composite with per-section role enumeration and the coverage & provenance ledger
