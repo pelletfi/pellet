@@ -430,6 +430,7 @@ export type TokenStackPoint = {
   usdce: number; // display USDC.e (already /1e6)
   usdt0: number;
   other: number;
+  txCount: number;
 };
 
 export type TokenStackTotals = {
@@ -459,6 +460,7 @@ export async function tokenBreakdown(windowHours: number): Promise<TokenStackRes
     usdce: string;
     usdt0: string;
     other: string;
+    tx_count: string;
   }>(sql`
     SELECT
       date_bin(interval ${bucketInterval}, ts, timestamp 'epoch') AS bucket,
@@ -468,7 +470,8 @@ export async function tokenBreakdown(windowHours: number): Promise<TokenStackRes
                         THEN amount_wei::numeric ELSE 0 END), 0)::text AS usdt0,
       COALESCE(SUM(CASE WHEN LOWER(token_address) NOT IN (${USDCE_ADDR}, ${USDT0_ADDR})
                           AND token_address IS NOT NULL
-                        THEN amount_wei::numeric ELSE 0 END), 0)::text AS other
+                        THEN amount_wei::numeric ELSE 0 END), 0)::text AS other,
+      COUNT(*)::text AS tx_count
     FROM agent_events
     WHERE ts > ${sinceCutoff}
       AND kind = 'transfer'
@@ -482,6 +485,7 @@ export async function tokenBreakdown(windowHours: number): Promise<TokenStackRes
     usdce: Number(r.usdce) / 1_000_000,
     usdt0: Number(r.usdt0) / 1_000_000,
     other: Number(r.other) / 1_000_000,
+    txCount: Number(r.tx_count),
   }));
 
   const totals: TokenStackTotals = points.reduce(

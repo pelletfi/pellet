@@ -1505,41 +1505,91 @@ main {
   }
 }
 
-/* ── Token Stack Chart ─────────────────────────────────────────────────── */
+/* ── Token Composed Chart ──────────────────────────────────────────────── */
 
-.oli-tokenstack-legend {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-text-tertiary);
+.oli-tokenchart {
   font-variant-numeric: tabular-nums;
 }
-.oli-tokenstack-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.oli-tokenchart .recharts-surface {
+  overflow: visible;
 }
-.oli-tokenstack-swatch {
+.oli-tokenchart .recharts-cartesian-axis-tick-value {
+  font-variant-numeric: tabular-nums;
+}
+.oli-tokenchart .recharts-default-legend {
+  margin-top: 4px !important;
+}
+.oli-tokenchart-tip {
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 2px solid var(--color-accent);
+  border-radius: 6px;
+  padding: 10px 12px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  min-width: 220px;
+}
+.oli-tokenchart-tip-head {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-quaternary);
+  margin-bottom: 8px;
+}
+.oli-tokenchart-tip-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.oli-tokenchart-tip-row {
+  display: grid;
+  grid-template-columns: 8px 60px 1fr 36px;
+  gap: 8px;
+  align-items: center;
+}
+.oli-tokenchart-tip-swatch {
   width: 8px;
   height: 8px;
   border-radius: 1px;
   border: 1px solid rgba(0, 0, 0, 0.4);
 }
-.oli-tokenstack-legend-label {
-  color: var(--color-text-primary);
-  letter-spacing: 0.04em;
+.oli-tokenchart-tip-swatch-blank {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.oli-tokenchart-tip-swatch-ma {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px dashed var(--color-accent) !important;
+  height: 0 !important;
+  border-radius: 0 !important;
+  margin-top: 4px;
+}
+.oli-tokenchart-tip-label {
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
 }
-.oli-tokenstack-legend-value {
-  color: var(--color-text-secondary);
-  margin-left: 2px;
+.oli-tokenchart-tip-value {
+  text-align: right;
+  color: var(--color-text-primary);
 }
-.oli-tokenstack-legend-pct {
+.oli-tokenchart-tip-value-strong {
+  color: var(--color-accent);
+}
+.oli-tokenchart-tip-sub {
+  text-align: right;
+  font-size: 10px;
   color: var(--color-text-quaternary);
-  margin-left: 2px;
+}
+.oli-tokenchart-tip-divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: 4px 0;
 }
 
 /* ── ⌘K Command Bar ───────────────────────────────────────────────────── */

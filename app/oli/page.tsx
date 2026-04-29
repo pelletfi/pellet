@@ -102,7 +102,7 @@ export default async function OliDashboardPage({
         >
           Service revenue by token · {windowLabel}
         </h2>
-        <TokenStackChart points={stack.points} totals={stack.totals} />
+        <TokenStackChart points={stack.points} totals={stack.totals} bucketHours={stack.bucketHours} />
       </section>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
