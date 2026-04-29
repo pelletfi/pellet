@@ -80,6 +80,14 @@ export function TokenStackChart({
   const grandTotal = totals.usdce + totals.usdt0 + totals.other;
   const totalTx = points.reduce((acc, p) => acc + p.txCount, 0);
 
+  // Cap bar width so the first bucket doesn't visually dominate when there
+  // are only a handful of points. ResponsiveContainer typically gives us
+  // ~1200px; with 5 points that'd auto-size each bar to ~240px. We want
+  // hairline columns at exact time positions, so we clamp to a sensible
+  // pixel width that scales gently with bucket count.
+  const barSize =
+    points.length <= 8 ? 14 : points.length <= 16 ? 10 : points.length <= 32 ? 8 : 6;
+
   const data: Datum[] = useMemo(() => {
     return points.map((p, i) => {
       const total = p.usdce + p.usdt0 + p.other;
@@ -175,7 +183,7 @@ export function TokenStackChart({
             tickLine={false}
             axisLine={false}
             minTickGap={48}
-            padding={{ left: 4, right: 4 }}
+            padding={{ left: 28, right: 28 }}
           />
 
           <YAxis
@@ -197,6 +205,7 @@ export function TokenStackChart({
             dataKey="other"
             stackId="rev"
             fill={FILL_OTHER}
+            barSize={barSize}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
@@ -205,6 +214,7 @@ export function TokenStackChart({
             dataKey="usdt0"
             stackId="rev"
             fill={FILL_USDT0}
+            barSize={barSize}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
@@ -213,6 +223,7 @@ export function TokenStackChart({
             dataKey="usdce"
             stackId="rev"
             fill={FILL_USDCE}
+            barSize={barSize}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
