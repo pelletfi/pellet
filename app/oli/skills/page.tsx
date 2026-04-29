@@ -74,6 +74,19 @@ export default function SkillsPage() {
         ))}
       </Section>
 
+      <Section title="Building" subtitle="ours, in flight">
+        <ul className="oli-skills-watch">
+          <li>
+            <Mono>pellet-wallet</Mono> — open agent wallet on Tempo. Pay
+            via x402, every payment auto-records to OLI. Manifesto +
+            waitlist at{" "}
+            <a href="/wallet" className="oli-meth-link">/wallet</a>; install
+            URL ships at <Mono>pellet.network/wallet/skill.md</Mono> when
+            the primitive lands.
+          </li>
+        </ul>
+      </Section>
+
       <Section title="Watching" subtitle="catalogued as they ship">
         <ul className="oli-skills-watch">
           <li>

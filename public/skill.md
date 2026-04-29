@@ -95,6 +95,14 @@ GET https://pellet.network/api/oli/services/tempo-gateway-mpp
 → { head: {...}, trend: [...], recent: [...], providers: [...] }
 ```
 
+## Sister product · Pellet Wallet (coming soon)
+
+OLI is the **read** side. [Pellet Wallet](https://pellet.network/wallet) is the **write** side — an open agent wallet on Tempo where every payment auto-records to this ledger. Same install convention (`pellet.network/wallet/skill.md` once shipped). Where Stripe Link is private and centralized, Pellet Wallet is public and self-custody. Waitlist open.
+
+When the wallet ships, agents will be able to do both via Pellet:
+- **Read** — query OLI for any historical or live agent-payment activity on Tempo
+- **Write** — sign x402 challenges and settle on Tempo, with the resulting tx automatically observable here
+
 ## Distribution graph
 
 - Source: [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet)

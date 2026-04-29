@@ -626,15 +626,16 @@ export default function LandingPage() {
             </motion.h1>
 
             <motion.p variants={fadeUp} className="landing-hero-sub">
-              Agents route through it. DAOs govern with it. Quants model on
-              it. Pellet measures every Tempo stablecoin — peg, policy,
-              reserves, flows, rewards — block-pinned, re-verifiable, only
-              OLI.
+              The open ledger of the agent economy. Pellet OLI reads every
+              Tempo MPP payment — block-pinned, re-verifiable, public.
+              Pellet Wallet (soon) writes them. Where Stripe Link is private
+              and centralized, Pellet is open and self-custody. Same
+              primitive, opposite trust model.
             </motion.p>
 
             <motion.div variants={fadeUp} className="landing-hero-links">
-              <Link href="/explorer">
-                Open Explorer
+              <Link href="/oli">
+                Read the ledger
                 <span className="arrow" aria-hidden>→</span>
               </Link>
               <div className="hero-links-secondary">
