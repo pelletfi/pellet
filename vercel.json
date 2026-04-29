@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/ingest", "schedule": "*/2 * * * *" },
+    { "path": "/api/cron/match",  "schedule": "*/2 * * * *" },
+    { "path": "/api/cron/pellet-tick", "schedule": "0 * * * *" }
+  ]
+}
