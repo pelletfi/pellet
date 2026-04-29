@@ -4,6 +4,12 @@
 // probed (endpoint requires specific request shape, etc.), the address can be
 // filled in manually here and the seed script will skip the probe for it.
 
+export type ProbeAttempt = {
+  method: "GET" | "POST";
+  path: string;
+  body?: unknown;
+};
+
 export type SeedMppService = {
   id: string;            // slug used as agents.id and address_labels source
   label: string;         // display name
@@ -11,6 +17,8 @@ export type SeedMppService = {
   mppEndpoint: string;   // probe URL
   // If known, populate directly; else null and the seed script will probe.
   settlementAddress: string | null;
+  // Optional service-specific probe paths. If omitted, seed script falls back to GET /.
+  probePaths?: ProbeAttempt[];
   bio: string;
   links: { x?: string; site?: string };
 };
@@ -22,6 +30,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "ai",
     mppEndpoint: "https://anthropic.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/messages", body: {} },
+      { method: "POST", path: "/v1/chat/completions", body: {} },
+    ],
     bio: "Claude chat completions via native and OpenAI-compatible APIs.",
     links: { site: "https://anthropic.com" },
   },
@@ -31,6 +43,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "ai",
     mppEndpoint: "https://openai.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/chat/completions", body: {} },
+      { method: "POST", path: "/v1/embeddings", body: {} },
+    ],
     bio: "Chat, embeddings, image generation, and audio capabilities.",
     links: { site: "https://openai.com" },
   },
@@ -40,6 +56,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "ai",
     mppEndpoint: "https://gemini.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1beta/models/gemini-pro:generateContent", body: {} },
+      { method: "POST", path: "/v1/chat/completions", body: {} },
+    ],
     bio: "Gemini text, Veo video, and image generation.",
     links: { site: "https://deepmind.google/technologies/gemini" },
   },
@@ -49,6 +69,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "ai",
     mppEndpoint: "https://openrouter.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/api/v1/chat/completions", body: {} },
+      { method: "POST", path: "/v1/chat/completions", body: {} },
+    ],
     bio: "Unified API access to 100+ language models.",
     links: { site: "https://openrouter.ai" },
   },
@@ -58,6 +82,11 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "data",
     mppEndpoint: "https://api.dune.com",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/api/v1/query", body: {} },
+      { method: "POST", path: "/v1/sql/run", body: {} },
+      { method: "GET", path: "/api/v1/query/1", body: null },
+    ],
     bio: "Query transaction data, decoded events, DeFi positions, NFT activity.",
     links: { site: "https://dune.com" },
   },
@@ -67,6 +96,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "blockchain",
     mppEndpoint: "https://mpp.alchemy.com",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v2/eth_blockNumber", body: { jsonrpc: "2.0", method: "eth_blockNumber", id: 1 } },
+      { method: "POST", path: "/", body: { jsonrpc: "2.0", method: "eth_blockNumber", id: 1 } },
+    ],
     bio: "Blockchain APIs including RPC, prices, portfolios, NFTs across 100+ chains.",
     links: { site: "https://alchemy.com" },
   },
@@ -76,6 +109,9 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "compute",
     mppEndpoint: "https://mpp.browserbase.com",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/sessions", body: {} },
+    ],
     bio: "Headless browser sessions and web page retrieval for agents.",
     links: { site: "https://browserbase.com" },
   },
@@ -85,6 +121,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "compute",
     mppEndpoint: "https://modal.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/run", body: {} },
+      { method: "POST", path: "/api/v1/run", body: {} },
+    ],
     bio: "Serverless GPU compute for code execution and AI workloads.",
     links: { site: "https://modal.com" },
   },
@@ -94,6 +134,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "data",
     mppEndpoint: "https://firecrawl.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/scrape", body: { url: "https://example.com" } },
+      { method: "POST", path: "/v0/scrape", body: { url: "https://example.com" } },
+    ],
     bio: "Web scraping and structured data extraction optimized for LLMs.",
     links: { site: "https://firecrawl.dev" },
   },
@@ -103,6 +147,10 @@ export const MPP_SERVICES: SeedMppService[] = [
     category: "media",
     mppEndpoint: "https://fal.mpp.tempo.xyz",
     settlementAddress: null,
+    probePaths: [
+      { method: "POST", path: "/v1/run", body: {} },
+      { method: "POST", path: "/", body: {} },
+    ],
     bio: "Image, video, and audio generation with 600+ models.",
     links: { site: "https://fal.ai" },
   },
