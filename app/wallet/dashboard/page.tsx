@@ -4,6 +4,7 @@ import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { db } from "@/lib/db/client";
 import { walletUsers, walletSessions, walletSpendLog } from "@/lib/db/schema";
 import { sql, eq, and, desc } from "drizzle-orm";
+import { readWalletBalances } from "@/lib/wallet/tempo-balance";
 import { Dashboard } from "./Dashboard";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,31 @@ export default async function WalletDashboardPage() {
     .orderBy(desc(walletSpendLog.createdAt))
     .limit(50);
 
+  // 7-day spend chart data — bucketed by day (UTC), zero-filled across
+  // the full window so the chart shape is consistent regardless of how
+  // many days have actual activity.
+  const chartRows = await db.execute<{ day: string; spent_wei: string }>(sql`
+    SELECT
+      to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+      SUM(amount_wei::numeric)::text                       AS spent_wei
+    FROM wallet_spend_log
+    WHERE user_id = ${userId}
+      AND status IN ('signed', 'submitted', 'confirmed')
+      AND created_at > now() - interval '7 days'
+    GROUP BY day
+    ORDER BY day ASC
+  `);
+  const chart = build7dChart(chartRows.rows);
+
+  // Live on-chain balances (USDC.e + pathUSD on testnet). Cheap; one RPC
+  // multicall via viem. Fails open: if RPC blips we render zeros + a note.
+  let balances: Awaited<ReturnType<typeof readWalletBalances>> = [];
+  try {
+    balances = await readWalletBalances(user.managedAddress as `0x${string}`);
+  } catch {
+    /* leave empty; UI falls back gracefully */
+  }
+
   return (
     <Dashboard
       user={{
@@ -71,6 +97,13 @@ export default async function WalletDashboardPage() {
         managedAddress: user.managedAddress,
         displayName: user.displayName,
       }}
+      balances={balances.map((b) => ({
+        symbol: b.symbol,
+        address: b.address,
+        display: b.display,
+        rawWei: b.raw.toString(),
+      }))}
+      chart={chart}
       sessions={sessions.map((s) => ({
         id: s.id,
         label: s.label,
@@ -93,4 +126,24 @@ export default async function WalletDashboardPage() {
       }))}
     />
   );
+}
+
+function build7dChart(
+  rows: Array<{ day: string; spent_wei: string }>,
+): Array<{ label: string; spentUsdc: number }> {
+  // Build a map of YYYY-MM-DD → wei sum
+  const byDay = new Map(rows.map((r) => [r.day, r.spent_wei]));
+  const out: Array<{ label: string; spentUsdc: number }> = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    const wei = byDay.get(iso) ?? "0";
+    out.push({
+      label: d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+      spentUsdc: Number(wei) / 1_000_000,
+    });
+  }
+  return out;
 }

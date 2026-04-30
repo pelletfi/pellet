@@ -9,6 +9,15 @@ type User = {
   displayName: string | null;
 };
 
+type Balance = {
+  symbol: string;
+  address: string;
+  display: string;
+  rawWei: string;
+};
+
+type ChartPoint = { label: string; spentUsdc: number };
+
 type Session = {
   id: string;
   label: string | null;
@@ -35,14 +44,38 @@ const EXPLORER = "https://explore.testnet.tempo.xyz";
 
 export function Dashboard({
   user,
+  balances,
+  chart,
   sessions,
   payments,
 }: {
   user: User;
+  balances: Balance[];
+  chart: ChartPoint[];
   sessions: Session[];
   payments: Payment[];
 }) {
   const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  const onRevoke = async (sessionId: string) => {
+    if (!confirm("Revoke this session? Bearer dies immediately. On-chain key revoke ships in a follow-up.")) return;
+    setRevoking(sessionId);
+    try {
+      const res = await fetch(`/api/wallet/sessions/${sessionId}/revoke`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(`revoke failed: ${d.error ?? res.statusText}`);
+        return;
+      }
+      window.location.reload();
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  // Total balance across all tokens (display only — assumes 1:1 USD pegs)
+  const totalUsd = balances.reduce((acc, b) => acc + Number(b.display), 0);
 
   const copyAddress = async () => {
     try {
@@ -255,9 +288,21 @@ export function Dashboard({
 
       <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span className="dash-kicker">Pellet Wallet</span>
-        <h1 className="dash-h1">
-          Your <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>wallet</em>.
-        </h1>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
+          <h1 className="dash-h1" style={{ fontStyle: "italic" }}>
+            ${totalUsd.toFixed(2)}
+          </h1>
+          {balances.length > 0 && (
+            <span className="dash-mono" style={{ fontSize: 12, color: "var(--color-text-tertiary)" }}>
+              {balances.map((b, i) => (
+                <span key={b.address}>
+                  {i > 0 && <span style={{ color: "var(--color-text-quaternary)", margin: "0 6px" }}>·</span>}
+                  {b.symbol} ${b.display}
+                </span>
+              ))}
+            </span>
+          )}
+        </div>
         <div className="dash-addr" style={{ marginTop: 8 }}>
           <span className="dash-kicker">addr</span>
           <code style={{ wordBreak: "break-all" }}>{user.managedAddress}</code>
@@ -282,6 +327,9 @@ export function Dashboard({
           </a>
         </div>
       </header>
+
+      {/* 7-day spend chart */}
+      <SpendChart chart={chart} />
 
       {/* Quick stats */}
       <div className="dash-grid-stats">
@@ -359,7 +407,19 @@ export function Dashboard({
                       </span>
                     )}
                   </span>
-                  <span className={`dash-pill ${pillClass(s)}`}>{pillLabel(s)}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className={`dash-pill ${pillClass(s)}`}>{pillLabel(s)}</span>
+                    {!s.revokedAt && new Date(s.expiresAt).getTime() > Date.now() && (
+                      <button
+                        className="dash-btn"
+                        style={{ padding: "4px 8px", fontSize: 10 }}
+                        onClick={() => onRevoke(s.id)}
+                        disabled={revoking === s.id}
+                      >
+                        {revoking === s.id ? "…" : "revoke"}
+                      </button>
+                    )}
+                  </span>
                 </div>
               );
             })}
@@ -464,4 +524,72 @@ function formatTimeAgo(iso: string): string {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+function SpendChart({ chart }: { chart: ChartPoint[] }) {
+  const total = chart.reduce((acc, p) => acc + p.spentUsdc, 0);
+  const maxVal = Math.max(...chart.map((p) => p.spentUsdc), 0.01);
+  const W = 720;
+  const H = 96;
+  const padT = 4;
+  const padB = 18;
+  const innerH = H - padT - padB;
+  const barW = (W - 8) / chart.length - 8;
+
+  return (
+    <section className="dash-card">
+      <header className="dash-card-head">
+        <h2 className="dash-card-h2">Last 7 days</h2>
+        <span className="dash-card-meta">
+          {total > 0 ? `total spent · $${total.toFixed(2)}` : "no payments yet"}
+        </span>
+      </header>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        height={H}
+        style={{ display: "block" }}
+        aria-label="7-day spend"
+      >
+        <line
+          x1={0}
+          x2={W}
+          y1={H - padB}
+          y2={H - padB}
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={1}
+        />
+        {chart.map((p, i) => {
+          const h = total === 0 ? 0 : (p.spentUsdc / maxVal) * innerH;
+          const x = 4 + i * (barW + 8);
+          const y = padT + innerH - h;
+          return (
+            <g key={i}>
+              <rect
+                x={x}
+                y={y}
+                width={barW}
+                height={h}
+                fill={p.spentUsdc > 0 ? "var(--color-accent)" : "rgba(255,255,255,0.05)"}
+                rx={1}
+              />
+              <text
+                x={x + barW / 2}
+                y={H - 4}
+                textAnchor="middle"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fill: "var(--color-text-quaternary)",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {p.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </section>
+  );
 }
