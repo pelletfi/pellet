@@ -1246,6 +1246,14 @@ main {
 .oli-sidebar-toggle:hover {
   color: var(--color-text-primary);
 }
+/* Lucide ships icons with stroke-linecap="round" + stroke-linejoin="round",
+ * which renders a half-pip cap at every line endpoint — at small sizes that
+ * reads as a brightness blob at the ends. Square caps + miter joins match
+ * the blocky terminal aesthetic and remove the cheap-looking glow. */
+.oli-sidebar-toggle svg {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
 
 
 /* 6. Leaderboard row hover: accent left rule */
