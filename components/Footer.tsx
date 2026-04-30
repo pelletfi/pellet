@@ -39,6 +39,18 @@ export function Footer() {
             }}
           >
             Pellet Network
+            <sup
+              style={{
+                fontSize: "0.55em",
+                marginLeft: 2,
+                color: "var(--color-text-quaternary)",
+                fontWeight: 400,
+                verticalAlign: "super",
+                lineHeight: 0,
+              }}
+            >
+              ™
+            </sup>
           </span>
           <div
             style={{
