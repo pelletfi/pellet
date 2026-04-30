@@ -363,12 +363,13 @@ export default function WalletPage() {
       <section className="wallet-cta">
         <h2 className="wallet-cta-h2">Live on testnet now</h2>
         <p className="wallet-cta-sub">
-          Pair via <code>npx -y @pelletnetwork/cli auth start</code>, then your
-          balance, sessions, and payment history are at{" "}
+          Create a wallet in your browser with a passkey, or pair an agent via{" "}
+          <code>npx -y @pelletnetwork/cli auth start</code>. Either way, your
+          balance, sessions, and payment history live at{" "}
           <code>/wallet/dashboard</code>.
         </p>
-        <Link href="/wallet/dashboard" className="wallet-cta-link">
-          Open dashboard →
+        <Link href="/wallet/sign-in" className="wallet-cta-link">
+          Open wallet →
         </Link>
         <Link href="/oli" className="wallet-cta-secondary">
           or read the live OLI ledger →

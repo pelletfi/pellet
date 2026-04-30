@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SignInForm } from "./SignInForm";
 
 export const metadata: Metadata = {
-  title: "Sign in — Pellet Wallet",
-  description: "Sign in to your Pellet Wallet with the passkey you registered at pairing time.",
+  title: "Sign in or create wallet — Pellet",
+  description: "Sign in with your passkey, or enroll a fresh passkey to create a new Pellet wallet.",
 };
 
 export const dynamic = "force-dynamic";
