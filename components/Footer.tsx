@@ -31,27 +31,6 @@ export function Footer() {
       <div className="footer-inner">
         {/* Left: brand + system info */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--color-text-primary)",
-            }}
-          >
-            Pellet Network
-            <sup
-              style={{
-                fontSize: "0.55em",
-                marginLeft: 2,
-                color: "var(--color-text-quaternary)",
-                fontWeight: 400,
-                verticalAlign: "super",
-                lineHeight: 0,
-              }}
-            >
-              ™
-            </sup>
-          </span>
           <div
             style={{
               fontFamily: "var(--font-mono)",
