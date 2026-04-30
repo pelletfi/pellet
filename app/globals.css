@@ -1038,20 +1038,19 @@ main {
 
 /* OLI mobile reshape — hide the fumadocs sidebar entirely on mobile. The
  * site Nav's mobile drawer surfaces OLI sub-routes when on /oli/* (see
- * components/Nav.tsx `oliSubLinks`), so users navigate from there. The
- * fumadocs sidebar's own max-md:hidden gets bypassed when the sidebar is
- * in collapsed state (it renders a floating card that ignores the
- * breakpoint), so we clamp it ourselves. */
+ * components/Nav.tsx `oliSubLinks`), so users navigate from there.
+ *
+ * Targeting fumadocs's stable hooks:
+ *  - `[data-sidebar-placeholder]` is the grid-area:sidebar wrapper div
+ *  - `#nd-sidebar` is the actual <aside> rendered inside it
+ * Fumadocs ships `max-md:hidden` on the placeholder, but it's bypassed in
+ * Tailwind v4 when our @theme/preflight layer wins specificity, so we clamp
+ * with !important.
+ */
 @media (max-width: 767px) {
-  .oli-docs-shell aside,
-  .oli-docs-shell [style*="grid-area: sidebar"],
-  .oli-docs-shell [style*="grid-area:sidebar"] {
+  [data-sidebar-placeholder],
+  #nd-sidebar {
     display: none !important;
-  }
-  /* Reset the grid template so the content fills the full width once the
-   * sidebar column is gone. */
-  .oli-docs-shell {
-    grid-template-columns: 1fr !important;
   }
 }
 
