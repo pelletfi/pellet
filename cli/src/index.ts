@@ -6,6 +6,7 @@
 
 import { authStart, authStatus, authRevoke } from "./commands/auth.js";
 import { pay, type PayArgs } from "./commands/pay.js";
+import { runMcpServer } from "./commands/mcp.js";
 
 const args = process.argv.slice(2);
 const [verb, sub, ...rest] = args;
@@ -32,6 +33,10 @@ async function main(): Promise<number> {
 
   if (verb === "pay") {
     return pay(parsePayArgs([sub, ...rest]));
+  }
+
+  if (verb === "mcp") {
+    return runMcpServer();
   }
 
   console.error(`unknown command: ${verb}`);
@@ -92,6 +97,11 @@ usage:
                     --amount in USDC (e.g. 1.50 = $1.50). Use --amount-wei
                     for raw 6-decimal wei. Defaults to chain's USDC.e
                     unless --token is provided.
+
+  pellet mcp        run an MCP server on stdio so agent runtimes
+                    (Claude Code, Cursor, Cloudflare Agents, Anthropic
+                    API) can call pellet_status + pellet_pay as tools.
+                    install line: see README "MCP install".
 
   pellet version    print version
 

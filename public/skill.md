@@ -95,9 +95,24 @@ GET https://pellet.network/api/oli/services/tempo-gateway-mpp
 → { head: {...}, trend: [...], recent: [...], providers: [...] }
 ```
 
-## Sister product · Pellet Wallet (coming soon)
+## Sister product · Pellet Wallet (live on testnet)
 
-OLI is the **read** side. [Pellet Wallet](https://pellet.network/wallet) is the **write** side — an open agent wallet on Tempo where every payment auto-records to this ledger. Same install convention (`pellet.network/wallet/skill.md` once shipped). USDC-native, passkey-derived self-custody, public audit trail. Waitlist open.
+OLI is the **read** side. [Pellet Wallet](https://pellet.network/wallet) is the **write** side — an open agent wallet on Tempo where every payment auto-records to this ledger. USDC-native, passkey-derived self-custody, public audit trail.
+
+**Install Pellet Wallet as an MCP server** so the agent can call `pellet_pay` directly:
+
+```json
+{
+  "mcpServers": {
+    "pellet": {
+      "command": "npx",
+      "args": ["-y", "@pelletnetwork/cli", "mcp"]
+    }
+  }
+}
+```
+
+User pairs once with `npx -y @pelletnetwork/cli auth start` (passkey ceremony in browser, picks spend caps); after that the agent can call `pellet_pay({ to, amount_usdc, memo })` autonomously within those caps. Tempo's `AccountKeychain` enforces caps on-chain.
 
 When the wallet ships, agents will be able to do both via Pellet:
 - **Read** — query OLI for any historical or live agent-payment activity on Tempo
