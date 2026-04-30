@@ -847,13 +847,34 @@ export async function tokenBreakdown(windowHours: number): Promise<TokenStackRes
     ORDER BY bucket ASC
   `);
 
-  const points: TokenStackPoint[] = rows.rows.map((r) => ({
+  const rawPoints: TokenStackPoint[] = rows.rows.map((r) => ({
     bucket: r.bucket instanceof Date ? r.bucket : new Date(r.bucket as string),
     usdce: Number(r.usdce) / 1_000_000,
     usdt0: Number(r.usdt0) / 1_000_000,
     other: Number(r.other) / 1_000_000,
     txCount: Number(r.tx_count),
   }));
+
+  // Back-fill empty buckets so the time-scale axis renders a continuous
+  // timeline. SQL skips hours with zero rows; without this the axis spreads
+  // missing buckets as blank space (e.g. a 6h lull at the right edge).
+  const bucketMs = bucketHours * 3600 * 1000;
+  const nowMs = Date.now();
+  const startMs = Math.floor((nowMs - windowHours * 3600 * 1000) / bucketMs) * bucketMs;
+  const endMs = Math.floor(nowMs / bucketMs) * bucketMs;
+  const byTs = new Map<number, TokenStackPoint>(rawPoints.map((p) => [p.bucket.getTime(), p]));
+  const points: TokenStackPoint[] = [];
+  for (let t = startMs; t <= endMs; t += bucketMs) {
+    points.push(
+      byTs.get(t) ?? {
+        bucket: new Date(t),
+        usdce: 0,
+        usdt0: 0,
+        other: 0,
+        txCount: 0,
+      },
+    );
+  }
 
   const totals: TokenStackTotals = points.reduce(
     (acc, p) => ({

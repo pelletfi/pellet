@@ -2230,6 +2230,12 @@ main {
 .oli-tokenchart .recharts-surface {
   overflow: visible;
 }
+/* Blocky terminal histogram — square edges, no anti-aliased halos. Applies
+ * to bars, the MA step line, axis ticks, and the reference baseline. */
+.oli-tokenchart .recharts-surface,
+.oli-tokenchart .recharts-surface * {
+  shape-rendering: crispEdges;
+}
 
 /* Tape/ticker strip above the chart — mono, hairline rule, no boxes */
 .oli-tokenchart-tape {
@@ -2483,6 +2489,7 @@ main {
     max-width: none;
   }
 }
+
 
 
 

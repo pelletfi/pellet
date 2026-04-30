@@ -4,6 +4,7 @@ import { StatStrip } from "@/components/oli/StatStrip";
 import { Leaderboard } from "@/components/oli/Leaderboard";
 import { EventStream } from "@/components/oli/EventStream";
 import { TokenStackChart } from "@/components/oli/TokenStackChart";
+import { TxCountChart } from "@/components/oli/TxCountChart";
 import { formatUsdcAmount, shortAddress } from "@/lib/oli/format";
 import { TimeWindowToggle } from "@/components/oli/TimeWindowToggle";
 import { windowHoursFromParam } from "@/lib/oli/timeWindow";
@@ -85,21 +86,38 @@ export default async function OliDashboardPage({
         ]}
       />
 
-      <section>
-        <h2
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "var(--color-text-tertiary)",
-            margin: "0 0 8px",
-          }}
-        >
-          Service revenue by token · {windowLabel}
-        </h2>
-        <TokenStackChart points={stack.points} totals={stack.totals} bucketHours={stack.bucketHours} />
-      </section>
+      <div className="oli-page-cols-2" style={{ gap: 16 }}>
+        <section>
+          <h2
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--color-text-tertiary)",
+              margin: "0 0 8px",
+            }}
+          >
+            Service revenue by token · {windowLabel}
+          </h2>
+          <TokenStackChart points={stack.points} totals={stack.totals} bucketHours={stack.bucketHours} />
+        </section>
+        <section>
+          <h2
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--color-text-tertiary)",
+              margin: "0 0 8px",
+            }}
+          >
+            MPP txs · {windowLabel}
+          </h2>
+          <TxCountChart points={stack.points} bucketHours={stack.bucketHours} />
+        </section>
+      </div>
 
       <div className="oli-page-cols-2" style={{ gap: 16 }}>
         <Leaderboard

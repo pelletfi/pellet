@@ -7,7 +7,7 @@ import {
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
+  ReferenceLine,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -92,10 +92,9 @@ export function TokenStackChart({
   }, []);
   const baseBarSize =
     points.length <= 8 ? 14 : points.length <= 16 ? 10 : points.length <= 32 ? 8 : 6;
-  // Reserve ~40% of viewport width for axis/legend padding; leave 60% for bars.
-  // Each bar gets at least a 2px lane (1px bar + 1px gap) on the tightest screens.
+  // Bars touch (barCategoryGap=0); fully consume each lane on tight screens.
   const widthBudget = Math.max(160, Math.floor(viewport * 0.6));
-  const maxBarFromWidth = Math.max(2, Math.floor(widthBudget / Math.max(points.length, 1)) - 1);
+  const maxBarFromWidth = Math.max(2, Math.floor(widthBudget / Math.max(points.length, 1)));
   const barSize = Math.min(baseBarSize, maxBarFromWidth);
 
   const data: Datum[] = useMemo(() => {
@@ -174,14 +173,8 @@ export function TokenStackChart({
         <ComposedChart
           data={data}
           margin={{ top: 8, right: 8, bottom: 4, left: 0 }}
-          barCategoryGap={1}
+          barCategoryGap={0}
         >
-          <CartesianGrid
-            stroke="rgba(255,255,255,0.05)"
-            strokeDasharray="1 5"
-            vertical={false}
-          />
-
           <XAxis
             dataKey="ts"
             type="number"
@@ -189,7 +182,7 @@ export function TokenStackChart({
             scale="time"
             tickFormatter={(v) => fmtTickX(v, bucketHours)}
             stroke="rgba(255,255,255,0.10)"
-            tick={{ fill: "rgba(255,255,255,0.40)", fontSize: 9, fontFamily: "var(--font-mono)" }}
+            tick={{ fill: "rgba(255,255,255,0.46)", fontSize: 9, fontFamily: "var(--font-mono)" }}
             tickLine={false}
             axisLine={false}
             minTickGap={48}
@@ -199,11 +192,16 @@ export function TokenStackChart({
           <YAxis
             tickFormatter={(v) => fmtUsd(v, true)}
             stroke="rgba(255,255,255,0.10)"
-            tick={{ fill: "rgba(255,255,255,0.40)", fontSize: 9, fontFamily: "var(--font-mono)" }}
+            tick={{ fill: "rgba(255,255,255,0.46)", fontSize: 9, fontFamily: "var(--font-mono)" }}
             tickLine={false}
             axisLine={false}
-            width={50}
+            width={56}
+            tickCount={3}
           />
+
+          {/* 1px baseline anchors empty buckets — without it the timeline reads
+            * as missing rather than zero. */}
+          <ReferenceLine y={0} stroke="rgba(255,255,255,0.10)" strokeWidth={1} />
 
           <Tooltip
             cursor={{ fill: "rgba(255,255,255,0.04)" }}
@@ -216,6 +214,7 @@ export function TokenStackChart({
             stackId="rev"
             fill={FILL_OTHER}
             barSize={barSize}
+            minPointSize={1}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
@@ -225,6 +224,7 @@ export function TokenStackChart({
             stackId="rev"
             fill={FILL_USDT0}
             barSize={barSize}
+            minPointSize={1}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
@@ -234,6 +234,7 @@ export function TokenStackChart({
             stackId="rev"
             fill={FILL_USDCE}
             barSize={barSize}
+            minPointSize={1}
             isAnimationActive
             animationDuration={650}
             animationEasing="ease-out"
@@ -243,7 +244,7 @@ export function TokenStackChart({
             type="step"
             dataKey="ma"
             stroke={ACCENT}
-            strokeWidth={1.25}
+            strokeWidth={1}
             dot={false}
             activeDot={false}
             isAnimationActive

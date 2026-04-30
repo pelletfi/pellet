@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pellet Wallet — Setup Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Commit Mono';
+  src: url('fonts/CommitMono-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Commit Mono';
+  src: url('fonts/CommitMono-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Commit Mono';
+  src: url('fonts/CommitMono-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --bg: #0c0c10;
+  --bg-shell: #050507;
+  --text-primary: rgba(255,255,255,0.93);
+  --text-secondary: rgba(255,255,255,0.63);
+  --text-tertiary: rgba(255,255,255,0.46);
+  --border-subtle: rgba(255,255,255,0.08);
+  --border-default: rgba(255,255,255,0.14);
+  --border-emphasis: rgba(255,255,255,0.22);
+  --success: #30a46c;
+}
+body { margin: 0; background: #000; }
+
+#wallet-demo {
+  width: 1080px;
+  height: 1080px;
+  background: var(--bg);
+  position: relative;
+  font-family: 'Geist', -apple-system, system-ui, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Atmospheric backdrop — radial wash, mirrors .oli-layout-shell ── */
+#wallet-demo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% -10%, rgba(255,255,255,0.09), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255,255,255,0.05), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanline overlay — matches `.oli-layout-shell::after` brand pattern. Lifts
+ * the canvas off "solid #0a0a0a" and gives the composition a CRT-print
+ * atmosphere without competing with content. */
+#wallet-demo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ── Persistent chrome layer (minimal) ──────────── */
+.chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+}
+.chrome-progress {
+  position: absolute;
+  bottom: 56px;
+  left: 0;
+  height: 1px;
+  background: var(--text-primary);
+  width: 0;
+  transform-origin: left;
+}
+.chrome-meta-bottom {
+  position: absolute;
+  bottom: 28px;
+  left: 56px;
+  right: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-tertiary);
+}
+.scene-counter { display: flex; align-items: baseline; gap: 8px; }
+.scene-counter .now {
+  font-size: 14px;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  color: var(--text-primary);
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+.scene-counter .of { color: var(--text-tertiary); }
+
+/* ── Three.js particle field — sits behind scenes ── */
+#canvas-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  width: 1080px;
+  height: 1080px;
+}
+
+/* ── Scenes ─────────────────────────────────────── */
+.scene { position: absolute; inset: 0; opacity: 0; z-index: 10; }
+.scene-content {
+  width: 100%;
+  height: 100%;
+  padding: 130px 110px 130px 110px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  gap: 28px;
+}
+
+/* shared: scene title strip */
+.scene-title {
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  margin-bottom: 8px;
+}
+.scene-title .num {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.scene-title .label {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+}
+.scene-title .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+  margin-left: 8px;
+  transform-origin: left;
+}
+
+/* ── Scene 1 — Terminal: auth start ─────────────── */
+.term {
+  border: 1px solid var(--border-default);
+  background: var(--bg-shell);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tlight {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.tlight.red    { background: #ff5f56; box-shadow: 0 0 0 1px rgba(0,0,0,0.25) inset; }
+.tlight.yellow { background: #ffbd2e; box-shadow: 0 0 0 1px rgba(0,0,0,0.25) inset; }
+.tlight.green  { background: #27c93f; box-shadow: 0 0 0 1px rgba(0,0,0,0.25) inset; }
+.term-bar .tlabel {
+  margin-left: 14px;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+}
+.term-body {
+  padding: 24px 32px;
+  flex: 1;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow: hidden;
+  position: relative;
+}
+.term-body::before {
+  content: "";
+  position: absolute;
+  top: 32px; bottom: 32px; left: 16px;
+  width: 1px;
+  background: var(--border-subtle);
+}
+.term-line { display: block; }
+.term-line.dim { color: var(--text-tertiary); }
+.term-line.bright { color: var(--text-primary); }
+.term-line .accent { color: var(--text-primary); }
+.term-line.code-line {
+  display: inline-block;
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+  padding: 8px 14px;
+  margin: 6px 0;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  border-left: 2px solid var(--text-primary);
+}
+.cursor {
+  display: inline-block;
+  width: 11px;
+  height: 22px;
+  background: var(--text-primary);
+  vertical-align: text-top;
+  margin-left: 4px;
+}
+.dots-wait { display: inline-block; color: var(--text-tertiary); }
+
+/* ── Browser frame ──────────────────────────────── */
+.browser {
+  border: 1px solid var(--border-default);
+  background: var(--bg-shell);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.browser-bar .blabel {
+  margin-left: 6px;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.url-bar {
+  flex: 1;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border-subtle);
+  padding: 8px 14px;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.url-bar .lock-icon {
+  width: 11px;
+  height: 13px;
+  flex-shrink: 0;
+  display: inline-block;
+  color: var(--text-tertiary);
+}
+.browser-body {
+  padding: 44px 56px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+/* Scene 2 — approve panel */
+.approve-kicker {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.approve-h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 72px;
+  font-weight: 400;
+  margin: 6px 0 8px;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.approve-h1 em { font-style: italic; color: var(--text-secondary); }
+.approve-sub {
+  color: var(--text-tertiary);
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 600px;
+  margin: 0 0 14px;
+}
+.cap-grid { border-top: 1px solid var(--border-subtle); flex-shrink: 0; }
+.cap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  flex-shrink: 0;
+}
+.cap-row .v {
+  color: var(--text-primary);
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+/* Action slot: button and approved stamp share the same position so the
+ * stamp lands exactly where the button was. Both are absolutely positioned
+ * inside .approve-action-stack which reserves the height. */
+.approve-action-stack {
+  position: relative;
+  margin-top: 16px;
+  height: 64px;
+}
+.approve-btn,
+.approved-stamp {
+  position: absolute;
+  inset: 0;
+  padding: 0 26px;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 15px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-emphasis);
+}
+.approve-btn {
+  background: rgba(255,255,255,0.06);
+  justify-content: space-between;
+}
+.approve-btn .arrow { font-size: 18px; }
+.approved-stamp {
+  /* Pre-blended dark-green so the stamp fully occludes the button beneath. */
+  background: #0e1d15;
+  border-color: rgba(48,164,108,0.45);
+  gap: 14px;
+  opacity: 0;
+}
+.approved-stamp .check {
+  width: 12px;
+  height: 12px;
+  background: var(--success);
+  display: inline-block;
+}
+
+/* ── Scene 4 — Dashboard ────────────────────────── */
+.dash-shell {
+  padding: 36px 44px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow: hidden;
+}
+.dash-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.dash-h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 64px;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  padding-top: 4px;
+}
+.dash-h1 em { font-style: italic; color: var(--text-secondary); }
+.dash-status {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dash-status .ok { width: 8px; height: 8px; background: var(--success); }
+
+.dash-balance-card {
+  border: 1px solid var(--border-subtle);
+  padding: 28px 32px;
+  background: rgba(255,255,255,0.02);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: end;
+}
+.dash-balance-label {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.dash-balance-value {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 110px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-top: 4px;
+}
+.dash-balance-value .unit {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-left: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.dash-balance-side {
+  text-align: right;
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dash-balance-side .v { color: var(--text-secondary); }
+
+.dash-card {
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.02);
+}
+.dash-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.dash-card-h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.dash-card-meta {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.dash-row {
+  display: grid;
+  grid-template-columns: 130px 1fr auto auto;
+  gap: 22px;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.dash-row:last-child { border-bottom: none; }
+.dash-row .label {
+  color: var(--text-primary);
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dash-row .cap {
+  color: var(--text-secondary);
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 22px;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+.dash-row.fresh { background: rgba(48,164,108,0.05); }
+.dash-row.fresh .label::before { content: '◆ '; color: var(--success); }
+
+/* Final caption — held silence after dashboard reveals */
+.final-caption {
+  position: absolute;
+  inset: auto 0 56px 0;
+  text-align: center;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  opacity: 0;
+}
+
+/* ── Outro scene ──────────────────────────────── */
+.s5 .scene-content {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0;
+  gap: 40px;
+}
+.outro-mark {
+  width: 200px;
+  height: 200px;
+  opacity: 0;
+}
+.outro-mark rect { fill: transparent; }
+.outro-mark path { fill: var(--text-primary); }
+.outro-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 96px;
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+.outro-title em { font-style: italic; color: var(--text-secondary); }
+.outro-tagline {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+.outro-url {
+  font-family: 'Commit Mono', 'JetBrains Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+</style>
+</head>
+<body>
+
+<div id="wallet-demo" data-composition-id="wallet-demo" data-width="1080" data-height="1080" data-start="0" data-duration="35">
+
+  <!-- Three.js particle field — initialized below -->
+  <canvas id="canvas-3d" aria-hidden="true"></canvas>
+
+  <!-- Persistent chrome layer (minimal: progress bar + scene counter) -->
+  <div class="chrome">
+    <div class="chrome-progress" id="chrome-progress"></div>
+    <div class="chrome-meta-bottom">
+      <div class="scene-counter">
+        <span class="now" id="scene-now">01</span>
+        <span class="of">/ 04</span>
+      </div>
+      <div>pellet.network/wallet</div>
+    </div>
+  </div>
+
+  <!-- Scene 1 — Terminal: auth start + pairing + wait -->
+  <div class="scene s1">
+    <div class="scene-content">
+      <div class="scene-title">
+        <span class="num">01</span>
+        <span class="label">pair the agent</span>
+        <span class="rule" id="s1-rule"></span>
+      </div>
+      <div class="term">
+        <div class="term-bar">
+          <span class="tlight red"></span><span class="tlight yellow"></span><span class="tlight green"></span>
+          <span class="tlabel">~/pellet · zsh</span>
+        </div>
+        <div class="term-body">
+<span class="term-line bright" id="t1">$ npx -y @pelletnetwork/cli auth start</span>
+<span class="term-line" id="t2">&nbsp;</span>
+<span class="term-line dim" id="t3">  Starting connection…</span>
+<span class="term-line dim" id="t4">  └ base url: https://pellet.network</span>
+<span class="term-line" id="t5">&nbsp;</span>
+<span class="term-line" id="t6">  Visit <span class="accent">https://pellet.network/wallet/device</span></span>
+<span class="term-line" id="t7">  When prompted, enter the following passphrase:</span>
+<span class="term-line code-line" id="t8">8H3K-A2QM</span>
+<span class="term-line" id="t9">&nbsp;</span>
+<span class="term-line dim" id="t10">  Waiting for approval<span class="dots-wait" id="t10-dots">.....</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 2 — Browser: approve agent -->
+  <div class="scene s2">
+    <div class="scene-content">
+      <div class="scene-title">
+        <span class="num">02</span>
+        <span class="label">approve in the browser</span>
+        <span class="rule" id="s2-rule"></span>
+      </div>
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="tlight red"></span><span class="tlight yellow"></span><span class="tlight green"></span>
+          <span class="blabel">browser</span>
+          <div class="url-bar">
+            <svg class="lock-icon" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="1" y="6" width="9" height="6.5" stroke="currentColor" stroke-width="1"/>
+              <path d="M3 6 V3.5 a2.5 2.5 0 1 1 5 0 V6" stroke="currentColor" stroke-width="1" fill="none"/>
+            </svg>
+            pellet.network/wallet/device?code=8H3K-A2QM
+          </div>
+        </div>
+        <div class="browser-body">
+          <span class="approve-kicker">Pellet Wallet · Connect agent</span>
+          <h1 class="approve-h1">Approve <em>agent.</em></h1>
+          <p class="approve-sub">Grant a spend cap so this agent can pay autonomously up to your limit. The chain enforces it.</p>
+          <div class="cap-grid" data-layout-allow-overflow>
+            <div class="cap-row"><span>spend cap</span><span class="v">$100.00</span></div>
+            <div class="cap-row"><span>per-call cap</span><span class="v">$5.00</span></div>
+            <div class="cap-row"><span>expires</span><span class="v">in 30 days</span></div>
+          </div>
+          <div class="approve-action-stack">
+            <div class="approve-btn" id="approve-btn">
+              <span>approve · grant 100 USDC</span>
+              <span class="arrow">→</span>
+            </div>
+            <div class="approved-stamp" id="approved-stamp">
+              <span class="check"></span>
+              <span>approved · session active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 3 — Terminal returns -->
+  <div class="scene s3">
+    <div class="scene-content">
+      <div class="scene-title">
+        <span class="num">03</span>
+        <span class="label">session active</span>
+        <span class="rule" id="s3-rule"></span>
+      </div>
+      <div class="term">
+        <div class="term-bar">
+          <span class="tlight red"></span><span class="tlight yellow"></span><span class="tlight green"></span>
+          <span class="tlabel">~/pellet · zsh</span>
+        </div>
+        <div class="term-body">
+<span class="term-line dim" id="r1">  Waiting for approval.....</span>
+<span class="term-line" id="r2">&nbsp;</span>
+<span class="term-line bright" id="r3">  <span style="color: var(--success)">✓</span> approved.</span>
+<span class="term-line dim" id="r4">  session label: <span class="accent">agent</span></span>
+<span class="term-line dim" id="r5">  spend cap:    <span class="accent">$100.00</span></span>
+<span class="term-line dim" id="r6">  per-call cap: <span class="accent">$5.00</span></span>
+<span class="term-line dim" id="r7">  expires:      <span class="accent">2026-05-30T13:33Z</span></span>
+<span class="term-line" id="r8">&nbsp;</span>
+<span class="term-line dim" id="r9">  config saved to ~/.pellet/config.json</span>
+<span class="term-line bright" id="r10">$ <span class="cursor" id="cursor"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4 — Dashboard -->
+  <div class="scene s4">
+    <div class="scene-content">
+      <div class="scene-title">
+        <span class="num">04</span>
+        <span class="label">landed on the dashboard</span>
+        <span class="rule" id="s4-rule"></span>
+      </div>
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="tlight red"></span><span class="tlight yellow"></span><span class="tlight green"></span>
+          <span class="blabel">browser</span>
+          <div class="url-bar">
+            <svg class="lock-icon" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="1" y="6" width="9" height="6.5" stroke="currentColor" stroke-width="1"/>
+              <path d="M3 6 V3.5 a2.5 2.5 0 1 1 5 0 V6" stroke="currentColor" stroke-width="1" fill="none"/>
+            </svg>
+            pellet.network/oli/wallet/dashboard
+          </div>
+        </div>
+        <div class="browser-body dash-shell">
+          <div class="dash-header" data-layout-allow-overflow>
+            <h1 class="dash-h1">Pellet <em>Wallet.</em></h1>
+            <span class="dash-status"><span class="ok"></span>1 active session</span>
+          </div>
+          <div class="dash-balance-card" id="d-balance">
+            <div>
+              <span class="dash-balance-label">balance</span>
+              <div class="dash-balance-value">$100.00<span class="unit">USDC.e</span></div>
+            </div>
+            <div class="dash-balance-side">
+              <span>0x9F4a…D11c</span>
+              <span class="v">cap remaining</span>
+              <span>$100.00</span>
+            </div>
+          </div>
+          <div class="dash-card" id="d-sessions" data-layout-allow-overflow>
+            <div class="dash-card-head">
+              <h2 class="dash-card-h2">Sessions</h2>
+              <span class="dash-card-meta">1 row</span>
+            </div>
+            <div class="dash-row fresh" id="d-row1">
+              <span>just now</span>
+              <span class="label">agent</span>
+              <span class="cap">$100.00</span>
+              <span>30d</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 5 — Outro: P logo + brand line + URL -->
+  <div class="scene s5">
+    <div class="scene-content">
+      <svg class="outro-mark" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-label="Pellet">
+        <rect width="1024" height="1024"/>
+        <g transform="translate(112, 112) scale(1.6)">
+          <path fill-rule="evenodd" d="M397.75,106.78h-56.39c-11.07,0-20.04-8.97-20.04-20.04V33.24c0-11.07-8.97-20.04-20.04-20.04H196.68c-11.07,0-20.04,8.97-20.04,20.04v53.51c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v105.33c0,11.07,8.97,20.04,20.04,20.04h57.35c11.07,0,20.04,8.97,20.04,20.04v47.75c0,11.07-8.97,20.04-20.04,20.04H103.1c-11.07,0-20.04,8.97-20.04,20.04v106.08c0,11.07,8.97,20.04,20.04,20.04h65.02c11.07,0,20.04-8.97,20.04-20.04v-98.4c0-11.07,8.97-20.04,20.04-20.04h96.94c11.07,0,20.04-8.97,20.04-20.04v-55.43c0-11.07,8.97-20.04,20.04-20.04h52.55c11.07,0,20.04-8.97,20.04-20.04V126.81C417.79,115.75,408.82,106.78,397.75,106.78z M292.66,242.58H208.2c-11.07,0-20.04-8.97-20.04-20.04v-84.22c0-11.07,8.97-20.04,20.04-20.04h84.46c11.07,0,20.04,8.97,20.04,20.04v84.22C312.69,233.61,303.72,242.58,292.66,242.58z"/>
+        </g>
+      </svg>
+      <h2 class="outro-title">Pellet <em>Wallet.</em></h2>
+      <p class="outro-tagline">the audit trail is the dashboard</p>
+      <p class="outro-url">pellet.network/wallet</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+
+    /* ── Deterministic PRNG (mulberry32) ───────────────────────────────── */
+    function mulberry32(seed) {
+      return function () {
+        let t = (seed += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ── Text typing: split text nodes into per-char spans, then stagger ── */
+    function splitTextRecursive_unused(el) {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+          if (node.parentElement && node.parentElement.closest('svg')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const textNodes = [];
+      let n;
+      while ((n = walker.nextNode())) textNodes.push(n);
+      textNodes.forEach((tn) => {
+        const text = tn.textContent;
+        // Skip pure-whitespace nodes (HTML formatting between sibling tags).
+        if (!text || !/\S/.test(text)) return;
+        const frag = document.createDocumentFragment();
+        for (const ch of text) {
+          const span = document.createElement('span');
+          span.setAttribute('data-char', '');
+          span.textContent = ch === ' ' ? ' ' : ch;
+          frag.appendChild(span);
+        }
+        tn.parentNode.replaceChild(frag, tn);
+      });
+    }
+
+    /* Typing via clip-path — left-to-right reveal, no DOM mutation. */
+    function typeIn(selector, t, perCharDur = 0.028) {
+      const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+      if (!el) return 0;
+      const charCount = (el.textContent || '').replace(/\s+/g, ' ').length || 1;
+      const dur = Math.max(0.25, charCount * perCharDur);
+      master.fromTo(
+        el,
+        { clipPath: 'inset(0 100% 0 0)', WebkitClipPath: 'inset(0 100% 0 0)' },
+        { clipPath: 'inset(0 0% 0 0)', WebkitClipPath: 'inset(0 0% 0 0)', duration: dur, ease: "none" },
+        t
+      );
+      return dur;
+    }
+
+    /* ── Three.js particle field ───────────────────────────────────────── */
+    const canvas3d = document.getElementById('canvas-3d');
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, alpha: true, antialias: true });
+    renderer.setSize(1080, 1080, false);
+    renderer.setPixelRatio(2);
+
+    const tjScene = new THREE.Scene();
+    const tjCamera = new THREE.PerspectiveCamera(55, 1, 0.1, 3000);
+    tjCamera.position.set(0, 0, 540);
+
+    // Particle cloud — deterministic spherical-shell distribution
+    const PT_COUNT = 1400;
+    const ptPos = new Float32Array(PT_COUNT * 3);
+    const ptRng = mulberry32(42);
+    for (let i = 0; i < PT_COUNT; i++) {
+      const radius = 180 + ptRng() * 380;
+      const phi = ptRng() * Math.PI * 2;
+      const theta = Math.acos(2 * ptRng() - 1);
+      ptPos[i * 3] = radius * Math.sin(theta) * Math.cos(phi);
+      ptPos[i * 3 + 1] = radius * Math.sin(theta) * Math.sin(phi);
+      ptPos[i * 3 + 2] = radius * Math.cos(theta);
+    }
+    const ptGeom = new THREE.BufferGeometry();
+    ptGeom.setAttribute('position', new THREE.BufferAttribute(ptPos, 3));
+    const ptMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 1.6,
+      transparent: true,
+      opacity: 0.55,
+      sizeAttenuation: true,
+      depthWrite: false,
+    });
+    const ptCloud = new THREE.Points(ptGeom, ptMat);
+    tjScene.add(ptCloud);
+
+    // Wireframe lattice — slowly rotating geometry that anchors the field
+    const latticeGeom = new THREE.IcosahedronGeometry(280, 2);
+    const latticeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.06 });
+    const lattice = new THREE.LineSegments(new THREE.WireframeGeometry(latticeGeom), latticeMat);
+    tjScene.add(lattice);
+
+    // Initial render so frame 0 isn't blank
+    renderer.render(tjScene, tjCamera);
+
+    const master = gsap.timeline({ paused: true, defaults: { ease: "power2.out" } });
+
+    /* ── Drive Three.js camera + lattice off the master timeline ────────── */
+    const tjState = { rot: 0 };
+    master.to(tjState, {
+      rot: 1,
+      duration: 35,
+      ease: "none",
+      onUpdate: () => {
+        const r = tjState.rot;
+        const angle = r * Math.PI * 0.6;             // ~108° camera orbit over 22s
+        tjCamera.position.x = Math.sin(angle) * 540;
+        tjCamera.position.z = Math.cos(angle) * 540;
+        tjCamera.position.y = Math.sin(r * Math.PI * 2) * 60;
+        tjCamera.lookAt(0, 0, 0);
+        // Lattice counter-rotates slightly for parallax depth
+        lattice.rotation.y = -r * Math.PI * 0.4;
+        lattice.rotation.x = Math.sin(r * Math.PI) * 0.15;
+        // Cloud bob
+        ptCloud.rotation.y = r * Math.PI * 0.2;
+        renderer.render(tjScene, tjCamera);
+      },
+    }, 0);
+
+    /* ───── Persistent chrome — fades in once, lives across all scenes ──── */
+    master.fromTo(".chrome", { opacity: 0 }, { opacity: 1, duration: 1.8, ease: "power2.out" }, 0.3);
+    // Progress bar grows linearly across the whole 35s composition
+    master.to("#chrome-progress", { width: 1080, duration: 34.0, ease: "none" }, 0.6);
+    // Scene counter ticks at scene-start moments (text-swap via tl.set)
+    master.set("#scene-now", { textContent: "02" }, 7.0);
+    master.set("#scene-now", { textContent: "03" }, 14.0);
+    master.set("#scene-now", { textContent: "04" }, 18.5);
+    master.set("#scene-now", { textContent: "05" }, 26.0);
+
+    /* ───── Scene helpers — long, contemplative fades ──────────────────── */
+    function fadeScene(sel, start, len, isLast) {
+      master.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 1.6, ease: "power2.out" }, start);
+      if (!isLast) {
+        master.to(sel, { opacity: 0, duration: 1.2, ease: "power2.inOut" }, start + len);
+      } else {
+        master.to(sel, { opacity: 0, duration: 2.4, ease: "power2.inOut" }, start + len);
+      }
+    }
+
+    /* ── Scene 1: Terminal · 0–8.5s — every line types in (slower) ─────── */
+    const s1Start = 0.6;
+    fadeScene(".s1", 0, 7.0);
+    master.fromTo("#s1-rule", { scaleX: 0 }, { scaleX: 1, duration: 1.4, ease: "power4.inOut" }, s1Start + 0.3);
+    master.from(".s1 .term", { y: 30, opacity: 0, duration: 1.0, ease: "expo.out" }, s1Start + 0.5);
+    // Title strip
+    typeIn(".s1 .num", s1Start + 0.3, 0.09);
+    typeIn(".s1 .label", s1Start + 0.5, 0.04);
+    // Terminal lines: each types in sequence with a small pause between
+    const t1Schedule = [
+      { id: "#t1", t: 2.0, cd: 0.022 },
+      { id: "#t2", t: 2.6, cd: 0.022 },
+      { id: "#t3", t: 2.75, cd: 0.020 },
+      { id: "#t4", t: 3.25, cd: 0.020 },
+      { id: "#t5", t: 3.75, cd: 0.022 },
+      { id: "#t6", t: 3.9, cd: 0.020 },
+      { id: "#t7", t: 4.5, cd: 0.022 },
+      { id: "#t8", t: 5.1, cd: 0.045 },
+      { id: "#t9", t: 5.85, cd: 0.022 },
+      { id: "#t10", t: 6.0, cd: 0.022 },
+    ];
+    t1Schedule.forEach(({ id, t, cd }) => typeIn(id, t, cd));
+
+    /* ── Scene 2: Browser · 7.0–14.5s — slower entrance choreography ── */
+    const s2Start = 7.5;
+    fadeScene(".s2", 7.0, 6.5);
+    master.from(".s2 .num", { y: 30, opacity: 0, duration: 1.1, ease: "expo.out" }, s2Start);
+    master.from(".s2 .label", { x: -14, opacity: 0, duration: 0.85, ease: "circ.out" }, s2Start + 0.25);
+    master.fromTo("#s2-rule", { scaleX: 0 }, { scaleX: 1, duration: 1.4, ease: "power4.inOut" }, s2Start + 0.3);
+    master.from(".s2 .browser", { y: 30, opacity: 0, duration: 0.95, ease: "expo.out" }, s2Start + 0.5);
+    master.from(".approve-kicker", { letterSpacing: "0.32em", opacity: 0, duration: 0.85, ease: "power3.out" }, s2Start + 1.1);
+    master.from(".approve-h1", { y: 50, opacity: 0, duration: 1.4, ease: "expo.out" }, s2Start + 1.35);
+    master.from(".approve-sub", { y: 14, opacity: 0, duration: 0.85, ease: "power2.out" }, s2Start + 1.85);
+    master.from(".cap-row", { y: 18, opacity: 0, duration: 0.65, stagger: { each: 0.15, from: "start" }, ease: "power3.out" }, s2Start + 2.2);
+    master.from(".cap-row .v", { scale: 0.94, duration: 0.75, stagger: 0.15, ease: "back.out(1.4)" }, s2Start + 2.35);
+    master.from("#approve-btn", { y: 16, opacity: 0, duration: 0.65, ease: "power3.out" }, s2Start + 3.2);
+    master.to("#approve-btn", { backgroundColor: "rgba(255,255,255,0.14)", duration: 0.3, yoyo: true, repeat: 1, ease: "power1.inOut" }, s2Start + 4.2);
+    master.fromTo("#approved-stamp", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, s2Start + 4.85);
+    master.fromTo("#approved-stamp", { scale: 0.97 }, { scale: 1, duration: 0.8, ease: "back.out(1.4)" }, s2Start + 4.85);
+
+    /* ── Scene 3: Terminal returns · 14.0–18.5s — typed responses (slower) ─ */
+    const s3Start = 14.5;
+    fadeScene(".s3", 14.0, 4.2);
+    master.fromTo("#s3-rule", { scaleX: 0 }, { scaleX: 1, duration: 1.4, ease: "power4.inOut" }, s3Start + 0.3);
+    master.from(".s3 .term", { y: 30, opacity: 0, duration: 0.95, ease: "expo.out" }, s3Start + 0.5);
+    // Title strip
+    typeIn(".s3 .num", s3Start + 0.3, 0.09);
+    typeIn(".s3 .label", s3Start + 0.5, 0.04);
+    // Terminal response: types deliberately
+    const r1Schedule = [
+      { id: "#r1", t: 15.4, cd: 0.022 },
+      { id: "#r2", t: 15.6, cd: 0.022 },
+      { id: "#r3", t: 15.85, cd: 0.045 },
+      { id: "#r4", t: 16.3, cd: 0.020 },
+      { id: "#r5", t: 16.55, cd: 0.020 },
+      { id: "#r6", t: 16.8, cd: 0.020 },
+      { id: "#r7", t: 17.05, cd: 0.020 },
+      { id: "#r8", t: 17.3, cd: 0.022 },
+      { id: "#r9", t: 17.45, cd: 0.020 },
+      { id: "#r10", t: 17.85, cd: 0.022 },
+    ];
+    r1Schedule.forEach(({ id, t, cd }) => typeIn(id, t, cd));
+    // Cursor blink — finite repeat
+    master.to("#cursor", { opacity: 0, duration: 0.5, repeat: 1, yoyo: true, ease: "steps(1)" }, 18.0);
+
+    /* ── Scene 4: Dashboard · 18.5–26.5s — default snappy choreography ── */
+    const s4Start = 18.95;
+    // Inline fade (faster than the slow fadeScene helper)
+    master.fromTo(".s4", { opacity: 0 }, { opacity: 1, duration: 0.85, ease: "power2.out" }, 18.5);
+    master.to(".s4", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 25.5);
+    master.from(".s4 .num", { y: 30, opacity: 0, duration: 0.7, ease: "expo.out" }, s4Start);
+    master.from(".s4 .label", { x: -14, opacity: 0, duration: 0.5, ease: "circ.out" }, s4Start + 0.15);
+    master.fromTo("#s4-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: "power4.inOut" }, s4Start + 0.2);
+    master.from(".s4 .browser", { y: 30, opacity: 0, duration: 0.55, ease: "expo.out" }, s4Start + 0.3);
+    master.from(".dash-h1", { y: 40, opacity: 0, duration: 0.85, ease: "expo.out" }, s4Start + 0.7);
+    master.from(".dash-status", { x: 14, opacity: 0, duration: 0.5, ease: "circ.out" }, s4Start + 0.85);
+    master.from("#d-balance", { y: 24, opacity: 0, duration: 0.55, ease: "power3.out" }, s4Start + 1.0);
+    master.from(".dash-balance-value", { scale: 0.94, opacity: 0, duration: 0.7, ease: "back.out(1.3)" }, s4Start + 1.15);
+    master.from(".dash-balance-side", { x: 14, opacity: 0, duration: 0.5, ease: "circ.out" }, s4Start + 1.4);
+    master.from("#d-sessions .dash-card-head", { y: 16, opacity: 0, duration: 0.4, ease: "power2.out" }, s4Start + 1.6);
+    master.from("#d-row1", { x: -20, opacity: 0, duration: 0.5, ease: "circ.out" }, s4Start + 1.85);
+
+    /* ── Scene 5: Outro · 26.0–34s — default brand resolve ──────────── */
+    const s5Start = 26.6;
+    // Inline fade (faster than the slow fadeScene helper)
+    master.fromTo(".s5", { opacity: 0 }, { opacity: 1, duration: 0.85, ease: "power2.out" }, 26.0);
+    master.to(".s5", { opacity: 0, duration: 1.4, ease: "power2.inOut" }, 33.0);
+    // Logo
+    master.fromTo(
+      ".outro-mark",
+      { opacity: 0, scale: 0.88, y: 12 },
+      { opacity: 1, scale: 1, y: 0, duration: 1.6, ease: "expo.out" },
+      s5Start
+    );
+    // Brand text types in
+    typeIn(".outro-title", s5Start + 0.9, 0.06);
+    typeIn(".outro-tagline", s5Start + 1.9, 0.025);
+    typeIn(".outro-url", s5Start + 2.7, 0.025);
+
+    window.__timelines["wallet-demo"] = master;
+  </script>
+</div>
+
+</body>
+</html>
