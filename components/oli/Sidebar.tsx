@@ -92,10 +92,25 @@ export function Sidebar() {
       className={`oli-sidebar ${collapsed ? "oli-sidebar-collapsed" : ""}`}
       data-collapsed={collapsed ? "true" : "false"}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <div
+        style={{
+          // Collapsed: stack the logo and toggle vertically so neither has to
+          // shrink to fit a 56px-wide rail. Expanded: side-by-side row.
+          display: "flex",
+          flexDirection: collapsed ? "column" : "row",
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : "space-between",
+          gap: collapsed ? 14 : 8,
+        }}
+      >
         <Link
           href="/"
-          style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            textDecoration: "none",
+            flexShrink: 0,
+          }}
           aria-label="Pellet — back to home"
         >
           <PelletMark size={24} />
@@ -141,7 +156,7 @@ export function Sidebar() {
                 aria-label={collapsed ? item.label : undefined}
               >
                 <span className="oli-nav-link-icon" aria-hidden>
-                  <Icon size={15} strokeWidth={1.5} />
+                  <Icon size={16} strokeWidth={1.75} />
                 </span>
                 {!collapsed && <span className="oli-nav-link-label">{item.label}</span>}
               </Link>
