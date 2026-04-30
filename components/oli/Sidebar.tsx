@@ -29,9 +29,10 @@ export function Sidebar() {
       style={{
         width: 240,
         borderRight: "1px solid var(--color-border-subtle)",
-        height: "100vh",
+        // Site Nav is 48px sticky; sidebar starts under it and fills the rest.
+        height: "calc(100vh - 48px)",
         position: "sticky",
-        top: 0,
+        top: 48,
         background: "var(--color-bg-base)",
         padding: "20px 16px",
         display: "flex",

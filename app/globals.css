@@ -1031,28 +1031,13 @@ main {
   }
 }
 
-/* OLI mobile reshape */
+/* OLI mobile reshape — sidebar collapses entirely on mobile. The site Nav's
+ * mobile drawer surfaces OLI sub-routes when on /oli/* (see components/Nav.tsx
+ * `oliSubLinks`), so users can navigate without the horizontal scroll-strip
+ * pattern that was overlapping content. */
 @media (max-width: 767px) {
   .oli-sidebar {
-    position: sticky !important;
-    top: 0;
-    width: 100% !important;
-    height: auto !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--color-border-subtle);
-    flex-direction: row !important;
-    gap: 0 !important;
-    padding: 12px 16px !important;
-    overflow-x: auto;
-    align-items: center;
-  }
-  .oli-sidebar > nav {
-    flex-direction: row !important;
-    gap: 4px !important;
-    margin-left: 16px;
-  }
-  .oli-sidebar > nav > span {
-    display: none; /* hide section header on mobile */
+    display: none !important;
   }
   .oli-layout-shell {
     flex-direction: column;

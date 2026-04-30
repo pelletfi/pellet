@@ -14,6 +14,18 @@ const navLinks = [
   { label: "Docs", href: "/docs" },
 ];
 
+// OLI sub-routes — surfaced in the site Nav's mobile drawer when the user is
+// on /oli/* so they can reach Services / Agents / Rails / etc. without an
+// OLI-specific sidebar (which is desktop-only now).
+const oliSubLinks = [
+  { label: "Dashboard", href: "/oli" },
+  { label: "Services", href: "/oli/services" },
+  { label: "Agents", href: "/oli/agents" },
+  { label: "Rails", href: "/oli/rails" },
+  { label: "Skills", href: "/oli/skills" },
+  { label: "Methodology", href: "/oli/methodology" },
+];
+
 function Logo() {
   return (
     <Link
@@ -42,8 +54,7 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
-  // OLI routes can render their own shell; suppress the site nav there.
-  if (pathname?.startsWith("/oli")) return null;
+  const onOli = pathname?.startsWith("/oli") ?? false;
 
   return (
     <header className="nav-header">
@@ -117,6 +128,41 @@ export function Nav() {
                 {link.label}
               </Link>
             ))}
+            {onOli && (
+              <>
+                <span
+                  style={{
+                    display: "block",
+                    padding: "16px 0 6px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--color-text-quaternary)",
+                  }}
+                >
+                  OLI sections
+                </span>
+                {oliSubLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    style={{
+                      display: "block",
+                      padding: "10px 0",
+                      paddingLeft: 12,
+                      fontSize: 14,
+                      color: "var(--color-text-secondary)",
+                      textDecoration: "none",
+                      borderBottom: "1px solid var(--color-border-subtle)",
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </>
+            )}
           </nav>
         )}
       </div>
