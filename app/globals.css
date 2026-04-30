@@ -1236,55 +1236,17 @@ main {
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--color-border-subtle);
+  border: 0;
+  padding: 0;
   color: var(--color-text-tertiary);
   cursor: pointer;
-  border-radius: 4px;
   flex-shrink: 0;
-  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+  transition: color var(--duration-fast) ease;
 }
 .oli-sidebar-toggle:hover {
   color: var(--color-text-primary);
-  border-color: var(--color-border-emphasis);
 }
 
-/* Ingest-freshness pill — replaces the redundant brand mark in the OLI
- * sidebar header. Surfaces "synced Xm ago · block N" with a status-tiered
- * dot (fresh / stale / old / unknown). On-brand for an open-ledger product:
- * a stale pill is itself a useful incident signal. */
-.oli-sync-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--color-text-tertiary);
-  font-variant-numeric: tabular-nums;
-  min-width: 0;
-}
-.oli-sync-pill-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.oli-sync-pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--color-text-quaternary);
-}
-.oli-sync-pill[data-tier="fresh"] .oli-sync-pill-dot {
-  background: var(--color-success);
-  box-shadow: 0 0 6px rgba(48, 164, 108, 0.4);
-}
-.oli-sync-pill[data-tier="stale"] .oli-sync-pill-dot {
-  background: var(--color-warning);
-}
-.oli-sync-pill[data-tier="old"] .oli-sync-pill-dot {
-  background: var(--color-error);
-}
 
 /* 6. Leaderboard row hover: accent left rule */
 .oli-leaderboard-link {

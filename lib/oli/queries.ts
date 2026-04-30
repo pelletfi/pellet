@@ -4,33 +4,6 @@ import { sql, desc, eq, and, gte } from "drizzle-orm";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-export type LastSync = {
-  /** When the most-recently-advanced cursor was last updated. */
-  updatedAt: Date | null;
-  /** Highest block number any cursor has reached. */
-  lastBlock: number | null;
-};
-
-/**
- * Freshness signal for the OLI ingest. We surface this as a "synced Xm ago ·
- * block N" pill in the OLI sidebar so users can see at a glance whether the
- * data is current. ingestion_cursors is the source of truth — whichever
- * contract is furthest along is what users effectively see.
- */
-export async function getLastSync(): Promise<LastSync> {
-  const rows = await db.execute<{ updated_at: Date | string | null; last_block: number | null }>(sql`
-    SELECT
-      MAX(updated_at) AS updated_at,
-      MAX(last_block) AS last_block
-    FROM ingestion_cursors
-  `);
-  const row = rows.rows[0];
-  if (!row) return { updatedAt: null, lastBlock: null };
-  const updatedAt = row.updated_at ? new Date(row.updated_at) : null;
-  const lastBlock = row.last_block != null ? Number(row.last_block) : null;
-  return { updatedAt, lastBlock };
-}
-
 export type LeaderboardRow = {
   id: string;
   label: string;

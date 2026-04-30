@@ -10,8 +10,8 @@ import {
   Route,
   BookOpen,
   FileText,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,14 +39,7 @@ const sections: Section[] = [
 
 const STORAGE_KEY = "pellet-oli-sidebar-collapsed";
 
-type SidebarProps = {
-  /** ISO timestamp of the most-recently-advanced ingestion cursor, or null. */
-  lastSyncAtIso: string | null;
-  /** Highest block number any cursor has reached, or null if no ingest yet. */
-  lastBlock: number | null;
-};
-
-export function Sidebar({ lastSyncAtIso, lastBlock }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -87,10 +80,10 @@ export function Sidebar({ lastSyncAtIso, lastBlock }: SidebarProps) {
         position: "sticky",
         top: 48,
         background: "var(--color-bg-base)",
-        padding: collapsed ? "20px 8px" : "20px 16px",
+        padding: collapsed ? "12px 8px" : "12px 16px",
         display: "flex",
         flexDirection: "column",
-        gap: 24,
+        gap: 16,
         // No transition until after hydration so the collapsed snapshot from
         // localStorage doesn't animate in on every fresh page load.
         transition: hydrated ? "width var(--duration-normal) ease, padding var(--duration-normal) ease" : "none",
@@ -101,16 +94,10 @@ export function Sidebar({ lastSyncAtIso, lastBlock }: SidebarProps) {
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
           alignItems: "center",
-          justifyContent: collapsed ? "center" : "space-between",
-          gap: 8,
-          minHeight: 24,
+          justifyContent: collapsed ? "center" : "flex-end",
         }}
       >
-        {!collapsed && (
-          <SyncPill lastSyncAtIso={lastSyncAtIso} lastBlock={lastBlock} />
-        )}
         <button
           type="button"
           onClick={toggle}
@@ -118,7 +105,7 @@ export function Sidebar({ lastSyncAtIso, lastBlock }: SidebarProps) {
           aria-expanded={!collapsed}
           className="oli-sidebar-toggle"
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {collapsed ? <PanelLeftOpen size={16} strokeWidth={1.75} /> : <PanelLeftClose size={16} strokeWidth={1.75} />}
         </button>
       </div>
 
@@ -162,56 +149,4 @@ export function Sidebar({ lastSyncAtIso, lastBlock }: SidebarProps) {
       ))}
     </aside>
   );
-}
-
-function SyncPill({ lastSyncAtIso, lastBlock }: SidebarProps) {
-  // Re-render every 30s so the "Xm ago" stays honest while the user lingers.
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!lastSyncAtIso) {
-    return (
-      <span className="oli-sync-pill" data-tier="unknown" title="No ingest run recorded yet">
-        <span className="oli-sync-pill-dot" />
-        <span>not synced</span>
-      </span>
-    );
-  }
-
-  const ageMs = Date.now() - new Date(lastSyncAtIso).getTime();
-  const tier = ageMs < 30 * 60_000 ? "fresh" : ageMs < 6 * 60 * 60_000 ? "stale" : "old";
-  const agoLabel = formatAgo(ageMs);
-  const blockLabel = lastBlock != null ? formatBlock(lastBlock) : "—";
-
-  return (
-    <span
-      className="oli-sync-pill"
-      data-tier={tier}
-      title={`Last cursor advance: ${new Date(lastSyncAtIso).toLocaleString()} · block ${lastBlock?.toLocaleString() ?? "—"}`}
-    >
-      <span className="oli-sync-pill-dot" />
-      <span className="oli-sync-pill-text">
-        synced {agoLabel} · block {blockLabel}
-      </span>
-    </span>
-  );
-}
-
-function formatAgo(ms: number): string {
-  if (ms < 60_000) return "just now";
-  const minutes = Math.floor(ms / 60_000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function formatBlock(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toLocaleString();
 }
