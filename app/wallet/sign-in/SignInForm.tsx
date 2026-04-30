@@ -197,7 +197,8 @@ const styles = `
   .si-tab {
     background: var(--color-bg-base);
     border: 0;
-    padding: 10px 12px;
+    min-height: 44px;
+    padding: 14px 12px;
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: 0.06em;
@@ -228,14 +229,19 @@ const styles = `
   .si-btn {
     width: 100%;
     padding: 14px;
-    background: var(--color-accent);
-    border: 0;
-    color: #fff;
+    background: var(--color-bg-emphasis);
+    border: 1px solid var(--color-border-emphasis);
+    color: var(--color-text-primary);
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     cursor: pointer;
+    transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease;
+  }
+  .si-btn:hover:not([disabled]) {
+    background: var(--color-bg-muted);
+    border-color: var(--color-text-tertiary);
   }
   .si-btn[disabled] { opacity: 0.5; cursor: wait; }
   .si-foot {
@@ -247,8 +253,10 @@ const styles = `
   }
   .si-cmd {
     display: inline-block;
-    word-break: break-all;
-    color: var(--color-text-tertiary);
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--color-text-secondary);
   }
   .si-error {
     margin-top: 12px;

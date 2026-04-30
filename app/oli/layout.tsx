@@ -9,6 +9,8 @@ import {
   Route,
   Sparkles,
   BookText,
+  ArrowLeft,
+  BookOpen,
 } from "lucide-react";
 import { OliSearchProvider } from "@/components/oli/CommandBarSearchProvider";
 import type { Metadata } from "next";
@@ -53,6 +55,12 @@ export const metadata: Metadata = {
 const tree: PageTree.Root = {
   name: "OLI",
   children: [
+    {
+      type: "page",
+      name: "Back to home",
+      url: "/",
+      icon: <ArrowLeft />,
+    },
     { type: "separator", name: "Explore" },
     {
       type: "page",
@@ -110,6 +118,13 @@ const tree: PageTree.Root = {
       url: "/oli/methodology",
       icon: <BookText />,
     },
+    { type: "separator", name: "Docs" },
+    {
+      type: "page",
+      name: "Documentation",
+      url: "/docs",
+      icon: <BookOpen />,
+    },
   ],
 };
 
@@ -120,22 +135,15 @@ export default function OliLayout({ children }: { children: React.ReactNode }) {
         tree={tree}
         nav={{
           title: "Pellet Network",
-          url: "/",
+          url: "/oli",
         }}
-        // Re-enable the search trigger so the sidebar matches /docs visually.
-        // Both the click and ⌘K route into our CommandBar via the
-        // OliSearchProvider above.
         searchToggle={{ enabled: true }}
         sidebar={{
           defaultOpenLevel: 1,
         }}
-        // Stable hook for our own CSS to target on mobile — fumadocs's sidebar
-        // would otherwise float over the dashboard content on phones because
-        // we're rendering inside a grid area that doesn't always honor the
-        // library's max-md:hidden tail (a Tailwind v4 layer-ordering subtlety).
         containerProps={{ className: "oli-docs-shell" }}
       >
-        {children}
+        <div className="oli-docs-main">{children}</div>
       </DocsLayout>
     </OliSearchProvider>
   );

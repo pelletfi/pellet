@@ -59,25 +59,25 @@ export default async function OliDashboardPage({
       <StatStrip
         stats={[
           {
-            label: `MPP txs · ${windowLabel}`,
+            label: "MPP txs",
             count: snap.txCount,
             valueType: "integer",
             hint: "decoded transfer events",
           },
           {
-            label: `Agents active · ${windowLabel}`,
+            label: "Agents active",
             count: snap.agentsActive,
             valueType: "integer",
             hint: "watched entities with ≥1 event",
           },
           {
-            label: `Service revenue · ${windowLabel}`,
+            label: "Service revenue",
             count: Number(snap.amountSumWei),
             valueType: "usdc",
             hint: "sum of TIP-20 inflows",
           },
           {
-            label: `Providers detected · ${windowLabel}`,
+            label: "Providers detected",
             count: snap.providersDetected,
             valueType: "integer",
             hint: "distinct routed providers + fp groups",

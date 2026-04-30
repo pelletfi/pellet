@@ -633,14 +633,7 @@ export default function LandingPage() {
                 <span className="arrow" aria-hidden>→</span>
               </Link>
               <div className="hero-links-secondary">
-                <a
-                  href="https://www.npmjs.com/package/@pelletfi/sdk"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="secondary-link"
-                >
-                  SDK
-                </a>
+                <Link href="/docs/wallet-cli" className="secondary-link">CLI</Link>
                 <span className="secondary-sep" aria-hidden>·</span>
                 <Link href="/docs/mcp" className="secondary-link">MCP</Link>
                 <span className="secondary-sep" aria-hidden>·</span>
@@ -760,7 +753,7 @@ export default function LandingPage() {
           </div>
           <span className="stats-version">
             <Link href="/oli" style={{ color: "inherit", textDecoration: "none", borderBottom: "1px solid var(--color-border-subtle)" }}>
-              live · open ledger of the agent economy
+              open ledger of the agent economy
             </Link>
           </span>
         </motion.div>

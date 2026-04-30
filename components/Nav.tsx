@@ -2,29 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { PelletMark } from "@/components/pellet-mark";
 
-// v0 nav: trimmed to the routes that actually exist post-pivot. OLI + Docs
-// confirmed by the user as keepers; pricing/studies/swap/explorer/fee-economics
-// were stablecoin-OLI-era surfaces and are deferred until they get rebuilt.
 const navLinks = [
-  { label: "Home", href: "/" },
   { label: "OLI", href: "/oli" },
   { label: "Wallet", href: "/wallet" },
   { label: "Docs", href: "/docs" },
-];
-
-// OLI sub-routes — surfaced in the site Nav's mobile drawer when the user is
-// on /oli/* so they can reach Services / Agents / Rails / etc. without an
-// OLI-specific sidebar (which is desktop-only now).
-const oliSubLinks = [
-  { label: "Dashboard", href: "/oli" },
-  { label: "Services", href: "/oli/services" },
-  { label: "Agents", href: "/oli/agents" },
-  { label: "Rails", href: "/oli/rails" },
-  { label: "Skills", href: "/oli/skills" },
-  { label: "Methodology", href: "/oli/methodology" },
 ];
 
 function Logo() {
@@ -40,7 +23,6 @@ function Logo() {
 }
 
 export function Nav() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState<"ok" | "drift" | "fail" | "unknown">("unknown");
 
@@ -54,8 +36,6 @@ export function Nav() {
       })
       .catch(() => {});
   }, []);
-
-  const onOli = pathname?.startsWith("/oli") ?? false;
 
   return (
     <header className="nav-header">
@@ -72,8 +52,10 @@ export function Nav() {
         </div>
 
         <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span
+          <Link
+            href="/status"
             className="nav-status"
+            aria-label="System status"
             style={{
               display: "flex",
               alignItems: "center",
@@ -81,6 +63,7 @@ export function Nav() {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               color: "var(--color-text-tertiary)",
+              textDecoration: "none",
             }}
           >
             <span
@@ -90,10 +73,10 @@ export function Nav() {
             <span className="nav-status-text">
               {systemStatus === "ok" || systemStatus === "unknown" ? "operational" : systemStatus === "drift" ? "drift" : "incident"}
             </span>
-          </span>
+          </Link>
         </div>
 
-        <button className="nav-mobile-toggle" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+        <button className="nav-mobile-toggle" onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
             {open ? (
               <>
@@ -110,7 +93,7 @@ export function Nav() {
           </svg>
         </button>
 
-        {open && (
+        {open ? (
           <nav className="nav-mobile-menu">
             {navLinks.map((link) => (
               <Link
@@ -129,43 +112,8 @@ export function Nav() {
                 {link.label}
               </Link>
             ))}
-            {onOli && (
-              <>
-                <span
-                  style={{
-                    display: "block",
-                    padding: "16px 0 6px",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "var(--color-text-quaternary)",
-                  }}
-                >
-                  OLI sections
-                </span>
-                {oliSubLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setOpen(false)}
-                    style={{
-                      display: "block",
-                      padding: "10px 0",
-                      paddingLeft: 12,
-                      fontSize: 14,
-                      color: "var(--color-text-secondary)",
-                      textDecoration: "none",
-                      borderBottom: "1px solid var(--color-border-subtle)",
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </>
-            )}
           </nav>
-        )}
+        ) : null}
       </div>
     </header>
   );

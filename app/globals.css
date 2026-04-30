@@ -29,7 +29,7 @@
   --color-text-primary: rgba(255, 255, 255, 0.93);
   --color-text-secondary: rgba(255, 255, 255, 0.63);
   --color-text-tertiary: rgba(255, 255, 255, 0.44);
-  --color-text-quaternary: rgba(255, 255, 255, 0.42);
+  --color-text-quaternary: rgba(255, 255, 255, 0.46);
 
   /* Brand */
   --color-accent: #6080c0;
@@ -889,6 +889,135 @@ main {
   animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── Status page ── */
+.status-page {
+  max-width: 720px;
+  padding: 48px 32px 64px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.status-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.status-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-quaternary);
+}
+.status-h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.status-lede {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+  line-height: 1.55;
+  max-width: 56ch;
+  margin: 4px 0 0;
+}
+.status-inline-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.status-row-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-quaternary);
+}
+.status-row-value {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+.status-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: status-pulse 2.4s ease-in-out infinite;
+}
+.status-pill[data-tone="fail"] .status-pill-dot {
+  background: var(--color-warning);
+}
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.status-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.status-error {
+  color: var(--color-warning);
+}
+.status-footer {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+.status-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 12px 0;
+}
+.status-footer-link:hover {
+  color: var(--color-text-primary);
+}
+@media (max-width: 600px) {
+  .status-page {
+    padding: 32px 16px 48px;
+  }
+  .status-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
 /* ── Button micro-interactions ── */
 .btn-primary {
   display: inline-flex;
@@ -1036,21 +1165,43 @@ main {
   }
 }
 
-/* OLI mobile reshape — hide the fumadocs sidebar entirely on mobile. The
- * site Nav's mobile drawer surfaces OLI sub-routes when on /oli/* (see
- * components/Nav.tsx `oliSubLinks`), so users navigate from there.
- *
- * Targeting fumadocs's stable hooks:
- *  - `[data-sidebar-placeholder]` is the grid-area:sidebar wrapper div
- *  - `#nd-sidebar` is the actual <aside> rendered inside it
- * Fumadocs ships `max-md:hidden` on the placeholder, but it's bypassed in
- * Tailwind v4 when our @theme/preflight layer wins specificity, so we clamp
- * with !important.
- */
+/* Pin OLI children to grid-area:main; fumadocs auto-placement otherwise
+ * lands them in the (zero-width) toc column. */
+.oli-docs-main {
+  grid-area: main;
+  min-width: 0;
+}
+
 @media (max-width: 767px) {
+  /* Collapse the fumadocs grid to a single column so subnav and content
+   * stack full-width. Fumadocs's max-md:hidden on the sidebar placeholder
+   * is bypassed by our @theme layer specificity in Tailwind v4. */
+  .oli-docs-shell {
+    grid-template:
+      "header" auto
+      "main" 1fr / 1fr !important;
+  }
   [data-sidebar-placeholder],
   #nd-sidebar {
     display: none !important;
+  }
+  /* On /oli/* the fumadocs subnav already brands and navigates — drop the
+   * site Nav so only one nav strip eats the fold. "Back to home" lives at
+   * the top of the OLI sidebar (see app/oli/layout.tsx tree). */
+  body:has(.oli-docs-shell) .nav-header {
+    display: none;
+  }
+  /* With the 48px site nav gone, zero out the docs sticky offset so the
+   * subnav slides up into the viewport top instead of leaving an empty
+   * 48px band above it. */
+  body:has(.oli-docs-shell) #nd-docs-layout {
+    --fd-docs-row-1: 0px !important;
+    --fd-docs-height: 100dvh !important;
+  }
+  /* Bump the subnav search + sidebar trigger to 44×44 for WCAG 2.5.5. */
+  #nd-subnav button {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -1284,6 +1435,17 @@ main {
   font-feature-settings: "ss01", "ss02", "tnum";
 }
 
+@media (max-width: 480px) {
+  /* Long USDC values like $352,206.96 clip the 2-column stat grid — collapse
+   * to a single column and dial the serif numerals down a notch. */
+  .oli-stat-strip {
+    grid-template-columns: 1fr !important;
+  }
+  .oli-stat-value {
+    font-size: 32px !important;
+  }
+}
+
 /* 9. Leaderboard chevron — slides right + brightens on link-row hover */
 .oli-leaderboard-chevron {
   display: inline-block;
@@ -1493,7 +1655,9 @@ main {
   border-radius: 5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 4px 10px;
+  min-height: 38px;
+  min-width: 44px;
+  padding: 4px 12px;
   background: transparent;
   border: 0;
   color: var(--color-text-tertiary);
@@ -2319,3 +2483,7 @@ main {
     max-width: none;
   }
 }
+
+
+
+
