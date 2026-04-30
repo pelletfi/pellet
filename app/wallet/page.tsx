@@ -355,26 +355,21 @@ export default function WalletPage() {
           <Stage n="02" name="Skill manifest forward-reference" sub="pellet.network/skill.md advertises the upcoming wallet endpoint to every agent that installs OLI." status="shipped" />
           <Stage n="03" name="Wallet primitive" sub="Passkey-rooted keys via WebAuthn + AccountKeychain T3 authorize, sponsored gas, on-chain cap enforcement. Live on Moderato testnet." status="shipped" />
           <Stage n="04" name="CLI + MCP" sub="@pelletnetwork/cli ships device-code pairing, pellet pay, and an MCP server for Claude Code / Cursor / Anthropic API direct." status="shipped" />
-          <Stage n="05" name="Wallet dashboard" sub="Human-facing wallet surface: balance, address copy, active sessions with cap usage, payment history, revoke. Building." status="building" />
+          <Stage n="05" name="Wallet dashboard" sub="Human-facing wallet surface: balance, address copy, active sessions with cap usage, payment history, revoke. Live at /wallet/dashboard (passkey sign-in)." status="shipped" />
           <Stage n="06" name="Mainnet release" sub="Self-hosted sponsor on Presto, second-passkey guardian for recovery, server-side revoke. Pending hardening pass." status="planned" />
         </div>
       </section>
 
       <section className="wallet-cta">
-        <h2 className="wallet-cta-h2">Want it when it ships?</h2>
+        <h2 className="wallet-cta-h2">Live on testnet now</h2>
         <p className="wallet-cta-sub">
-          Open an issue with subject <code>Wallet · interest</code> on the
-          repo to register. We&rsquo;ll prioritize early signers for the
-          sandbox.
+          Pair via <code>npx -y @pelletnetwork/cli auth start</code>, then your
+          balance, sessions, and payment history are at{" "}
+          <code>/wallet/dashboard</code>.
         </p>
-        <a
-          href="https://github.com/pelletnetwork/pellet/issues/new?title=Wallet+%C2%B7+interest&body=Following+along+on+Pellet+Wallet+development.+Optionally%3A+how+you%E2%80%99d+use+it%2C+what+rails+you%E2%80%99d+want+covered."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="wallet-cta-link"
-        >
-          Register on GitHub ↗
-        </a>
+        <Link href="/wallet/dashboard" className="wallet-cta-link">
+          Open dashboard →
+        </Link>
         <Link href="/oli" className="wallet-cta-secondary">
           or read the live OLI ledger →
         </Link>
