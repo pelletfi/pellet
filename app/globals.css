@@ -237,6 +237,7 @@ a:focus-visible {
 /* ── Data table ── */
 .data-table {
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   overflow: hidden;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -276,6 +277,7 @@ a:focus-visible {
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--color-border-subtle);
+  border-radius: 8px;
   overflow: hidden;
   margin-bottom: 24px;
   backdrop-filter: blur(12px);
@@ -286,6 +288,7 @@ a:focus-visible {
 .section-card {
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
   backdrop-filter: blur(12px);
@@ -495,6 +498,7 @@ a:focus-visible {
   gap: 1px;
   background: var(--color-border-subtle);
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   overflow: hidden;
 }
 .oli-stat {
@@ -506,6 +510,7 @@ a:focus-visible {
 
 .oli-leaderboard {
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   overflow: hidden;
   background: var(--color-bg-subtle);
 }
@@ -1289,6 +1294,7 @@ main {
 /* ── EventStream v0.5 ── */
 .oli-eventstream {
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   background: var(--color-bg-subtle);
   overflow: hidden;
 }
@@ -1298,6 +1304,7 @@ main {
   color: var(--color-text-quaternary);
   font-size: 13px;
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
   background: var(--color-bg-subtle);
 }
 .oli-event-row {
@@ -1473,10 +1480,12 @@ main {
   padding: 3px;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
 }
 .oli-time-toggle-btn {
   font-family: var(--font-mono);
   font-size: 11px;
+  border-radius: 5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 4px 10px;

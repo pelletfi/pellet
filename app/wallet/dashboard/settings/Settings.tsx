@@ -267,6 +267,7 @@ const styles = `
   }
   .set-card {
     border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
     padding: 20px 24px;
     background: var(--color-bg-base);
     display: flex;
@@ -304,6 +305,8 @@ const styles = `
     gap: 1px;
     background: var(--color-border-subtle);
     border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
   }
   .set-field {
     background: var(--color-bg-base);

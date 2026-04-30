@@ -122,6 +122,7 @@ export function Dashboard({
         }
         .dash-card {
           border: 1px solid var(--color-border-subtle);
+          border-radius: 8px;
           padding: 24px 28px;
           background: var(--color-bg-base);
           display: flex;
@@ -195,6 +196,8 @@ export function Dashboard({
           gap: 1px;
           background: var(--color-border-subtle);
           border: 1px solid var(--color-border-subtle);
+          border-radius: 8px;
+          overflow: hidden;
         }
         .dash-stat {
           background: var(--color-bg-base);
