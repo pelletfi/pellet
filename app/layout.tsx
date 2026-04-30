@@ -76,7 +76,16 @@ export default function RootLayout({
           fumadocs-ui's other context (framework, sidebar, search), so we keep
           RootProvider but turn its theme switch off.
         */}
-        <RootProvider theme={{ enabled: false }}>
+        <RootProvider
+          theme={{ enabled: false }}
+          // Disable the global fumadocs search at the root. /oli wraps its
+          // own SearchProvider that routes ⌘K + the visible trigger into
+          // CommandBar; /docs doesn't have a wired search backend yet so
+          // the bar was non-functional anyway. With this off, only one
+          // SearchProvider is active at a time and ⌘K opens a single
+          // dialog instead of stacking.
+          search={{ enabled: false }}
+        >
           <Nav />
           <main>{children}</main>
           <FooterGate />
