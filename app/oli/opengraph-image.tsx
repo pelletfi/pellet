@@ -18,9 +18,9 @@ async function loadFont(file: string): Promise<ArrayBuffer> {
 }
 
 export default async function Image() {
-  const [geistBold, geistMono, instrumentSerifItalic] = await Promise.all([
+  const [geistBold, commitMono, instrumentSerifItalic] = await Promise.all([
     loadFont("Geist-Bold.ttf"),
-    loadFont("GeistMono-Regular.ttf"),
+    loadFont("CommitMono-Regular.otf"),
     loadFont("InstrumentSerif-Italic.ttf"),
   ]);
 
@@ -70,7 +70,7 @@ export default async function Image() {
               letterSpacing: "0.2em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.55)",
-              fontFamily: "Geist Mono",
+              fontFamily: "Commit Mono",
             }}
           >
             PELLET · OLI
@@ -124,7 +124,7 @@ export default async function Image() {
       ...size,
       fonts: [
         { name: "Geist", data: geistBold, weight: 700, style: "normal" },
-        { name: "Geist Mono", data: geistMono, weight: 400, style: "normal" },
+        { name: "Commit Mono", data: commitMono, weight: 400, style: "normal" },
         {
           name: "Instrument Serif",
           data: instrumentSerifItalic,
