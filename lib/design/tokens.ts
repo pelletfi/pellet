@@ -7,7 +7,7 @@ export const colors = {
   muted: "#888888",
   border: "#1a1a1a",
   hover: "#0a0a0a",
-  accent: "#6080c0", // soft Linear blue — used sparingly for highlights
+  accent: "#9a9a9a", // soft Linear blue — used sparingly for highlights
 } as const;
 
 export type ColorToken = keyof typeof colors;
