@@ -36,7 +36,7 @@ export async function renderDashboard(basePath: string) {
     .where(eq(walletUsers.id, userId))
     .limit(1);
   const user = userRows[0];
-  if (!user) redirect("/wallet/sign-in");
+  if (!user) redirect(`${basePath}/sign-in`);
 
   const sessions = await db
     .select({
