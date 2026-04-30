@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { listenPool } from "@/lib/db/client";
 import { getFeedRowById, type FeedRow } from "@/lib/db/agent-events";
+import { dispatchToWebhooks } from "@/lib/oli/webhooks/dispatcher";
 
 // Per-instance bus. Each Vercel function instance opens its own LISTEN
 // connection on first SSE request — postgres broadcasts NOTIFY to all
@@ -17,8 +18,14 @@ class Bus extends EventEmitter {
     const client = await pool.connect();
     client.on("notification", async (msg) => {
       if (msg.channel !== "agent_events" || !msg.payload) return;
+      const eventId = Number(msg.payload);
+      // Fan out to webhook subscribers in parallel with the SSE emit. Both
+      // call sites use the (subscription_id, event_id) unique index for
+      // idempotency, so duplicate dispatches (here + the inline match-runner
+      // call) collapse to a single delivery row.
+      void dispatchToWebhooks(eventId).catch(() => {});
       try {
-        const row = await getFeedRowById(Number(msg.payload));
+        const row = await getFeedRowById(eventId);
         if (row) this.emit("event", row);
       } catch {
         // swallow — failure to fetch a row shouldn't break the bus

@@ -2,6 +2,7 @@ import { db } from "@/lib/db/client";
 import { agents, agentEvents } from "@/lib/db/schema";
 import { matchEvent, type AgentLite, type RawEventRow } from "./matcher";
 import { sql } from "drizzle-orm";
+import { dispatchToWebhooks } from "@/lib/oli/webhooks/dispatcher";
 
 // Pulls events that haven't yet been matched (no agent_events row referencing
 // them), runs the matcher, and inserts agent_events rows. Idempotent — safe
@@ -61,7 +62,7 @@ export async function runMatcher(limit = 1000): Promise<{
     const matches = matchEvent({ ...row, blockTimestamp: ts }, lite);
     if (matches.length === 0) continue;
 
-    await db
+    const insertedRows = await db
       .insert(agentEvents)
       .values(
         matches.map((m) => ({
@@ -79,8 +80,15 @@ export async function runMatcher(limit = 1000): Promise<{
           methodologyVersion: m.methodologyVersion,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: agentEvents.id });
     matched += matches.length;
+    // Belt-and-braces fan-out to webhook subscribers. The NOTIFY listener also
+    // dispatches; the (subscription_id, event_id) unique index makes the
+    // double-call safe. Fire-and-forget so the matcher loop doesn't block.
+    for (const r of insertedRows) {
+      void dispatchToWebhooks(r.id).catch(() => {});
+    }
   }
 
   return { scanned: rows.length, matched, agents: lite.length };

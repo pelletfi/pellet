@@ -6,6 +6,7 @@
     "wallet",
     "wallet-cli",
     "wallet-mcp",
+    "oli-webhooks",
     "---OLI---",
     "oli",
     "methodology",

@@ -11,6 +11,7 @@ import {
   BookText,
   ArrowLeft,
   BookOpen,
+  Webhook,
 } from "lucide-react";
 import { OliSearchProvider } from "@/components/oli/CommandBarSearchProvider";
 import type { Metadata } from "next";
@@ -81,6 +82,12 @@ const tree: PageTree.Root = {
       icon: <Users />,
     },
     { type: "separator", name: "Wallet" },
+    {
+      type: "page",
+      name: "Webhooks",
+      url: "/oli/webhooks",
+      icon: <Webhook />,
+    },
     {
       type: "page",
       name: "Pellet Wallet",

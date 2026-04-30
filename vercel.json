@@ -3,9 +3,10 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "crons": [
-    { "path": "/api/cron/ingest",      "schedule": "0 */6 * * *" },
-    { "path": "/api/cron/match",       "schedule": "5 */6 * * *" },
-    { "path": "/api/cron/attribute",   "schedule": "10 */6 * * *" },
-    { "path": "/api/cron/pellet-tick", "schedule": "15 */6 * * *" }
+    { "path": "/api/cron/ingest",         "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/match",          "schedule": "5 */6 * * *" },
+    { "path": "/api/cron/attribute",      "schedule": "10 */6 * * *" },
+    { "path": "/api/cron/pellet-tick",    "schedule": "15 */6 * * *" },
+    { "path": "/api/cron/webhook-retry",  "schedule": "* * * * *" }
   ]
 }

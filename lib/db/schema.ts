@@ -9,9 +9,11 @@ import {
   boolean,
   primaryKey,
   index,
+  uniqueIndex,
   uuid,
   customType,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // bytea — Drizzle doesn't ship a built-in bytea type yet; declare one.
 const bytea = customType<{ data: Buffer; default: false }>({
@@ -240,5 +242,94 @@ export const walletSpendLog = pgTable(
     sessionIdx: index("wallet_spend_log_session_idx").on(t.sessionId, t.createdAt),
     userIdx: index("wallet_spend_log_user_idx").on(t.userId, t.createdAt),
     txIdx: index("wallet_spend_log_tx_idx").on(t.txHash),
+  }),
+);
+
+// ── OLI Webhooks v1 ──────────────────────────────────────────────────────
+// Subscriptions own a callback_url + signing_secret + filter spec. Every
+// matching agent_events row produces a delivery row (idempotent via the
+// (subscription_id, event_id) unique index). signing_secret is the raw hex
+// used to HMAC the payload — exposed once on create and once on rotate;
+// stored verbatim because we need it to sign on every dispatch.
+//
+// Status lifecycle:
+//   pending_verify → active            (verify endpoint flips on token match)
+//   active         → paused            (manual pause OR 410 Gone from callback)
+//   active         → disabled_by_failures (5 consecutive non-2xx failures)
+//   *              → deleted           (soft delete; cascade still applies on user delete)
+export const oliWebhookSubscriptions = pgTable(
+  "oli_webhook_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => walletUsers.id, { onDelete: "cascade" }),
+    callbackUrl: text("callback_url").notNull(),
+    // Raw hex secret — used for signing, NOT a hash. Surfaced once on create
+    // and once on rotate; otherwise never returned over the API.
+    signingSecret: text("signing_secret").notNull(),
+    label: text("label"),
+    filters: jsonb("filters").notNull().default({}),
+    status: text("status").notNull().default("pending_verify"),
+    verifyToken: text("verify_token"),
+    verifyTokenExpiresAt: timestamp("verify_token_expires_at", { withTimezone: true }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    lastDeliveredAt: timestamp("last_delivered_at", { withTimezone: true }),
+  },
+  (t) => ({
+    ownerIdx: index("oli_webhook_subs_owner_idx").on(t.ownerUserId),
+    statusIdx: index("oli_webhook_subs_status_idx").on(t.status),
+    // Expression index lets dispatchToWebhooks short-list subscriptions by
+    // the event's recipient without scanning the whole table.
+    recipientIdx: index("oli_webhook_subs_recipient_idx").on(
+      sql`(${t.filters} ->> 'recipient_address')`,
+    ),
+  }),
+);
+
+export const oliWebhookDeliveries = pgTable(
+  "oli_webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => oliWebhookSubscriptions.id, { onDelete: "cascade" }),
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => agentEvents.id, { onDelete: "cascade" }),
+    // Stable across retries — surfaced as the Pellet-Delivery header so
+    // receivers can dedupe even before they index our (sub, event) pair.
+    deliveryId: uuid("delivery_id").notNull().defaultRandom(),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    // 'queued' | 'retry' | 'delivered' | 'dead'
+    status: text("status").notNull().default("queued"),
+    responseCode: integer("response_code"),
+    responseBodyExcerpt: text("response_body_excerpt"),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // Hard idempotency: at most one delivery row per (subscription, event).
+    // Both the bus path AND the inline match-runner path try to INSERT;
+    // ON CONFLICT DO NOTHING + this index makes the double-call safe.
+    subEventUq: uniqueIndex("oli_webhook_deliveries_sub_event_uq").on(
+      t.subscriptionId,
+      t.eventId,
+    ),
+    retryReadyIdx: index("oli_webhook_deliveries_retry_ready_idx").on(
+      t.status,
+      t.nextRetryAt,
+    ),
+    deliveryIdIdx: index("oli_webhook_deliveries_delivery_id_idx").on(t.deliveryId),
+    subStatusIdx: index("oli_webhook_deliveries_sub_status_idx").on(
+      t.subscriptionId,
+      t.status,
+    ),
   }),
 );

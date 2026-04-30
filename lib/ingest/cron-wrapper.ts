@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client";
 import { cronRuns } from "@/lib/db/schema";
+import { bus } from "@/lib/realtime/bus";
 
 // Wraps a cron handler so every invocation is recorded in cron_runs with
 // duration + status + (on success) the result payload + (on error) the message.
@@ -11,6 +12,10 @@ export async function runCron<T>(
 ): Promise<{ ok: true; result: T } | { ok: false; error: string }> {
   const startedAt = new Date();
   const t0 = Date.now();
+  // Make sure the LISTEN connection for the realtime bus is alive — otherwise
+  // webhook dispatch from NOTIFY-driven events can be missed inside cron-only
+  // runs of this process. Idempotent: bus().start() short-circuits after first call.
+  await bus().start().catch(() => {});
   try {
     const result = await handler();
     const durationMs = Date.now() - t0;

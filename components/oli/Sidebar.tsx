@@ -10,6 +10,8 @@ import {
   IconRoute,
   IconBook,
   IconFileText,
+  IconWebhook,
+  IconWallet,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   type Icon as TablerIconType,
@@ -33,6 +35,13 @@ const sections: Section[] = [
       { label: "Rails", href: "/oli/rails", icon: IconRoute },
       { label: "Skills", href: "/oli/skills", icon: IconBook },
       { label: "Methodology", href: "/oli/methodology", icon: IconFileText },
+    ],
+  },
+  {
+    label: "Wallet",
+    items: [
+      { label: "Webhooks", href: "/oli/webhooks", icon: IconWebhook },
+      { label: "Pellet Wallet", href: "/oli/wallet", icon: IconWallet },
     ],
   },
 ];
