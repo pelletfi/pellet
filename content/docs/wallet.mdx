@@ -1,0 +1,145 @@
+---
+title: Pellet Wallet
+description: Open agent wallet on Tempo. Passkey-rooted self-custody, on-chain spending caps, sponsored gas, public receipts.
+icon: Wallet
+---
+
+Pellet Wallet is an open agent wallet on Tempo. The user pairs once with a passkey; an `AccountKeychain.authorizeKey` transaction grants the agent a spending key bounded by user-set caps that Tempo enforces on-chain. The agent then pays autonomously within those caps with no further human approval per call.
+
+> **Status: live on [Moderato testnet](https://explore.testnet.tempo.xyz) (chainId 42431).** Mainnet release pending sponsor + recovery hardening — don't trust real funds yet.
+
+## Trust model
+
+Three properties together that no other shipped agent wallet combines today:
+
+1. **Self-custody.** Pellet never holds raw key material that can spend without your passkey first authorizing it on-chain. The agent's session key is generated and held server-side (encrypted with `WALLET_MASTER_KEY` at rest), but it can only spend up to the caps your passkey signed for. Tempo's `AccountKeychain` enforces those caps in protocol — server compromise can't exceed them.
+2. **Public ledger.** Every payment is a public Tempo transaction with an explorer link. No private settlement, no Stripe-style audit trail. The chain is the receipts surface.
+3. **Cap-bounded autonomy.** The agent doesn't need a per-call approval prompt. Within the caps you set (lifetime spend, per-call max, daily reset), the agent signs and broadcasts on its own. Above the caps, both server-side validation and on-chain enforcement reject.
+
+For full details on what the chain enforces vs what the server checks, see [Methodology](/docs/methodology#wallet).
+
+## Lifecycle
+
+### 1. Enroll a passkey
+
+User visits `pellet.network/wallet/device?code=<3-words>` (the URL the CLI prints). Browser performs WebAuthn registration via [`@simplewebauthn/browser`](https://simplewebauthn.dev). The credential's COSE-encoded P-256 public key is decoded to uncompressed `(x, y)` and used to derive the user's Tempo account address: `keccak256(x ‖ y)[12:]`. Same shape as Ethereum derivation but over secp256r1.
+
+The address is **deterministic from the public key** — no first-tx ceremony required. The account doesn't have on-chain code yet, but it has an address as soon as the passkey exists.
+
+### 2. Authorize an agent key
+
+Browser receives chain config + a freshly-generated agent EOA address from `/api/wallet/device/approve-init`. It then constructs a `viem` client:
+
+```ts
+import { Account, withRelay, tempoActions } from "viem/tempo";
+import { tempoModerato } from "viem/chains";
+import { createWalletClient, http } from "viem";
+
+const userAccount = Account.fromWebAuthnP256(
+  { id: credentialId, publicKey: uncompressedPubKey },
+  { rpId: "pellet.network" },
+);
+const accessKey = Account.fromSecp256k1(agentPrivateKey, { access: userAccount });
+
+const client = createWalletClient({
+  account: userAccount,
+  chain: { ...tempoModerato, feeToken: USDC_E_MODERATO },
+  transport: withRelay(http(rpcUrl), http(sponsorUrl), { policy: "sign-only" }),
+}).extend(tempoActions());
+```
+
+Then calls the high-level T3 authorize action:
+
+```ts
+const result = await client.accessKey.authorizeSync({
+  accessKey,
+  expiry: expiryUnixSeconds,
+  feePayer: true,
+  gas: BigInt(5_000_000),
+  limits: [{ token: USDC_E, limit: BigInt(spendCapWei), period: 86400 }],
+  scopes: [{ address: USDC_E, selector: "0x95777d59" /* transferWithMemo */ }],
+});
+```
+
+Touch ID prompts the user. The passkey signs the outer TempoTransaction; viem builds the type-`0x76` envelope, posts it to the sponsor relay (which co-signs the fee-payer side gas-free), and broadcasts. The agent EOA now has on-chain spending authority bounded by the caps.
+
+### 3. Verify on-chain
+
+The browser POSTs the resulting tx hash to `/api/wallet/device/approve-finalize`. The server independently fetches the receipt from the chain RPC, polls up to 5x with 1.5s backoff, and checks:
+
+- `receipt.status === "success"`
+- `receipt.to === 0xaAAAaaAA00000000000000000000000000000000` (AccountKeychain precompile)
+- `receipt.from === user.managedAddress`
+
+Only then is the pairing flipped to `approved` and the bearer token issued to the CLI. Defends against a malicious browser POSTing a forged tx hash.
+
+### 4. Pay
+
+Agent calls `pellet pay --to 0x… --amount 0.50` (or via MCP, or via direct API call to `/api/wallet/pay` with the bearer). Server:
+
+1. Validates bearer + cap arithmetic (per-call ≤ per_call_cap_wei, lifetime + amount ≤ spend_cap_wei)
+2. Decrypts the agent session key via `WALLET_MASTER_KEY` (AES-256-GCM)
+3. Builds a `transferWithMemo` TempoTransaction signed by the agent's access key + sponsored gas
+4. Broadcasts via `withRelay` → sponsor co-signs → confirmed on chain
+5. Bumps `wallet_sessions.spend_used_wei`
+
+Returns tx hash, explorer URL, and current cap usage.
+
+## What the chain enforces
+
+The user's passkey signs `authorizeKey` with this `KeyRestrictions` struct:
+
+```solidity
+struct KeyRestrictions {
+  uint64 expiry;           // future, nonzero — Tempo rejects 0
+  bool enforceLimits;
+  TokenLimit[] limits;     // per-token caps
+  bool allowAnyCalls;
+  CallScope[] allowedCalls; // per-target/per-selector scope
+}
+
+struct TokenLimit {
+  address token;
+  uint256 amount;
+  uint64 period;           // 0 = one-shot; >0 = recurring (e.g. 86400 daily)
+}
+
+struct CallScope {
+  address target;
+  SelectorRule[] selectorRules;  // 4-byte selector + optional recipient allowlist
+}
+```
+
+For Pellet's default $5/24h flow:
+- `expiry` = now + 86400
+- `limits` = `[(USDC.e, 5_000000, 86400)]` (daily reset)
+- `allowAnyCalls` = `false`
+- `allowedCalls` = `[(USDC.e, [(transferWithMemo, [])])]`
+
+The agent can ONLY call `transferWithMemo` on USDC.e, and only spend up to $5 USDC.e per rolling 24h window. Any other call reverts; over-cap reverts. Server validation is a fast-fail; the chain is the source of truth.
+
+## Two-tier protection
+
+If the server is compromised AND `WALLET_MASTER_KEY` is leaked, an attacker holds the encrypted agent key. They can decrypt it and sign payments. **But:**
+
+- `AccountKeychain.enforceLimits` rejects anything over the cap on-chain
+- `expiry` auto-revokes the key after the session window
+- Selector scoping rejects any call that isn't `transferWithMemo`
+- `allowAnyCalls=false` rejects any contract that isn't USDC.e
+
+Worst case under that compromise: $5 (the per-day cap, until expiry). Not a worst-of-all-worst-cases scenario — it's a very-bad scenario with bounded blast radius.
+
+## What's NOT yet shipped
+
+- **Mainnet sponsor.** Tempo doesn't run a public Presto sponsor; we'll run our own. Phase 5+.
+- **Recovery flow.** Lose your passkey → lose the wallet. Day-one mitigation: register a second passkey at enroll time as a guardian. Smart-account-with-backup-signer is the longer-term answer.
+- **Cross-device passkey sync.** iCloud Keychain ↔ Google Password Manager don't sync; users who switch ecosystems must re-enroll.
+- **402 auto-pay.** `pellet pay <url>` auto-parses an x402 challenge and retries with credentials. Today the CLI is manual: `--to` and `--amount` flags.
+
+## Read more
+
+- [CLI reference](/docs/wallet-cli) — full command surface
+- [MCP integration](/docs/wallet-mcp) — installing into Claude Code, Cursor, Cloudflare Agents
+- [Methodology](/docs/methodology#wallet) — every formula, every check
+- [API · /api/wallet/*](/docs/api) — pairing + payment endpoints
+- [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet) — full source

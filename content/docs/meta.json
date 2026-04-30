@@ -2,17 +2,18 @@
   "title": "Pellet",
   "pages": [
     "index",
+    "---Wallet---",
+    "wallet",
+    "wallet-cli",
+    "wallet-mcp",
+    "---OLI---",
     "oli",
-    "tempo-primer",
+    "methodology",
     "---API---",
     "api",
-    "webhooks",
-    "mcp",
     "---Reference---",
-    "spec",
-    "methodology",
-    "---Operations---",
-    "pricing",
+    "skills",
+    "tempo-primer",
     "changelog"
   ]
 }

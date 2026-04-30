@@ -1,32 +1,109 @@
 ---
 title: REST API
-description: HTTP endpoints for stablecoin data on Tempo.
+description: HTTP endpoints for OLI queries and Pellet Wallet operations. Hosted at https://pellet.network.
 icon: Terminal
 ---
 
-All endpoints are hosted at `https://pelletfi.com/api/v1`. Responses are JSON. CORS is open.
+All endpoints are hosted at `https://pellet.network`. Responses are JSON. CORS is open on the OLI read endpoints.
 
-Every value returned here is an **Open-Ledger Interface (OLI)** measurement — read directly from the Tempo public ledger, never aggregated from off-chain oracles. See [What is OLI?](/docs/oli) for the discipline, and [Methodology](/docs/methodology) for the exact formulas behind each field.
+Two surfaces:
 
-Three authentication modes:
+- **OLI** — read-only queries against the public OLI ledger. Unauthenticated.
+- **Wallet** — pairing, authorize, and payment operations. Bearer-authenticated for `/pay`; cookie-session-authenticated for the `/device/*` flow.
 
-- **Free tier** — unauthenticated. Stablecoin matrix + pre-trade TIP-403 simulate.
-- **MPP-paid** — per-request USDC.e micropayment on Tempo. Tiered ($0.010 lookup → $0.200 deep briefing). See [Pricing](/docs/pricing).
-- **Pellet Pro** — subscription. Unlimited access to all endpoints via API key in the `Authorization: Bearer` header.
+## OLI · `/api/oli/*`
 
-## Endpoints at a glance
+Live observability over autonomous economic activity on Tempo. Read more at [OLI](/docs/oli) and [Methodology](/docs/methodology).
 
-| Endpoint | Tier | Description |
-| --- | --- | --- |
-| `GET /v1/stablecoins` | Free | Full TIP-20 stablecoin matrix on Tempo |
-| `GET /v1/tip403/simulate` | Free | Pre-trade compliance oracle — will a transfer revert? |
-| `GET /v1/stablecoins/{addr}/peg` | MPP · $0.010 | Peg sample + 1h/24h/7d aggregates |
-| `GET /v1/stablecoins/flows` | MPP · $0.010 | Hourly DEX flow topology |
-| `GET /v1/addresses/{addr}` | MPP · $0.010 | Wallet intelligence (ERC-8004 + TIP-403 roles) |
-| `GET /v1/stablecoins/flow-anomalies` | MPP · $0.020 | ≥3σ anomalies |
-| `GET /v1/stablecoins/{addr}/reserves` | MPP · $0.020 | Backing composition + attestation |
-| `GET /v1/stablecoins/{addr}/risk` | MPP · $0.050 | Composite risk score + sub-scores |
-| `GET /v1/stablecoins/{addr}/rewards` | MPP · $0.100 | TIP-20 reward attribution + APY (first-mover) |
-| `GET /v1/tokens/{addr}/briefing` | MPP · $0.200 | Deep briefing — 8 aggregators + coverage/provenance ledger |
+| Endpoint | Description |
+|---|---|
+| `GET /api/oli/dashboard?w=24h\|7d\|30d\|all` | Headline stats: tx count, agents active, service revenue, providers detected. Plus topServices, topAgents, topProviders, recentEvents arrays. Cache: 5min edge. |
+| `GET /api/oli/services` | All curated MPP services (id ends in `-mpp`) with 24h + 7d aggregates. |
+| `GET /api/oli/services/[id]` | Service detail: head metadata, 30-day trend, recent 50 events. For `tempo-gateway-mpp`: also includes a `providers[]` aggregate (Pattern A address-attributed + Pattern B fingerprint-grouped). |
+| `GET /api/oli/agents` | All watched non-MPP entities. |
+| `GET /api/oli/agents/[id]` | Agent detail. Same shape as service detail. |
+| `GET /api/oli/events/[id]` | Single event with provenance: agent, counterparty, amount, tx hash, log index, source block, methodology version, related events from the same tx. |
+| `GET /api/oli/search?q=<query>` | Unified search across events (by tx hash or counterparty), agents/services (by id, label, wallet), labeled addresses. Min query length 2. |
+| `GET /api/oli/feed` | Server-sent-events stream pushing new events as they're matched. Off by default — set `NEXT_PUBLIC_OLI_LIVE_FEED=1` to enable. |
 
-See [Stablecoins](/docs/api/stablecoins) and [Flows](/docs/api/flows) for full schemas.
+### Schema notes
+
+- Amounts are `uint256` strings — parse with `BigInt`. Divide by `1e6` for USDC display value.
+- Timestamps are ISO 8601 strings on the wire — parse with `new Date()`.
+- Addresses are stored lowercase; normalize on input.
+- `methodology_version` indicates which version of the matcher decoded the row.
+- `source_block` lets you re-derive any number against the raw `events` table on-chain.
+
+### Example
+
+```bash
+curl https://pellet.network/api/oli/dashboard?w=24h
+# → {
+#   "windowHours": 24,
+#   "txCount": 837,
+#   "agentsActive": 6,
+#   "amountSumWei": "308012247916",        # uint256 wei; /1e6 → $308k
+#   "providersDetected": 10,
+#   "topServices": [...],
+#   "topAgents": [...],
+#   "topProviders": [...],
+#   "recentEvents": [...]
+# }
+```
+
+## Wallet · `/api/wallet/*`
+
+Pairing + authorize + payment surface. Read more at [Pellet Wallet](/docs/wallet) and [CLI](/docs/wallet-cli).
+
+### Device-code pairing
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/wallet/device/start` | Issue a device-code pairing. Body: `{ agent_label?: string }`. Returns `{ code, device_id, approve_url, expires_at, poll_interval_seconds, pairing_id }`. 5-min TTL. |
+| `GET /api/wallet/device/poll?device_id=<id>` | CLI poll. Returns `{ status: 'pending' \| 'expired' \| 'claimed' \| 'approved' }`. On first `approved` poll, mints + returns the bearer token (exactly once). |
+| `POST /api/wallet/device/approve-init` | Browser kicks off approval. Cookie-authenticated (user must complete WebAuthn first). Body: `{ code, spend_cap_wei, per_call_cap_wei, session_ttl_seconds }`. Generates the agent EOA, encrypts at rest, returns `{ credential_id, public_key_uncompressed, agent_key_address, agent_private_key, chain, account_keychain_address, expiry_unix, ... }`. Browser uses these to construct the on-chain authorize call via viem. |
+| `POST /api/wallet/device/approve-finalize` | Browser POSTs `{ code, tx_hash }` after the authorize tx confirms. Server fetches the receipt, verifies `status=success` + `to=AccountKeychain` + `from=user.managed_address`, persists `authorize_tx_hash` + `on_chain_authorized_at`. Flips pairing to `approved`. |
+
+### WebAuthn (passkey enrollment + login)
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/wallet/webauthn/register/options` | Browser kicks off passkey enrollment. Returns `PublicKeyCredentialCreationOptions`. Sets a signed challenge cookie. |
+| `POST /api/wallet/webauthn/register/verify` | Browser submits the attestation. Server verifies, persists `wallet_users` row with the COSE pubkey + derives the Tempo address. Sets a 30min user-session cookie. |
+| `POST /api/wallet/webauthn/auth/options` | Sign-in options for an existing credential. |
+| `POST /api/wallet/webauthn/auth/verify` | Sign-in verify. Bumps `passkey_sign_count`, sets the user-session cookie. |
+
+### Payment
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/wallet/pay` | Sign + broadcast a `transferWithMemo` on Tempo. Bearer-authenticated. Body: `{ to, amount_wei, memo?, token? }`. Server validates caps, decrypts the agent session key, signs via `viem/tempo`, broadcasts via `withRelay` (sponsored gas), bumps `spend_used_wei`. Returns `{ tx_hash, explorer_url, from, to, amount_wei, memo, token, spend_used_wei_after, spend_cap_wei }`. |
+
+### Auth shape
+
+```bash
+curl -X POST https://pellet.network/api/wallet/pay \
+  -H 'Authorization: Bearer pwk_svuEqyiz…' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "to": "0x000000000000000000000000000000000000dead",
+    "amount_wei": "500000",
+    "memo": "first payment"
+  }'
+```
+
+The bearer token is what the CLI persists to `~/.pellet/config.json` after `pellet auth start`. Server compares `sha256(bearer)` against `wallet_sessions.bearer_token_hash`.
+
+### Errors
+
+| Status | Reason |
+|---|---|
+| 401 | Missing or invalid bearer; missing user-session cookie |
+| 403 | `session expired`, `session revoked`, `session not yet on-chain authorized`, `per-call cap exceeded`, `lifetime cap exceeded` |
+| 400 | `amount_wei` not positive, `to` not a valid address, body malformed |
+| 500 | On-chain payment failed, server-side state corruption |
+
+## Source
+
+- OLI endpoints: [`app/api/oli/`](https://github.com/pelletnetwork/pellet/tree/main/app/api/oli)
+- Wallet endpoints: [`app/api/wallet/`](https://github.com/pelletnetwork/pellet/tree/main/app/api/wallet)

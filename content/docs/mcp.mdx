@@ -1,66 +1,30 @@
 ---
-title: MCP Server
-description: Drop-in Pellet integration for Claude and any MCP-compatible agent.
+title: MCP overview
+description: Pellet's MCP integration is the wallet, bundled with the CLI. See the wallet · MCP page for install + tools.
 icon: Bot
 ---
 
-Pellet ships an MCP (Model Context Protocol) server as `@pelletfi/mcp` on npm. Install it once, and your agent gets tools for every Pellet endpoint — list stables, inspect peg, fetch flows, request editorial briefings.
+Pellet's MCP server is bundled with [`@pelletnetwork/cli`](/docs/wallet-cli). Run `pellet mcp` to start a stdio MCP server that exposes `pellet_status` and `pellet_pay` to any agent runtime.
 
-Every value the MCP server exposes is an **Open-Ledger Interface (OLI)** measurement — read directly from Tempo's public ledger, never aggregated from off-chain oracles. An agent calling Pellet's MCP is practicing OLI on your behalf. See [What is OLI?](/docs/oli).
+→ **[Full integration guide is at Wallet · MCP](/docs/wallet-mcp).**
 
-## Install
-
-```bash
-npm install -g @pelletfi/mcp
-```
-
-## Configure
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+## TL;DR
 
 ```json
 {
   "mcpServers": {
     "pellet": {
       "command": "npx",
-      "args": ["@pelletfi/mcp"],
-      "env": {
-        "PELLET_KEY": "pk_live_...",
-        "EVM_PRIVATE_KEY": "0x..."
-      }
+      "args": ["-y", "@pelletnetwork/cli", "mcp"]
     }
   }
 }
 ```
 
-Two auth modes, pick one:
+Works with Claude Code, Cursor, Cloudflare Agents, and the Anthropic API directly via stdio MCP.
 
-- **`PELLET_KEY`** — Pellet Pro subscription key. Unlimited calls, no per-request cost.
-- **`EVM_PRIVATE_KEY`** — a Tempo-compatible private key holding pathUSD. Paid endpoints are settled via MPP automatically.
+## Why isn't there a separate MCP for OLI?
 
-## Tools exposed
+OLI is read-only and CORS-open at `/api/oli/*`. Any agent that can `fetch` can hit OLI directly — no MCP wrapper required. The skill manifest at [pellet.network/skill.md](/skill.md) teaches the agent the endpoints + when to use them.
 
-| Tool | Endpoint | Cost |
-| --- | --- | --- |
-| `list_stablecoins` | `GET /v1/stablecoins` | Free |
-| `simulate_transfer` | `GET /v1/tip403/simulate` | Free |
-| `get_peg` | `GET /v1/stablecoins/{addr}/peg` | $0.010 |
-| `get_flows` | `GET /v1/stablecoins/flows` | $0.010 |
-| `get_address` | `GET /v1/addresses/{addr}` | $0.010 |
-| `get_flow_anomalies` | `GET /v1/stablecoins/flow-anomalies` | $0.020 |
-| `get_reserves` | `GET /v1/stablecoins/{addr}/reserves` | $0.020 |
-| `get_risk_score` | `GET /v1/stablecoins/{addr}/risk` | $0.050 |
-| `get_rewards` | `GET /v1/stablecoins/{addr}/rewards` | $0.100 |
-| `analyze_token` | `GET /v1/tokens/{addr}/briefing` | $0.200 |
-
-## Example session
-
-Once installed, ask Claude anything natural:
-
-> "Which Tempo stable has the widest peg spread right now?"
-
-Claude calls `list_stablecoins` (free), compares `peg.spread_bps` across the returned set, and responds. No extra glue code.
-
-> "Analyze frxUSD for me."
-
-Claude calls `analyze_token`. If you're on Pro, the call is free. If you're paying per request, $0.200 USDC.e is debited from your wallet and Claude returns the full briefing — 8 on-chain aggregators plus the coverage & provenance ledger.
+If you want an MCP-flavored OLI surface specifically (e.g. for runtimes that only invoke MCP tools, never raw HTTP), open an issue at [github.com/pelletnetwork/pellet/issues](https://github.com/pelletnetwork/pellet/issues) and we'll bundle one with the CLI.

@@ -1,0 +1,174 @@
+---
+title: MCP · for any agent runtime
+description: Pellet Wallet as an MCP server. One config line installs pellet_pay + pellet_status into Claude Code, Cursor, Cloudflare Agents, or the Anthropic API directly.
+icon: Bot
+---
+
+`@pelletnetwork/cli mcp` runs an MCP (Model Context Protocol) server on stdio. Drop one config line into your agent runtime and the agent gets `pellet_pay` and `pellet_status` as callable tools.
+
+> Same line that today's Stripe Treasury launch shipped: *"Use Treasury from any AI app with the Stripe MCP."* Pellet's MCP is the open / on-chain / self-custody equivalent.
+
+## Pre-requisite
+
+Pair your CLI once (browser passkey ceremony — agents can't drive that step):
+
+```bash
+npx -y @pelletnetwork/cli auth start
+```
+
+Approve in the browser. After this the agent can spend autonomously within your caps. Re-pair when caps run out or the session expires.
+
+## Install
+
+### Claude Code
+
+Add to `~/.config/claude-code/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "pellet": {
+      "command": "npx",
+      "args": ["-y", "@pelletnetwork/cli", "mcp"]
+    }
+  }
+}
+```
+
+Restart Claude Code. The agent now sees `pellet_status` and `pellet_pay` in its tool list.
+
+### Cursor
+
+Settings → MCP → Add Server:
+
+```json
+{
+  "name": "pellet",
+  "command": "npx",
+  "args": ["-y", "@pelletnetwork/cli", "mcp"]
+}
+```
+
+### Cloudflare Agents
+
+Add to `wrangler.toml` agent config (or wherever your runtime expects MCP servers):
+
+```toml
+[[mcp.servers]]
+name = "pellet"
+command = "npx"
+args = ["-y", "@pelletnetwork/cli", "mcp"]
+```
+
+### Anthropic API direct
+
+Pass to the API as part of your messages request `mcp_servers`:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "name": "pellet",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@pelletnetwork/cli", "mcp"]
+    }
+  ]
+}
+```
+
+## Tools
+
+### `pellet_status`
+
+Read the local Pellet Wallet session — caps, expiry, label. Use to confirm wallet capability before attempting a payment.
+
+**Input:** none.
+
+**Output:**
+```json
+{
+  "ok": true,
+  "label": "claude-code · daily",
+  "spend_cap_usdc": 5.00,
+  "per_call_cap_usdc": 1.00,
+  "expires_at": "2026-04-30T22:52:35.862Z",
+  "paired_at": "2026-04-29T22:52:48.150Z",
+  "base_url": "https://pellet.network"
+}
+```
+
+If no session is paired:
+```json
+{ "ok": false, "error": "no active session — run `pellet auth start` to pair" }
+```
+
+### `pellet_pay`
+
+Sign + broadcast a `transferWithMemo` on Tempo. Uses the agent's on-chain-authorized session key; spend bounded by the user's caps.
+
+**Input:**
+- `to` (string, required) — recipient address (0x + 40 hex)
+- `amount_usdc` (number) **or** `amount_wei` (string) — required; one or the other
+- `memo` (string, optional) — bytes32 hex literal verbatim, or any text → keccak256-hashed to bytes32. For x402 settlement, pass the challenge id.
+- `token` (string, optional) — TIP-20 token address. Defaults to chain USDC.e.
+
+**Output (success):**
+```json
+{
+  "ok": true,
+  "tx_hash": "0x0af5f25c…",
+  "explorer_url": "https://explore.testnet.tempo.xyz/tx/0x0af5f25c…",
+  "from": "0x0eBd6a5D…74b5A",
+  "to": "0x000…dead",
+  "amount_usdc": 0.50,
+  "memo": "0x0ae1e216…",
+  "spend_used_usdc": 0.50,
+  "spend_cap_usdc": 5.00
+}
+```
+
+**Output (error):**
+- `per-call cap exceeded` (server-side reject)
+- `lifetime cap exceeded` (server-side reject)
+- `session expired`
+- `on-chain payment failed: <detail>` (viem / Tempo bubbled error)
+
+## Why pairing isn't an MCP tool
+
+`pellet_auth_start` would have to drive a browser passkey ceremony — but agents can't open browsers, present Touch ID prompts, or pick spend caps on the user's behalf. That step is intentionally human-only. The CLI handles it:
+
+```bash
+npx -y @pelletnetwork/cli auth start
+```
+
+After that the agent can call `pellet_pay` autonomously, with the caps the user set in the browser.
+
+## Example interaction
+
+```
+User: My agent needs to settle a $0.10 x402 challenge to 0xabc…123.
+       Memo should be the challenge id `0xdeadbeef…cafe`.
+
+Agent → pellet_pay({
+  to: "0xabc…123",
+  amount_usdc: 0.10,
+  memo: "0xdeadbeef…cafe"
+})
+
+Tool → {
+  "ok": true,
+  "tx_hash": "0x…",
+  "explorer_url": "https://explore.testnet.tempo.xyz/tx/0x…",
+  ...
+}
+
+Agent: Paid. tx 0x… on Tempo testnet.
+       Spend used: $0.60 of $5.00.
+       Receipt: https://explore.testnet.tempo.xyz/tx/0x…
+```
+
+## Source
+
+- [cli/src/commands/mcp.ts](https://github.com/pelletnetwork/pellet/blob/main/cli/src/commands/mcp.ts)
+- [skill.md companion install convention](/docs/skills)

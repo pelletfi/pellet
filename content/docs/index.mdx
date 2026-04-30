@@ -1,42 +1,44 @@
 ---
 title: Introduction
-description: Open-Ledger Interface on Tempo — every peg, every policy, every flow.
+description: Pellet — open agent wallet on Tempo, plus the public ledger every payment writes to.
 icon: BookOpen
 ---
 
-Pellet is Open-Ledger Interface on Tempo. We monitor every TIP-20 stablecoin on the chain — peg stability, supply dynamics, cross-pair flows, compliance policies, role holders, and backing structure — and expose the data through a REST API, an MCP server, and a web explorer.
+Pellet is an open agent wallet on Tempo, and the public ledger every Pellet payment writes to.
 
-## What is Open-Ledger Interface (OLI)?
+There are two halves:
 
-**OLI** is the discipline of producing rigorous analysis from publicly verifiable on-chain data. Pellet practices OLI on Tempo: peg from DEX pool reads, compliance from TIP-403 `isAuthorized` queries, issuance and flow topology from mainnet events, role holders from forensic event replay — measured directly, not estimated from oracle aggregators.
+- **[Pellet Wallet](/docs/wallet)** — a passkey-rooted, self-custody agent wallet. Your passkey signs an on-chain `AccountKeychain.authorizeKey` once with caps you choose; from there an agent can spend autonomously within those caps. The chain enforces them. Sponsored gas. USDC-native. Public on-chain receipts.
+- **[OLI](/docs/oli)** — the Open-Ledger Interface. A live observability layer over autonomous economic activity on Tempo. Every Pellet payment surfaces here automatically, alongside every other MPP transfer the chain emits. Per-event provenance, per-service revenue, per-provider attribution recovered on-chain.
 
-OLI has explicit scope. Transfers *inside* [Tempo Zones](https://tempo.xyz/blog/privacy-on-tempo) (private parallel ledgers) stay private by design. But zones are validiums with a rich public portal — every deposit, withdrawal, batch commitment, bounce-back, and token-enable event lands on Tempo mainnet with plaintext token + amount fields, even when the deposit itself is end-user-encrypted. OLI covers that boundary in depth: per-zone TVL, encrypted-deposit adoption rate, cross-zone flow matrix, compliance-propagation latency. The zone operator sees what's inside; Pellet sees everything that crosses in or out.
+Together: an agent can pay through Pellet Wallet, and you can audit the result through OLI. Same primitive, both halves observable.
 
-When a Pellet endpoint returns a number, that number is a measurement. If the value can't be measured, the response says so explicitly via a `coverage` field — never a default masquerading as a zero. That's the OLI standard. **[Read the full OLI reference →](/docs/oli)**
+## Where to start
 
-## Why Tempo needs Open-Ledger Interface
+| You want to… | Read |
+|---|---|
+| Pair an agent and pay something on Tempo | [Wallet · CLI](/docs/wallet-cli) |
+| Plug Pellet into Claude Code, Cursor, or the Anthropic API | [Wallet · MCP](/docs/wallet-mcp) |
+| Query live economic activity on Tempo | [OLI](/docs/oli) |
+| Understand how OLI attributes gateway-routed payments | [Methodology](/docs/methodology) |
+| Call the JSON API directly | [API reference](/docs/api) |
+| Install Pellet capabilities in any agent runtime | [Skills](/docs/skills) |
 
-Tempo isn't another general-purpose L1. It's a payments chain with enshrined stablecoin standards (TIP-20), native compliance policies (TIP-403), an enshrined DEX, and the Micropayment Protocol (MPP) for machine-to-machine payments at the HTTP layer.
+## What's currently shipped
 
-Generic chain indexers don't understand these primitives. They treat TIP-20 tokens like ERC-20s, miss compliance state entirely, and can't read the enshrined DEX orderbook. Pellet was built ground-up for Tempo, reading directly from the protocol's native data structures.
+- **OLI dashboard, attribution, deep-link event pages** — live at [pellet.network/oli](/oli). All MPP txs ingested every six hours; gateway routing recovered via Pattern A (`Settlement` event from the escrow contract) and Pattern B (calldata fingerprint). Methodology documented at [/oli/methodology](/oli/methodology).
+- **Pellet Wallet — passkey-rooted, on-chain authorize, sponsored gas, autonomous payments within caps** — live on [Moderato testnet](https://explore.testnet.tempo.xyz). Mainnet release pending sponsor + key custody hardening.
+- **Pellet MCP server** — bundled with `@pelletnetwork/cli`. One config line installs `pellet_pay` + `pellet_status` into any stdio-MCP runtime.
+- **`skill.md` install convention** at [pellet.network/skill.md](https://pellet.network/skill.md). Mirrors the convention Anthropic seeded and Stripe Link normalized.
 
-## What we track
+See [the changelog](/docs/changelog) for dated milestones.
 
-- **Peg stability** — real-time price via enshrined DEX quote swaps, spread in basis points
-- **Supply dynamics** — current supply, caps, mint/burn activity via TIP-20 precompile events
-- **Pre-trade compliance simulation** — TIP-403 `isAuthorized` oracle, predicts whether a transfer would revert before gas is spent
-- **Role holders** — forensic derivation of issuer, pauser, and burn-blocked admins via mint/burn event replay + `hasRole` verification
-- **Wallet intelligence** — labels, ERC-8004 agent status, role holdings, and per-address role summaries in one call
-- **Cross-pair flows** — movement between stables, routing through native DEX
-- **Backing structure** — issuer context, reserve model (protocol-native, bridged, fiat-backed)
-- **Editorial analysis** — every stable gets a written briefing covering origin, risk, context
+## What's not yet shipped
 
-## How to use Pellet
+- **Mainnet release.** We need a production sponsor + a second-passkey recovery path before real funds touch the wallet. Testnet flows are exercised end-to-end.
+- **`pellet pay <402-url>` auto-mode.** Today the CLI's `pay` is manual: pass `--to` and `--amount`. Auto-parsing of x402 challenges from a URL is the next CLI commit.
+- **Pattern B fingerprint labels.** OLI has 7 fingerprint groups attributed via Pattern B but not yet named. The `address_labels` table accepts `fp_<hex>` keys; one `npm run label-provider -- fp_8bdb… "Anthropic"` call lights them up across the UI.
 
-Three surfaces, same data:
+## Open
 
-1. **[Explorer](/explorer)** — human-facing web UI for browsing stables and flows
-2. **[REST API](/docs/api/stablecoins)** — programmatic access, payable via MPP
-3. **[MCP Server](/docs/mcp)** — drop-in for AI agents, Claude-compatible
-
-Pricing is [transparent](/docs/pricing) — free tier for basic reads, MPP micropayments for deep analysis, a Pro subscription for high-volume agents.
+Full source: [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet). Methodology, schema, attribution logic, signing recipes — all readable.

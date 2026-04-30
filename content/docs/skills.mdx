@@ -1,0 +1,70 @@
+---
+title: Skills
+description: Pellet's skill.md install convention. The canonical metadata Anthropic-style agents use to discover Pellet capabilities.
+icon: Sparkles
+---
+
+[`pellet.network/skill.md`](/skill.md) is the agent install metadata for Pellet — both the OLI read surface and the Pellet Wallet write surface.
+
+The skill.md convention emerged from Anthropic and went mainstream when Stripe shipped one for Link the same day Pellet shipped its own. The shape: Markdown with YAML frontmatter declaring the skill's `name` + `description` (preloaded into the agent's system prompt), and a body of progressive-disclosure content the agent loads when it decides the skill is relevant.
+
+## Pellet's skill.md
+
+Read it directly: [pellet.network/skill.md](/skill.md).
+
+It declares:
+
+```yaml
+---
+name: pellet-oli
+description: Query the open-ledger interface (OLI) for autonomous economic
+  activity on Tempo. Use to look up live revenue, transaction counts, and
+  per-service attribution for the Tempo MPP network — including which
+  providers underly the Tempo MPP Gateway aggregator…
+---
+```
+
+…and the body documents:
+
+- Every `/api/oli/*` endpoint (dashboard, services, agents, events, search, feed)
+- The schema notes (uint256 strings, ISO timestamps, methodology version, source block)
+- The Pattern A / Pattern B attribution paths
+- A worked example for typical agent queries
+- The sister Pellet Wallet product, with the MCP install line for `@pelletnetwork/cli`
+
+## When an agent should use it
+
+The `description` field is what the agent's system prompt sees. Ours is tuned for: *"which AI service is making the most money on Tempo right now?", "how much did Anthropic earn through MPP today?", "what's the revenue mix between USDC.e and USDT0?"* — questions about live agent-payment activity on Tempo specifically. Skip when the question is about traditional rails or markets outside Tempo.
+
+## How to install Pellet via skill.md
+
+In a runtime that supports skill.md (Claude Code, Anthropic API with skill loading enabled, the [agentskills.io](https://agentskills.io) reference loaders): tell the agent to read `https://pellet.network/skill.md`. The runtime will fetch + parse the frontmatter and either preload the body or load it on relevance.
+
+For a one-line install pitch: *"Read pellet.network/skill.md and get me set up with Pellet."*
+
+## Pellet's curated skills registry
+
+We track skill.md manifests relevant to autonomous-agent payments at [pellet.network/oli/skills](/oli/skills):
+
+- **pellet-oli** — ours. Query the open ledger.
+- **stripe-link** — Stripe's wallet for agents.
+- **(building) pellet-wallet** — sister to pellet-oli; the write surface. Install URL ships at `pellet.network/wallet/skill.md` once the wallet primitive lands the per-call autonomous flow.
+- **(watching)** x402-direct endpoints, MCP servers shipping payment flows, per-rail aggregator skills.
+
+Open an issue at [github.com/pelletnetwork/pellet/issues](https://github.com/pelletnetwork/pellet/issues) to suggest additions.
+
+## Difference from MCP
+
+`skill.md` is metadata that teaches an agent **when and how to use a capability**. The capability itself can be implemented as an MCP server, a REST API, a CLI, or just documentation.
+
+For Pellet specifically:
+- The OLI query side is implemented as REST endpoints (`/api/oli/*`), described in skill.md.
+- The Wallet write side is implemented as an MCP server (`@pelletnetwork/cli mcp`), described in skill.md AND installable via the [MCP integration page](/docs/wallet-mcp).
+
+Same skill.md, two implementation surfaces.
+
+## Spec
+
+- Anthropic, *Equipping agents for the real world with Agent Skills* — [anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
+- [agentskills.io](https://agentskills.io) — open standard reference
+- [github.com/anthropics/skills](https://github.com/anthropics/skills) — reference repo with `/spec` and `/template`

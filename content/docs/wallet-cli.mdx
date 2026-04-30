@@ -1,0 +1,151 @@
+---
+title: CLI · @pelletnetwork/cli
+description: Command-line wallet for Tempo. Pair, status, pay — calls into Pellet's API with your passkey-issued bearer.
+icon: Terminal
+---
+
+`@pelletnetwork/cli` is the command-line entrypoint to Pellet Wallet. It pairs your terminal to a passkey-rooted wallet, signs payments via Pellet's API, and runs as an MCP server that any agent runtime can install.
+
+## Install
+
+```bash
+npm i -g @pelletnetwork/cli
+```
+
+Or invoke without install:
+
+```bash
+npx -y @pelletnetwork/cli auth start
+```
+
+## `pellet auth start`
+
+Pair this CLI to your wallet via device-code flow.
+
+```bash
+$ pellet auth start
+
+  Starting connection…
+  └ Calling pellet auth start
+
+  Visit https://pellet.network/wallet/device?code=blue-tape-river
+  and follow the instructions to connect your Pellet wallet.
+  When prompted, verify or enter the following passphrase:
+  blue-tape-river
+
+  Waiting for approval…
+```
+
+In the browser:
+1. Sign in with your passkey (or enroll if first-time)
+2. Pick spend caps — `$5/24h`, `$25/7d`, or `$100/30d`
+3. Click **Approve**
+
+Your passkey signs an `AccountKeychain.authorizeKey` TempoTransaction. Sponsored gas, broadcast to Moderato testnet, server verifies the receipt. CLI poll loop picks up the bearer token within ~2s and writes it to `~/.pellet/config.json` (mode 0600).
+
+**Flags:**
+- `--label <name>` — agent label shown in the approval UI ("claude-code · daily")
+- `--base-url <url>` — override API host. Defaults to `$PELLET_BASE_URL` then `https://pellet.network`.
+
+## `pellet auth status`
+
+Print the active session — caps, expiry, label, paired-at, base URL, bearer fingerprint.
+
+```bash
+$ pellet auth status
+
+  session label: —
+  base url:      https://pellet.network
+  spend cap:     $5.00
+  per-call cap:  $1.00
+  paired at:     2026-04-29T22:52:48.150Z
+  expires:       2026-04-30T22:52:35.862Z
+  bearer:        pwk_svuEqyiz…4Nko
+```
+
+If no session exists, exits with status 1.
+
+## `pellet auth revoke`
+
+Drop the local bearer (clears `~/.pellet/config.json`).
+
+```bash
+$ pellet auth revoke
+  ✓ local bearer cleared. (server-side revoke ships in phase 3.)
+```
+
+Server-side revoke (mark `wallet_sessions.revoked_at`, invalidate any future calls with the bearer hash) lands in Phase 6. Until then, the bearer remains valid until natural expiry — re-pair if you need to rotate immediately.
+
+## `pellet pay`
+
+Sign and broadcast a `transferWithMemo` on Tempo. Uses the agent's on-chain-authorized session key; spend is bounded by the AccountKeychain caps you set at pairing time.
+
+```bash
+$ pellet pay --to 0x000000000000000000000000000000000000dead \
+             --amount 0.50 \
+             --memo "first pellet payment"
+
+  signing payment…
+  ✓ payment confirmed.
+
+  from:      0x0eBd6a5D935241c9E491831d8b007D2F9a774b5A
+  to:        0x000000000000000000000000000000000000dead
+  amount:    $0.5000
+  memo:      0x0ae1e216ab3a7ecbf9acb06da6b2b0adf2b79aed7183e592422205ef3a6d1b99
+  tx:        0x0af5f25cb6db80735c55590c93da03eb0674a9f6ae7c42ca1222a0e88943130d
+  explorer:  https://explore.testnet.tempo.xyz/tx/0x0af5f25c…43130d
+
+  session: $0.5000 of $5.0000 used
+```
+
+**Required flags:**
+- `--to <address>` — recipient (0x + 40 hex)
+- `--amount <usdc>` (display units, e.g. `1.50` = $1.50) **or** `--amount-wei <wei>` (raw uint256, 6-decimal — for matching exact 402 challenge amounts)
+
+**Optional:**
+- `--memo <text-or-hex>` — if exactly `0x` + 64 hex chars, used as the bytes32 memo verbatim. Otherwise hashed via `keccak256(utf8)` to bytes32. Omitted defaults to `bytes32(0)`.
+- `--token <addr>` — TIP-20 token address. Defaults to the chain's USDC.e (`0x20c0…9e8d…` on Moderato, `0x20c0…b9537d…` on Presto). Must be in your authorized scope.
+
+**Errors:**
+- `per-call cap exceeded` — `amount > per_call_cap_wei`. Server-side check; no on-chain call.
+- `lifetime cap exceeded` — `spend_used_wei + amount > spend_cap_wei`. Server-side check.
+- `session expired` — `expires_at < now`. Re-pair via `pellet auth start`.
+- `session not yet on-chain authorized` — pairing flipped to approved but `authorize_tx_hash` not set. Should be transient; retry in 5s.
+- `on-chain payment failed: <detail>` — viem/Tempo bubbled an error. Most common: insufficient balance (the user's account doesn't hold the token), or sponsor rejected the tx for a non-cap reason.
+
+## `pellet mcp`
+
+Run as an MCP (Model Context Protocol) server on stdio. Used by agent runtimes to call `pellet_pay` directly. See [MCP integration](/docs/wallet-mcp).
+
+## `pellet version`
+
+Print the CLI version (sync'd with `package.json`).
+
+## Env
+
+| Variable | Default | Use |
+|---|---|---|
+| `PELLET_BASE_URL` | saved at pair-time → falls back to `https://pellet.network` | Override API host. Useful for local dev (`http://localhost:3000`) or pointing at a different production deployment without re-pairing. |
+
+## Where the bearer lives
+
+`~/.pellet/config.json` (mode 0600):
+
+```json
+{
+  "bearer": "pwk_svuEqyiz6vfAPsoCwj6UKygx-tLT3qInSdZWOrq4Nko",
+  "baseUrl": "https://pellet.network",
+  "label": null,
+  "spendCapWei": "5000000",
+  "perCallCapWei": "1000000",
+  "expiresAt": "2026-04-30T22:52:35.862Z",
+  "pairedAt": "2026-04-29T22:52:48.150Z"
+}
+```
+
+The bearer is a 32-byte secret prefixed with `pwk_`. Server stores only its SHA-256 hash (`wallet_sessions.bearer_token_hash`); cleartext exists exactly once at issue time. **Don't commit `~/.pellet/config.json` to a repo or paste it in chat — possession of the bearer is enough to spend up to your caps.**
+
+## Source
+
+- [github.com/pelletnetwork/pellet/tree/main/cli](https://github.com/pelletnetwork/pellet/tree/main/cli)
+- License: MIT

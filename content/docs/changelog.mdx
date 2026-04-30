@@ -8,6 +8,53 @@ Entries are written in the first person of the project, not of an author. Materi
 
 ---
 
+## 2026-04-29 · Pellet Wallet · live on testnet (Phases 0 → 5)
+
+Pellet ships its first agent wallet — passkey-rooted, self-custody, on-chain-cap-bounded, sponsored-gas, public-receipts. End-to-end on [Moderato testnet](https://explore.testnet.tempo.xyz) (chainId 42431).
+
+The full path, from manifesto to working autonomous payments, in one day:
+
+- **Phase 0** — `/wallet` manifesto + waitlist, Stripe-Link contrast, Pellet Wallet name picked. [Read the page](/wallet).
+- **Phase 1** — schema (`wallet_users`, `wallet_sessions`, `wallet_spend_log`), CLI scaffold (`@pelletnetwork/cli`), device-code pairing endpoints. No signing yet.
+- **Phase 2** — real WebAuthn passkey enrollment + sign-in via `@simplewebauthn/server` v13.3.0. Replaces the placeholder approve-flow; signed-cookie challenge + user session storage; HMAC over `WALLET_CHALLENGE_SECRET`.
+- **Phase 3.A** — agent session key generation + AES-256-GCM at rest (`WALLET_MASTER_KEY`). Schema column `wallet_sessions.session_key_ciphertext` populated at approve-init; bearer minted at poll-claim time.
+- **Phase 3.B.1** — Tempo SDK foundation. `viem/tempo` confirmed as the canonical signing surface (no hand-rolling RLP envelopes); migration `0006` adds `authorize_tx_hash` + `public_key_uncompressed`; `coseToUncompressed` + `passkeyAddress` helpers replace the placeholder address derivation. T3 selector `0x980a6025` (T2 was rejected as `LegacyAuthorizeKeySelectorChanged` post-2026-04-21).
+- **Phase 3.B.2** — first commit that writes to Tempo. Browser builds `Account.fromWebAuthnP256` + `Account.fromSecp256k1(privateKey, { access: userAccount })` + `withRelay(rpc, sponsor, { policy: 'sign-only' })` and calls `client.accessKey.authorizeSync({ accessKey, expiry, feePayer: true, gas: 5_000_000n, limits, scopes })`. Sponsor co-signs, broadcasts, tx confirms.
+- **Phase 3.B.3** — server-side receipt verification in `/approve-finalize`. Polls `eth_getTransactionReceipt` 5x with 1.5s backoff, rejects unless `status=success` + `to=AccountKeychain` + `from=user.managed_address`.
+- **Phase 4** — `pellet pay`. CLI command + `/api/wallet/pay` endpoint. Decrypts session key, signs `transferWithMemo` TempoTransaction, sponsored gas, returns tx hash + explorer URL. Three real cap-bounded payments confirmed on Moderato within an hour of shipping.
+- **Phase 5** — MCP server bundled with the CLI. `pellet mcp` exposes `pellet_status` + `pellet_pay` over stdio. One config line installs Pellet Wallet into Claude Code, Cursor, Cloudflare Agents, or the Anthropic API directly.
+
+Trust model documented at [Methodology](/docs/methodology#wallet). Full source at [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet).
+
+What's NOT shipped yet: mainnet sponsor (Tempo doesn't run one for Presto; we'll run our own), recovery flow (lose your passkey → lose the wallet — register a second one as a guardian), `pellet pay <402-url>` auto-mode, server-side revoke. All on the docket.
+
+---
+
+## 2026-04-29 · OLI · cross-rail framing + skill.md install convention
+
+Pellet's positioning shifts from "Tempo OLI dashboard" to "open ledger of the agent economy, Tempo today." Three reference pages land on `/oli`:
+
+- **[/oli/rails](/oli/rails)** — comparison of payment rails relevant to autonomous agents. Tempo MPP (indexed live), Stripe Link (documented, private rail), x402-direct (watching), MCP-native (watching). Card-per-rail with Pellet coverage notes.
+- **[/oli/skills](/oli/skills)** — curated registry of `skill.md` install manifests for agent-payment surfaces. Two entries on day one: `pellet-oli` (ours) and `stripe-link` (Stripe's, shipped same day).
+- **[/oli/methodology](/oli/methodology)** — five-section reference: ingestion, matching, Pattern A/B attribution, provenance, known gaps. Linked from every "recovered from settlement event topic[2]…" footer.
+
+OLI also gets a [`/skill.md`](/skill.md) at the apex — Anthropic-style skill manifest with frontmatter + endpoint docs, the install surface Stripe Link normalized for agent-payment SDKs.
+
+---
+
+## 2026-04-29 · OLI · gateway routing attribution recovered on-chain
+
+Tempo MPP Gateway settles to one address (`0xca4e835f…`) for ~17 underlying providers. Per-service attribution recovered via two paths:
+
+- **Pattern A** — escrow contract `0x33b9…4f25` emits a `Settlement` event whose `topic[2]` is the provider address. Decoded into `agent_events.routed_to_address`. ~9% of gateway txs.
+- **Pattern B** — user→gateway calldata `bytes32` ref's bytes 5–14 are a stable per-service fingerprint set by Tempo's MPP client. Decoded into `agent_events.routed_fingerprint`. ~91% of gateway txs (combined with Pattern A: essentially 100%).
+
+Surfaces: dashboard "Top providers (routed)" table, gateway service detail "Underlying providers" table, deep-link `/oli/providers/[address]` and `/oli/providers/fp_[hex]` pages. Once a provider/fingerprint is labeled in `address_labels` (one CLI command: `npm run label-provider -- <key> "<name>"`), the UI lights it up automatically across every surface.
+
+Methodology bumped to v0.2.
+
+---
+
 ## 2026-04-17 · v2 pricing — measurement has a price
 
 Pellet's v1 schedule priced every MPP endpoint at `$0.000000` and the deep briefing at `$0.05`. That was the right call at zero: it put Pellet in the Tempo MPP directory, unblocked MPPScan indexing, and landed the [first paid tx](https://mppscan.com/server/29f5b7b1) within 48 hours. Free parity across nine measurement endpoints also signals that the category is commoditized, and after a week of operating data we know it isn't — Pellet is the only service on Tempo offering TIP-20 reward attribution, TIP-403 policy state, sub-basis-point peg measurement, and ERC-8004 + TIP-403 wallet intelligence, and none of those have a peer anywhere.
