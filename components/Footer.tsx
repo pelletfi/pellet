@@ -50,7 +50,15 @@ export function Footer() {
               gap: 4,
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--color-text-quaternary)" }}>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "var(--color-text-quaternary)",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
               Built on
               {/* SVG inlined so currentColor inherits — <img src> wouldn't. */}
               <svg
