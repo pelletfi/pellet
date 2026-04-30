@@ -205,6 +205,43 @@ export async function POST(req: Request) {
     }),
   }).extend(tempoActions());
 
+  // 6b. On-chain key check. Defends against an AccountKeychain.revokeKey we
+  // missed server-side, or against on-chain expiry that came earlier than the
+  // session's expires_at (e.g. on-chain authorize used a shorter expiry).
+  // Eats one extra RPC roundtrip per pay; cheap insurance.
+  try {
+    const meta = await client.accessKey.getMetadata({
+      account: user.managedAddress as `0x${string}`,
+      accessKey: agentAddress,
+    });
+    if (meta.isRevoked) {
+      // Mirror server-side state so future calls fail fast without the RPC.
+      await db
+        .update(walletSessions)
+        .set({ revokedAt: new Date() })
+        .where(eq(walletSessions.id, session.id));
+      return NextResponse.json(
+        { error: "access key revoked on-chain" },
+        { status: 403 },
+      );
+    }
+    // expiry is a unix-seconds bigint per AccountKeychain. 0 = no expiry.
+    if (meta.expiry > BigInt(0) && meta.expiry * BigInt(1000) < BigInt(Date.now())) {
+      return NextResponse.json(
+        { error: "access key expired on-chain" },
+        { status: 403 },
+      );
+    }
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error: "on-chain access key not found",
+        detail: e instanceof Error ? e.message : String(e),
+      },
+      { status: 403 },
+    );
+  }
+
   // 7. Sign + send. transferWithMemo on the chosen TIP-20.
   let txHash: `0x${string}`;
   try {
