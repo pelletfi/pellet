@@ -31,6 +31,17 @@ const SKILLS: Skill[] = [
     link: { label: "pellet.network/oli", href: "/oli" },
   },
   {
+    id: "pellet-wallet",
+    name: "Pellet Wallet",
+    vendor: "Pellet",
+    status: "live",
+    installUrl: "https://pellet.network/skill.md#pellet-wallet",
+    category: "payments",
+    bio: "Open agent wallet on Tempo. Pair once with a passkey, set on-chain spending caps, agent pays autonomously within those caps via the Pellet MCP server. Every payment is a public Tempo tx with a deep-linkable explorer URL. Live on Moderato testnet; mainnet pending.",
+    shipped: "2026-04-29",
+    link: { label: "pellet.network/wallet", href: "/wallet" },
+  },
+  {
     id: "stripe-link",
     name: "Stripe Link Wallet",
     vendor: "Stripe",
@@ -72,19 +83,6 @@ export default function SkillsPage() {
         {SKILLS.filter((s) => s.status === "live").map((s) => (
           <SkillCard key={s.id} skill={s} />
         ))}
-      </Section>
-
-      <Section title="Building" subtitle="ours, in flight">
-        <ul className="oli-skills-watch">
-          <li>
-            <Mono>pellet-wallet</Mono> — open agent wallet on Tempo. Pay
-            via x402, every payment auto-records to OLI. Manifesto +
-            waitlist at{" "}
-            <a href="/wallet" className="oli-meth-link">/wallet</a>; install
-            URL ships at <Mono>pellet.network/wallet/skill.md</Mono> when
-            the primitive lands.
-          </li>
-        </ul>
       </Section>
 
       <Section title="Watching" subtitle="catalogued as they ship">

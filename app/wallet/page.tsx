@@ -276,7 +276,7 @@ export default function WalletPage() {
       <header>
         <span className="wallet-kicker">
           <span className="wallet-kicker-dot" aria-hidden="true" />
-          Coming soon · waitlist open
+          Live on Moderato testnet · mainnet pending
         </span>
         <h1 className="wallet-h1">
           Pellet <span className="wallet-h1-em">Wallet.</span>
@@ -353,10 +353,10 @@ export default function WalletPage() {
           <Stage n="00" name="OLI · the read side" sub="Live observability of every Tempo MPP payment, with per-event provenance and gateway attribution." status="shipped" />
           <Stage n="01" name="Manifesto + waitlist" sub="This page. Plant the flag, gauge interest, document the open trust model." status="shipped" />
           <Stage n="02" name="Skill manifest forward-reference" sub="pellet.network/skill.md advertises the upcoming wallet endpoint to every agent that installs OLI." status="shipped" />
-          <Stage n="03" name="Wallet primitive" sub="Passkey-derived keys, signed transferWithAuthorization endpoint, per-session spend caps." status="building" />
-          <Stage n="04" name="Approval UI" sub="Per-purchase user approval modal. The trust surface — designed in the open." status="planned" />
-          <Stage n="05" name="Public sandbox" sub="Pre-funded test wallet, mock 402 challenges, see the full loop without spending real funds." status="planned" />
-          <Stage n="06" name="Mainnet release" sub="Self-custody pellet.network/wallet/skill.md install. Pay on Tempo. Read on OLI." status="planned" />
+          <Stage n="03" name="Wallet primitive" sub="Passkey-rooted keys via WebAuthn + AccountKeychain T3 authorize, sponsored gas, on-chain cap enforcement. Live on Moderato testnet." status="shipped" />
+          <Stage n="04" name="CLI + MCP" sub="@pelletnetwork/cli ships device-code pairing, pellet pay, and an MCP server for Claude Code / Cursor / Anthropic API direct." status="shipped" />
+          <Stage n="05" name="Wallet dashboard" sub="Human-facing wallet surface: balance, address copy, active sessions with cap usage, payment history, revoke. Building." status="building" />
+          <Stage n="06" name="Mainnet release" sub="Self-hosted sponsor on Presto, second-passkey guardian for recovery, server-side revoke. Pending hardening pass." status="planned" />
         </div>
       </section>
 
