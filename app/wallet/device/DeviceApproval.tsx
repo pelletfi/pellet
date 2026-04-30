@@ -236,7 +236,10 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         setState({
           kind: "error",
           message:
-            "tx confirmed but server rejected finalize: " + (finData.error ?? "unknown"),
+            "tx confirmed but server rejected finalize: " +
+            (finData.error ?? "unknown") +
+            (finData.detail ? ` (${finData.detail})` : "") +
+            ` · tx ${txHash}`,
         });
         return;
       }
