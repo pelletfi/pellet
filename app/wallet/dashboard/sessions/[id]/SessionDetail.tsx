@@ -430,9 +430,11 @@ const styles = `
     margin-bottom: 4px;
     border-bottom: 1px solid var(--color-border-subtle);
   }
+  /* Type pattern (locked across wallet pages): h1 italic + stat-value italic;
+   * h2 upright. h1 size varies by surface importance; h2/stat sizes are fixed. */
   .sd-card-h2 {
     font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 400;
     margin: 0;
     flex: 1;
@@ -480,7 +482,7 @@ const styles = `
   .sd-stat-value {
     font-family: 'Instrument Serif', Georgia, serif;
     font-style: italic;
-    font-size: 24px;
+    font-size: 28px;
     color: var(--color-text-primary);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;

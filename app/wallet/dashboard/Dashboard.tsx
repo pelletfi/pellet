@@ -103,6 +103,9 @@ export function Dashboard({
           flex-direction: column;
           gap: 32px;
         }
+        /* Type pattern (locked across wallet pages): h1 italic + stat-value
+         * italic; h2 upright. h1 size varies by surface importance; h2 fixed
+         * at 22, stat-value fixed at 28. */
         .dash-h1 {
           font-family: 'Instrument Serif', Georgia, serif;
           font-size: 48px;

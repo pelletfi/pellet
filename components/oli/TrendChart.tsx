@@ -109,7 +109,11 @@ export function TrendChart({
         {deltaPct != null && (
           <span>
             <span style={{ color: "var(--color-text-quaternary)", textTransform: "uppercase" }}>Δ </span>
-            <span style={{ color: delta >= 0 ? ACCENT : "var(--color-text-secondary)" }}>
+            <span
+              style={{
+                color: delta >= 0 ? "var(--color-success)" : "var(--color-error)",
+              }}
+            >
               {delta >= 0 ? "+" : ""}{deltaPct.toFixed(1)}%
             </span>
           </span>
