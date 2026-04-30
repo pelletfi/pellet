@@ -18,6 +18,12 @@ const ALG = "aes-256-gcm";
 const IV_LEN = 12;
 const TAG_LEN = 16;
 
+// Dev fallback fingerprint, surfaced via /api/wallet/debug-key in dev so
+// the operator can sanity-check what's actually being used.
+export const DEV_FALLBACK_MASTER_KEY_FINGERPRINT = "d4f5ccd3c37e7531";
+
+let didWarnFallback = false;
+
 function getMasterKey(): Buffer {
   const raw = process.env.WALLET_MASTER_KEY;
   if (!raw || raw.length < 32) {
@@ -26,7 +32,19 @@ function getMasterKey(): Buffer {
         "WALLET_MASTER_KEY must be set (>=32 chars base64url) in production",
       );
     }
-    // Dev fallback only — never used in prod (env check above).
+    // Dev fallback only — never used in prod (env check above). Warn once
+    // per process so operators notice when their env didn't take effect
+    // (the silent fallback caused 5 hours of "decrypt fails" debugging on
+    // 2026-04-30 when an old key encrypted sessions and a later restart
+    // dropped to fallback — every existing session became unrecoverable).
+    if (!didWarnFallback) {
+      didWarnFallback = true;
+      console.warn(
+        "[wallet/session-keys] WALLET_MASTER_KEY not set; using deterministic dev fallback. " +
+          "Sessions encrypted with a different key will fail to decrypt. " +
+          "Set WALLET_MASTER_KEY (>=32 base64url chars) and re-pair.",
+      );
+    }
     return Buffer.from(
       "dev-only-pellet-wallet-master-key-do-not-use-in-prod-32",
     ).subarray(0, 32);

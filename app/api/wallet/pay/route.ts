@@ -122,7 +122,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const agentPk = decryptSessionKey(Buffer.from(session.sessionKeyCiphertext));
+  let agentPk: `0x${string}`;
+  try {
+    agentPk = decryptSessionKey(Buffer.from(session.sessionKeyCiphertext));
+  } catch (e) {
+    // Most common cause: WALLET_MASTER_KEY drifted between session-create
+    // and pay time. Surface this clearly so operators can re-pair instead
+    // of staring at "Unsupported state or unable to authenticate data".
+    const detail = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      {
+        error: "session key undecryptable — WALLET_MASTER_KEY may have changed",
+        detail,
+        action: "revoke this session and re-pair (`pellet auth start`)",
+      },
+      { status: 500 },
+    );
+  }
   const agentAddress = privateKeyToAddress(agentPk);
 
   // 6. Build the access-key Account + a viem client wired to the user's
