@@ -38,7 +38,7 @@ export function Footer() {
               color: "var(--color-text-primary)",
             }}
           >
-            pellet.network
+            Pellet Network
           </span>
           <div
             style={{
