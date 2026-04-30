@@ -69,7 +69,7 @@ export default function WalletPage() {
         .wallet-pitch {
           padding: 24px 28px;
           border-left: 2px solid var(--color-accent);
-          background: rgba(200, 154, 106, 0.14);
+          background: rgba(122, 150, 178, 0.14);
           font-family: 'Instrument Serif', Georgia, serif;
           font-size: 22px;
           font-style: italic;
@@ -195,7 +195,7 @@ export default function WalletPage() {
         .wallet-stage-status-shipped {
           color: var(--color-accent);
           border-color: var(--color-accent);
-          background: rgba(200, 154, 106, 0.10);
+          background: rgba(122, 150, 178, 0.10);
         }
         .wallet-stage-status-building {
           color: var(--color-text-secondary);

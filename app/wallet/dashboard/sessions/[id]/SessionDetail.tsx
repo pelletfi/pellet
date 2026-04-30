@@ -517,8 +517,8 @@ const styles = `
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--color-text-tertiary);
-    background: rgba(200, 154, 106, 0.08);
-    border: 1px solid rgba(200, 154, 106, 0.20);
+    background: rgba(122, 150, 178, 0.08);
+    border: 1px solid rgba(122, 150, 178, 0.20);
     padding: 10px 14px;
     line-height: 1.5;
   }

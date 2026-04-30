@@ -18,6 +18,6 @@ export function classifyToken(address: string | null | undefined): TokenBucket {
 // Display colors — restrained palette aligned w/ the rest of OLI.
 export const TOKEN_COLORS: Record<TokenBucket, string> = {
   "USDC.e": "rgba(255, 255, 255, 0.55)",
-  USDT0: "rgba(200, 154, 106, 0.60)",
+  USDT0: "rgba(122, 150, 178, 0.60)",
   other: "rgba(255, 255, 255, 0.18)",
 };
