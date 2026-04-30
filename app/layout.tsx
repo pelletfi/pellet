@@ -2,9 +2,23 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import localFont from "next/font/local";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Nav } from "@/components/Nav";
 import { FooterGate } from "@/components/FooterGate";
+
+// CommitMono — replacing Geist Mono for terminal-flavored type. Geist Mono
+// stays imported above as a fallback for any surface that's still
+// referencing var(--font-geist-mono) directly until we sweep them.
+const commitMono = localFont({
+  src: [
+    { path: "../public/fonts/CommitMono-Regular.otf", weight: "400", style: "normal" },
+    { path: "../public/fonts/CommitMono-Italic.otf",  weight: "400", style: "italic" },
+    { path: "../public/fonts/CommitMono-Bold.otf",    weight: "700", style: "normal" },
+  ],
+  variable: "--font-commit-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pellet.network"),
@@ -44,7 +58,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} dark`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${commitMono.variable} dark`}
       suppressHydrationWarning
     >
       <head>
