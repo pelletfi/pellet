@@ -38,7 +38,7 @@ export function Footer() {
               color: "var(--color-text-primary)",
             }}
           >
-            Pellet Finance
+            Pellet
           </span>
           <div
             style={{
@@ -50,12 +50,15 @@ export function Footer() {
               gap: 4,
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--color-text-quaternary)" }}>
               Built on
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tempo-logo-white.svg" alt="Tempo" style={{ height: 10, width: "auto", opacity: 0.4 }} />
+              <img
+                src="/tempo-logo-white.svg"
+                alt="Tempo"
+                style={{ height: 11, width: "auto", color: "currentColor" }}
+              />
             </span>
-            <span>API v1 · 12 endpoints</span>
           </div>
         </div>
 
