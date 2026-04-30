@@ -18,9 +18,14 @@ async function loadFont(file: string): Promise<ArrayBuffer> {
 }
 
 export default async function Image() {
-  const [geistBold, commitMono, instrumentSerifItalic] = await Promise.all([
+  // CommitMono's OTF carries an Apple-specific `ltag` OpenType table that
+  // Satori (the next/og renderer) can't parse — fails the build with
+  // "ReferenceError: ltagTable is not defined". The OG card falls back
+  // to Geist Mono; site-wide CommitMono survives via the regular CSS path
+  // (browsers parse OTFs fine; only Satori's stricter OT parser blows up).
+  const [geistBold, geistMono, instrumentSerifItalic] = await Promise.all([
     loadFont("Geist-Bold.ttf"),
-    loadFont("CommitMono-Regular.otf"),
+    loadFont("GeistMono-Regular.ttf"),
     loadFont("InstrumentSerif-Italic.ttf"),
   ]);
 
@@ -70,7 +75,7 @@ export default async function Image() {
               letterSpacing: "0.2em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.55)",
-              fontFamily: "Commit Mono",
+              fontFamily: "Geist Mono",
             }}
           >
             PELLET · OLI
@@ -124,7 +129,7 @@ export default async function Image() {
       ...size,
       fonts: [
         { name: "Geist", data: geistBold, weight: 700, style: "normal" },
-        { name: "Commit Mono", data: commitMono, weight: 400, style: "normal" },
+        { name: "Geist Mono", data: geistMono, weight: 400, style: "normal" },
         {
           name: "Instrument Serif",
           data: instrumentSerifItalic,
