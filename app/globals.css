@@ -3,7 +3,14 @@
 @import "fumadocs-ui/css/preset.css";
 @source "../node_modules/fumadocs-ui/dist/**/*.{js,jsx}";
 
-@theme inline {
+/* `@theme` (no `inline`) — Tailwind references tokens as CSS vars in compiled
+ * utilities (e.g. `.text-accent { color: var(--color-accent) }`). With
+ * `inline`, the literal value gets baked into the utility CSS and a globals
+ * change doesn't update `text-accent` consumers without a full Tailwind
+ * recompile. Plain `@theme` makes the runtime `:root` override below the
+ * single source of truth.
+ */
+@theme {
   --font-sans: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
   --font-mono: var(--font-commit-mono), var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
@@ -41,14 +48,11 @@
   --ease-default: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Runtime override for --color-accent so HMR picks up changes immediately.
- * Tailwind v4's @theme block compiles tokens into a separate CSS chunk that
- * HMR doesn't always invalidate when only globals.css changes — the cached
- * chunk wins for `var(--color-accent)` consumers, leaving text on the prior
- * value while inline `<style>` jsx (with literal rgba/hex) updates correctly.
- * Re-declaring at :root in a chunk that DOES rebuild on globals.css change
- * shadows the stale @theme value cleanly. Tailwind utilities like `text-accent`
- * still work because @theme is also still set.
+/* Belt-and-suspenders runtime override for --color-accent. With plain @theme
+ * (no `inline`) above, Tailwind utilities now reference `var(--color-accent)`
+ * and would already read whatever :root resolves to. Keeping this mirror in a
+ * user-CSS chunk that rebuilds on every globals.css change protects against
+ * any cached @theme chunk continuing to win on first HMR cycle.
  */
 :root {
   --color-accent: #6080c0;
