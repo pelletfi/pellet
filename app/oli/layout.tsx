@@ -1,6 +1,8 @@
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import {
   IconWallet,
+  IconTerminal2,
+  IconPlugConnected,
   IconLayoutDashboard,
   IconServer,
   IconRobot,
@@ -54,6 +56,18 @@ const tree: PageTree.Root = {
       name: "Pellet Wallet",
       url: "/wallet",
       icon: <IconWallet {...ICON_PROPS} />,
+    },
+    {
+      type: "page",
+      name: "CLI",
+      url: "/docs/wallet-cli",
+      icon: <IconTerminal2 {...ICON_PROPS} />,
+    },
+    {
+      type: "page",
+      name: "MCP",
+      url: "/docs/wallet-mcp",
+      icon: <IconPlugConnected {...ICON_PROPS} />,
     },
     { type: "separator", name: "Explore" },
     {
