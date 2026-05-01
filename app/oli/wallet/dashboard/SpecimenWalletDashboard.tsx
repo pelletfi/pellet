@@ -194,12 +194,12 @@ export function SpecimenWalletDashboard({
               className="spec-switch-seg"
               onClick={() =>
                 alert(
-                  "Pair device — coming soon.\n\nFor now, run `pellet auth start` from the CLI to pair an agent.",
+                  "Pair agent — coming soon.\n\nFor now, run `pellet auth start` from the CLI; the pending approval will surface in the right rail when ready.",
                 )
               }
-              title="Pair a CLI / agent device — coming soon"
+              title="Approve an agent's spend authority — coming soon"
             >
-              PAIR DEVICE
+              PAIR AGENT
             </button>
             <button
               type="button"
