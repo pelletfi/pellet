@@ -215,6 +215,15 @@ body:has(.specimen-shell) main {
 }
 .specimen-shell pre {
   background: var(--ink) !important;
+  border: 0 !important;
+}
+/* Fumadocs wraps shiki <pre> in a <figure class="bg-fd-card …"> with
+   its own card background (rgb(25,25,25)) — that paints a slightly-
+   lighter ring around the inner #111 pre. Flatten the figure so only
+   the pre bg shows. Border lives on the figure, not the pre. */
+.specimen-shell figure.shiki,
+.specimen-shell figure[class*="shiki"] {
+  background: var(--ink) !important;
   border: 1px solid var(--line) !important;
 }
 .specimen-shell :not(pre) > code {
