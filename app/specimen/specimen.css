@@ -15,7 +15,7 @@
 
 .specimen-shell {
   --paper: #bcbcbc;
-  --ink:   #0a0a0a;
+  --ink:   #0e0e10;
 
   --bg: var(--paper);
   --fg: var(--ink);
@@ -45,7 +45,7 @@ body:has(.specimen-shell:not(.dark)) {
   background: #bcbcbc;
 }
 body:has(.specimen-shell.dark) {
-  background: #0a0a0a;
+  background: #0e0e10;
 }
 
 /* ── Square everything inside the shell ──────────────────────────────────── */
