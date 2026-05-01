@@ -225,6 +225,15 @@ body:has(.specimen-shell) main {
   background: var(--ink) !important;
   border: 1px solid var(--line) !important;
 }
+/* Dark-mode lift — page bg is also #111, so the code panel needs a
+   slight upward tint to read as a discrete surface instead of merging
+   into the page. Lifts both the figure and the pre by the same
+   amount so they stay coherent. */
+.specimen-shell.dark pre,
+.specimen-shell.dark figure.shiki,
+.specimen-shell.dark figure[class*="shiki"] {
+  background: color-mix(in oklch, var(--paper) 8%, var(--ink)) !important;
+}
 .specimen-shell :not(pre) > code {
   background: color-mix(in oklch, var(--fg) 8%, transparent);
   color: var(--fg) !important;
