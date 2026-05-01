@@ -197,6 +197,122 @@ body:has(.specimen-shell) main {
   fill: currentColor;
 }
 
+/* ── Pair-agent overrides ───────────────────────────────────────────────────
+ * The DeviceApproval form ships with `dev-*` styles + inline `style={...}`
+ * blocks tuned for the standalone /wallet/device page (dark fill, Instrument
+ * Serif, blue accent). When embedded inside the specimen shell at
+ * /oli/wallet/dashboard/pair we (1) remap the `--color-*` tokens it reads
+ * via inline styles to specimen equivalents, and (2) override the `dev-*`
+ * classes via CSS. Both layers are needed because inline `background:
+ * var(--color-bg-base)` beats class-level rules. Scoped to .specimen-shell
+ * so the legacy page is unaffected.
+ */
+.specimen-shell {
+  --color-bg-base: var(--bg);
+  --color-bg-subtle: var(--bg);
+  --color-bg-muted: var(--bg);
+  --color-bg-emphasis: var(--bg);
+  --color-border-subtle: var(--line);
+  --color-border-default: var(--line);
+  --color-border-emphasis: var(--line);
+  --color-text-primary: var(--fg);
+  --color-text-secondary: var(--fg);
+  --color-text-tertiary: var(--fg);
+  --color-text-quaternary: color-mix(in oklch, var(--fg) 55%, var(--bg));
+  --color-accent: var(--fg);
+}
+.specimen-shell .dev-h1 {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--fg) !important;
+}
+.specimen-shell .dev-kicker {
+  color: var(--fg) !important;
+  opacity: 0.55;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+.specimen-shell .dev-mono,
+.specimen-shell .dev-mono-addr {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+  color: var(--fg) !important;
+}
+.specimen-shell .dev-input {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-input::placeholder {
+  color: var(--fg);
+  opacity: 0.4;
+}
+.specimen-shell .dev-input:focus {
+  border-color: var(--fg) !important;
+  outline: 1px solid var(--fg);
+  outline-offset: -2px;
+}
+.specimen-shell .dev-btn {
+  background: var(--fg) !important;
+  color: var(--bg) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
+}
+.specimen-shell .dev-btn-secondary {
+  background: transparent !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line) !important;
+}
+.specimen-shell .dev-btn:disabled {
+  opacity: 0.4;
+}
+.specimen-shell .dev-cap {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--fg) !important;
+  opacity: 0.7;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-cap:hover {
+  opacity: 1;
+  border-color: var(--fg) !important;
+}
+.specimen-shell .dev-cap-active {
+  background: var(--fg) !important;
+  color: var(--bg) !important;
+  border-color: var(--fg) !important;
+  opacity: 1;
+}
+.specimen-shell .dev-rule {
+  border-color: var(--line) !important;
+  opacity: 0.5;
+}
+.specimen-shell .dev-stage,
+.specimen-shell .dev-stage-active,
+.specimen-shell .dev-stage-done {
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-stage-active {
+  font-weight: 700;
+}
+.specimen-shell .dev-stage-done {
+  opacity: 0.55;
+}
+/* Form card background — DeviceApproval wraps in a panel; flatten it onto
+   the specimen surface rather than floating a contrast box. */
+.specimen-shell .dev-shell,
+.specimen-shell [class*="dev-card"],
+.specimen-shell [class*="dev-panel"] {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+}
+
 /* ── Keymap legend (bottom) ──────────────────────────────────────────────── */
 
 .spec-keymap {
