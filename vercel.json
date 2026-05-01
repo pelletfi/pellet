@@ -7,6 +7,6 @@
     { "path": "/api/cron/match",          "schedule": "5 */6 * * *" },
     { "path": "/api/cron/attribute",      "schedule": "10 */6 * * *" },
     { "path": "/api/cron/pellet-tick",    "schedule": "15 */6 * * *" },
-    { "path": "/api/cron/webhook-retry",  "schedule": "* * * * *" }
+    { "path": "/api/cron/webhook-retry",  "schedule": "*/5 * * * *" }
   ]
 }
