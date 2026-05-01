@@ -210,7 +210,6 @@ body:has(.specimen-shell) main {
  */
 .specimen-shell pre code,
 .specimen-shell pre code span {
-  color: var(--paper) !important;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 .specimen-shell pre {
