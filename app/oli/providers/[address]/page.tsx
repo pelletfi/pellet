@@ -7,6 +7,7 @@ import {
   fmtUsdExact,
   Sparkline,
 } from "@/components/specimen/dashboard-charts";
+import { SpecimenSettlementRow } from "@/components/oli/SpecimenSettlementRow";
 
 export const dynamic = "force-dynamic";
 
@@ -192,7 +193,7 @@ export default async function OliProviderDetailPage({
               <span>{detail.recent.length}</span>
             </span>
           </div>
-          <div className="spec-row-head">
+          <div className="spec-activity-head" style={{ paddingLeft: 24 }}>
             <span style={{ width: 40, flexShrink: 0 }}>T-</span>
             <span style={{ width: 92, flexShrink: 0 }}>TX</span>
             <span style={{ flex: 1, minWidth: 0 }}>MEMO</span>
@@ -200,63 +201,34 @@ export default async function OliProviderDetailPage({
               AMOUNT
             </span>
             <span style={{ width: 86, flexShrink: 0 }} className="spec-cell-r">
-              FROM
+              SERVICE
             </span>
             <span style={{ width: 50, flexShrink: 0 }} className="spec-cell-r">
               STATUS
             </span>
           </div>
-          {detail.recent.map((ev) => {
-            const memo = `${ev.kind}${ev.routedToLabel ? ` · ${ev.routedToLabel}` : ""}`;
-            const from = ev.agentLabel ?? "—";
-            return (
-              <div key={ev.id} className="spec-row">
-                <span style={{ width: 40, flexShrink: 0 }}>{timeAgoShort(ev.ts)}</span>
-                <span style={{ width: 92, flexShrink: 0 }}>
-                  <a
-                    href={`${EXPLORER}/tx/${ev.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: "underline", textUnderlineOffset: 2 }}
-                  >
-                    {shortHash(ev.txHash)}
-                  </a>
-                </span>
-                <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    opacity: 0.7,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {memo}
-                </span>
-                <span style={{ width: 110, flexShrink: 0 }} className="spec-cell-r">
-                  {fmtAmount(ev.amountWei, ev.tokenAddress)}
-                </span>
-                <span style={{ width: 86, flexShrink: 0 }} className="spec-cell-r">
-                  {from}
-                </span>
-                <span
-                  style={{
-                    width: 50,
-                    flexShrink: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    gap: 6,
-                  }}
-                  className="spec-cell-r"
-                >
-                  <span className="spec-status-dot-sm" aria-hidden="true" />
-                  <span>OK</span>
-                </span>
-              </div>
-            );
-          })}
+          {detail.recent.map((ev) => (
+            <SpecimenSettlementRow
+              key={ev.id}
+              ev={{
+                id: ev.id,
+                ts: ev.ts.toISOString(),
+                agentId: ev.agentId,
+                agentLabel: ev.agentLabel,
+                counterpartyAddress: ev.counterpartyAddress,
+                counterpartyLabel: ev.counterpartyLabel,
+                routedToAddress: ev.routedToAddress,
+                routedToLabel: ev.routedToLabel,
+                routedFingerprint: ev.routedFingerprint,
+                kind: ev.kind,
+                amountWei: ev.amountWei,
+                tokenAddress: ev.tokenAddress,
+                txHash: ev.txHash,
+                sourceBlock: ev.sourceBlock,
+                methodologyVersion: ev.methodologyVersion,
+              }}
+            />
+          ))}
         </div>
       </section>
 
