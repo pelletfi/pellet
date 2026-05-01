@@ -15,6 +15,7 @@ const NAV: Array<{ num: string; label: string; href?: string }> = [
   { num: "06", label: "Webhooks", href: "/oli/webhooks" },
   { num: "07", label: "CLI", href: "/oli/cli" },
   { num: "08", label: "MCP", href: "/oli/mcp" },
+  { num: "09", label: "Skills", href: "/oli/skills" },
 ];
 
 export type KeymapItem = {
@@ -216,10 +217,11 @@ function KeymapLegend({
 }
 
 /**
- * Specimen shell — top nav, content slot, keymap legend. Light is default;
+ * Specimen shell — top nav, content slot, keymap legend. Dark is default;
  * pressing `M` (or clicking the M keycap) flips a `dark` class on the root
  * div and persists to localStorage. We intentionally do NOT honor
- * prefers-color-scheme — first-load is always paper.
+ * prefers-color-scheme — first-load is always ink unless the user has
+ * explicitly chosen light before.
  */
 export function SpecimenShell({
   children,
@@ -229,13 +231,14 @@ export function SpecimenShell({
   const pathname = usePathname() ?? "/oli";
   const isWallet = pathname.startsWith("/oli/wallet") || pathname.startsWith("/specimen/wallet");
   const keymap = isWallet ? WALLET_KEYMAP : DEFAULT_KEYMAP;
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
 
   // Hydrate from storage; URL `?theme=dark|light` overrides for screenshots.
+  // Default is dark — only an explicit stored "light" flips it.
   useEffect(() => {
-    let initial = false;
+    let initial = true;
     try {
-      initial = window.localStorage.getItem(STORAGE_KEY) === "dark";
+      initial = window.localStorage.getItem(STORAGE_KEY) !== "light";
       const url = new URL(window.location.href);
       const q = url.searchParams.get("theme");
       if (q === "dark") initial = true;
