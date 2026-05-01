@@ -69,7 +69,15 @@ function Keycap({
   return <span className="spec-keycap">{children}</span>;
 }
 
-function TopBar({ pathname }: { pathname: string }) {
+function TopBar({
+  pathname,
+  dark,
+  onToggleTheme,
+}: {
+  pathname: string;
+  dark: boolean;
+  onToggleTheme: () => void;
+}) {
   return (
     <header className="spec-topbar">
       <div className="spec-brand">
@@ -115,17 +123,59 @@ function TopBar({ pathname }: { pathname: string }) {
           );
         })}
       </nav>
-      <Status pathname={pathname} />
+      <ThemeToggleButton dark={dark} onToggle={onToggleTheme} />
     </header>
   );
 }
 
-function Status({ pathname: _pathname }: { pathname: string }) {
+function ThemeToggleButton({
+  dark,
+  onToggle,
+}: {
+  dark: boolean;
+  onToggle: () => void;
+}) {
+  // Show the icon for the *target* mode (sun in dark, moon in light) so the
+  // affordance answers "click here to go to ___."
   return (
-    <span className="spec-status">
-      <span className="spec-status-dot" aria-hidden="true" />
-      <span>OLI</span>
-    </span>
+    <button
+      type="button"
+      onClick={onToggle}
+      className="spec-theme-toggle"
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      title={dark ? "Switch to light mode (M)" : "Switch to dark mode (M)"}
+    >
+      {dark ? (
+        // Sun
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinecap="square"
+        >
+          <circle cx="8" cy="8" r="3" />
+          <path d="M8 1 V3 M8 13 V15 M1 8 H3 M13 8 H15 M3 3 L4.5 4.5 M11.5 11.5 L13 13 M3 13 L4.5 11.5 M11.5 4.5 L13 3" />
+        </svg>
+      ) : (
+        // Moon
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinecap="square"
+        >
+          <path d="M13 9.5 A6 6 0 1 1 6.5 3 A4.5 4.5 0 0 0 13 9.5 Z" />
+        </svg>
+      )}
+    </button>
   );
 }
 
@@ -232,7 +282,7 @@ export function SpecimenShell({
 
   return (
     <div className={`specimen-shell${dark ? " dark" : ""}`}>
-      <TopBar pathname={pathname} />
+      <TopBar pathname={pathname} dark={dark} onToggleTheme={toggleTheme} />
       <div className="spec-main">{children}</div>
       <KeymapLegend items={keymap} onToggleTheme={toggleTheme} />
     </div>

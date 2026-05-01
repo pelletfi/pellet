@@ -164,6 +164,39 @@ body:has(.specimen-shell) main {
   flex-shrink: 0;
 }
 
+/* Theme toggle (top-right) — bare icon, no chrome. The icon glyph itself
+   fills on hover/click; no border, no background tile. */
+.spec-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+.spec-theme-toggle:hover,
+.spec-theme-toggle:active,
+.spec-theme-toggle:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+.spec-theme-toggle svg circle,
+.spec-theme-toggle svg path {
+  transition: fill 0.12s ease;
+}
+.spec-theme-toggle:hover svg circle,
+.spec-theme-toggle:hover svg path,
+.spec-theme-toggle:active svg circle,
+.spec-theme-toggle:active svg path {
+  fill: currentColor;
+}
+
 /* ── Keymap legend (bottom) ──────────────────────────────────────────────── */
 
 .spec-keymap {
