@@ -175,18 +175,13 @@ export function SpecimenWalletDashboard({
             <span>Wallet</span>
           </h1>
           <div className="spec-switch" role="group" aria-label="Wallet actions">
-            <button
-              type="button"
+            <Link
               className="spec-switch-seg"
-              onClick={() =>
-                alert(
-                  "Pair agent — coming soon.\n\nFor now, run `pellet auth start` from the CLI; the pending approval will surface in the right rail when ready.",
-                )
-              }
-              title="Approve an agent's spend authority — coming soon"
+              href={`${basePath}/dashboard/pair`}
+              title="Approve an agent's spend authority"
             >
               PAIR AGENT
-            </button>
+            </Link>
             <button
               type="button"
               className="spec-switch-seg"
