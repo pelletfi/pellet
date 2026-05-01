@@ -224,7 +224,7 @@ body:has(.specimen-shell) main {
 .specimen-shell .dev-h1 {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
   font-size: 28px !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   letter-spacing: -0.01em !important;
   color: var(--fg) !important;
 }
@@ -257,16 +257,25 @@ body:has(.specimen-shell) main {
   outline-offset: -2px;
 }
 .specimen-shell .dev-btn {
-  background: var(--fg) !important;
-  color: var(--bg) !important;
+  background: transparent !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line) !important;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
   font-weight: 500 !important;
   letter-spacing: 0.06em !important;
+  transition: background-color 0.12s ease;
+}
+.specimen-shell .dev-btn:hover {
+  background: color-mix(in oklch, var(--fg) 8%, transparent) !important;
+}
+.specimen-shell .dev-btn:active {
+  background: color-mix(in oklch, var(--fg) 18%, transparent) !important;
 }
 .specimen-shell .dev-btn-secondary {
   background: transparent !important;
   color: var(--fg) !important;
   border: 1px solid var(--line) !important;
+  opacity: 0.7;
 }
 .specimen-shell .dev-btn:disabled {
   opacity: 0.4;
