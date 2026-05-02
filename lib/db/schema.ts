@@ -361,3 +361,72 @@ export const walletChatMessages = pgTable(
     sessionTsIdx: index("wallet_chat_session_ts_idx").on(t.sessionId, t.createdAt),
   }),
 );
+
+// ── OAuth 2.1 substrate v1 ──────────────────────────────────────────────
+// Pellet wallet is the authorization server (mints tokens via passkey
+// consent) AND a resource server (the MCP server validates tokens before
+// serving tools). See drizzle/0009.
+export const oauthClients = pgTable(
+  "oauth_clients",
+  {
+    clientId: text("client_id").primaryKey(),
+    userId: uuid("user_id").references(() => walletUsers.id, { onDelete: "cascade" }),
+    clientName: text("client_name").notNull(),
+    // 'cimd' | 'pre' | 'dynamic'
+    clientType: text("client_type").notNull(),
+    metadataUrl: text("metadata_url"),
+    metadata: jsonb("metadata"),
+    metadataFetchedAt: timestamp("metadata_fetched_at", { withTimezone: true }),
+    redirectUris: text("redirect_uris").array().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("oauth_clients_user_idx").on(t.userId),
+  }),
+);
+
+export const oauthAuthorizationCodes = pgTable(
+  "oauth_authorization_codes",
+  {
+    codeHash: text("code_hash").primaryKey(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    redirectUri: text("redirect_uri").notNull(),
+    scopes: text("scopes").array().notNull(),
+    audience: text("audience").notNull(),
+    codeChallenge: text("code_challenge").notNull(),
+    codeChallengeMethod: text("code_challenge_method").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    expiresIdx: index("oauth_authz_codes_expires_idx").on(t.expiresAt),
+  }),
+);
+
+export const oauthAccessTokens = pgTable(
+  "oauth_access_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tokenHash: text("token_hash").notNull().unique(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    sessionId: uuid("session_id").references(() => walletSessions.id, { onDelete: "set null" }),
+    scopes: text("scopes").array().notNull(),
+    audience: text("audience").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("oauth_tokens_user_idx").on(t.userId),
+    expiresIdx: index("oauth_tokens_expires_idx").on(t.expiresAt),
+  }),
+);
