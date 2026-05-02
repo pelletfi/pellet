@@ -1880,12 +1880,28 @@ button.spec-keycap {
  * Each row is a metadata line (time · sender · kind) above the content.
  * Sender colors and kind tints are intentionally subtle — content is
  * the focus, meta is reference.
+ *
+ * Container is centered (~880px max-width) so chat reads at a sensible
+ * line length instead of stretching edge-to-edge.
  */
+.spec-chat-container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 .spec-chat-pane {
-  margin-top: 24px;
-  border-top: 1px solid var(--line-thin);
+  flex: 1;
+  margin-top: 8px;
   padding-top: 16px;
+  border-top: 1px solid var(--line-thin);
   min-height: 60vh;
+  display: flex;
+  flex-direction: column;
 }
 .spec-chat-empty {
   display: flex;
@@ -1917,19 +1933,29 @@ button.spec-keycap {
 .spec-chat-row {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 0;
+  gap: 4px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--line-thin);
 }
 .spec-chat-row:last-child {
   border-bottom: 0;
+}
+.spec-chat-row-user {
+  /* Subtle left bar to mark user replies — keeps left-alignment but adds
+   * a visual signal that this row is from you, not from an agent. */
+  border-left: 2px solid var(--fg);
+  padding-left: 12px;
+  margin-left: -14px;
+}
+.spec-chat-row-system {
+  opacity: 0.7;
 }
 .spec-chat-meta {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: color-mix(in oklch, var(--fg) 55%, var(--bg));
@@ -1943,6 +1969,10 @@ button.spec-keycap {
 .spec-chat-sender {
   text-transform: lowercase;
 }
+.spec-chat-row-user .spec-chat-sender {
+  color: var(--fg);
+  font-weight: 700;
+}
 .spec-chat-kind {
   text-transform: uppercase;
 }
@@ -1951,77 +1981,95 @@ button.spec-keycap {
   font-weight: 700;
 }
 .spec-chat-content {
-  font-size: 14px;
-  line-height: 1.5;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 68ch;
   white-space: pre-wrap;
   word-break: break-word;
 }
-.spec-chat-row-user .spec-chat-content {
-  /* Right-align user replies for visual contrast even without bubbles. */
-  align-self: flex-end;
-  max-width: 70ch;
-  text-align: right;
-}
-.spec-chat-row-system {
-  opacity: 0.7;
-}
 
-/* Composer — sticky textarea at the bottom for user replies. Auto-grows
- * to a max height; Enter sends, Shift-Enter inserts a newline. */
+/* Composer — sticky textarea at the bottom of the centered container.
+ * Enter sends, Shift-Enter inserts a newline. Border + send button echo
+ * the dashboard's spec-switch-seg style for visual coherence. */
 .spec-chat-composer {
   position: sticky;
   bottom: 0;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 12px 0;
+  align-items: stretch;
+  gap: 0;
+  padding: 16px 0 24px;
   margin-top: 8px;
   background: var(--bg);
   border-top: 1px solid var(--line-thin);
 }
+.spec-chat-input-wrap {
+  flex: 1;
+  display: flex;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  transition: border-color 120ms ease;
+}
+.spec-chat-input-wrap:focus-within {
+  border-color: var(--fg);
+}
 .spec-chat-input {
   flex: 1;
   resize: none;
-  min-height: 38px;
-  max-height: 160px;
-  padding: 9px 10px;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.5;
+  min-height: 44px;
+  max-height: 200px;
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--fg);
-  background: var(--bg);
-  border: 1px solid var(--line-thin);
+  background: transparent;
+  border: 0;
   border-radius: 0;
   outline: none;
 }
-.spec-chat-input:focus-visible {
-  border-color: var(--fg);
+.spec-chat-input::placeholder {
+  color: color-mix(in oklch, var(--fg) 45%, var(--bg));
 }
 .spec-chat-input:disabled {
   opacity: 0.5;
 }
 .spec-chat-send {
   flex-shrink: 0;
-  padding: 9px 14px;
-  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  padding: 0 22px;
+  font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   color: var(--bg);
   background: var(--fg);
   border: 1px solid var(--fg);
+  border-left: 0;
   border-radius: 0;
   cursor: pointer;
   text-transform: uppercase;
+  transition: opacity 120ms ease;
+}
+.spec-chat-send:hover:not(:disabled) {
+  opacity: 0.85;
 }
 .spec-chat-send:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 .spec-chat-send-err {
-  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: color-mix(in oklch, var(--fg) 70%, var(--bg));
+  color: var(--fg);
   align-self: center;
+  padding: 0 12px;
+  border-left: 2px solid var(--fg);
+}
+
+@media (max-width: 600px) {
+  .spec-chat-container {
+    padding: 0 16px;
+  }
 }
 
 /* ── OAuth consent screen ────────────────────────────────────────────────

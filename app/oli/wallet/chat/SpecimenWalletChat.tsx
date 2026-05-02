@@ -147,77 +147,83 @@ export function SpecimenWalletChat({
         </div>
       </section>
 
-      <section className="spec-chat-pane" aria-label="Agent chat thread">
-        {messages.length === 0 ? (
-          <div className="spec-chat-empty">
-            <span className="spec-chat-empty-label">no messages yet</span>
-            <span className="spec-chat-empty-hint">
-              pair an agent to start a thread. agents post status updates,
-              approval requests, and reports here in real time.
-            </span>
-          </div>
-        ) : (
-          <ol className="spec-chat-list" role="log" aria-live="polite">
-            {messages.map((m) => (
-              <li
-                key={m.id}
-                className={`spec-chat-row spec-chat-row-${m.sender}`}
-                data-kind={m.kind}
-              >
-                <span className="spec-chat-meta">
-                  <span className="spec-chat-time">{formatTime(m.ts)}</span>
-                  <span className="spec-chat-sep">·</span>
-                  <span className="spec-chat-sender">
-                    {m.sender === "agent"
-                      ? `agent:${shortSession(m.sessionId)}`
-                      : m.sender}
+      <div className="spec-chat-container">
+        <section className="spec-chat-pane" aria-label="Agent chat thread">
+          {messages.length === 0 ? (
+            <div className="spec-chat-empty">
+              <span className="spec-chat-empty-label">no messages yet</span>
+              <span className="spec-chat-empty-hint">
+                pair an agent to start a thread. agents post status updates,
+                approval requests, and reports here in real time.
+              </span>
+            </div>
+          ) : (
+            <ol className="spec-chat-list" role="log" aria-live="polite">
+              {messages.map((m) => (
+                <li
+                  key={m.id}
+                  className={`spec-chat-row spec-chat-row-${m.sender}`}
+                  data-kind={m.kind}
+                >
+                  <span className="spec-chat-meta">
+                    <span className="spec-chat-time">{formatTime(m.ts)}</span>
+                    <span className="spec-chat-sep">·</span>
+                    <span className="spec-chat-sender">
+                      {m.sender === "agent"
+                        ? `agent:${shortSession(m.sessionId)}`
+                        : m.sender === "user"
+                          ? "you"
+                          : m.sender}
+                    </span>
+                    <span className="spec-chat-sep">·</span>
+                    <span className={`spec-chat-kind spec-chat-kind-${m.kind}`}>
+                      [{m.kind.replace("_", " ")}]
+                    </span>
                   </span>
-                  <span className="spec-chat-sep">·</span>
-                  <span className={`spec-chat-kind spec-chat-kind-${m.kind}`}>
-                    [{m.kind.replace("_", " ")}]
-                  </span>
-                </span>
-                <span className="spec-chat-content">{m.content}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <div ref={tailRef} />
-      </section>
+                  <span className="spec-chat-content">{m.content}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <div ref={tailRef} />
+        </section>
 
-      <form
-        className="spec-chat-composer"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void sendReply();
-        }}
-      >
-        <textarea
-          ref={inputRef}
-          className="spec-chat-input"
-          placeholder="reply to your agents…"
-          rows={1}
-          maxLength={MAX_INPUT}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          disabled={sending}
-          aria-label="Type a reply"
-        />
-        <button
-          type="submit"
-          className="spec-chat-send"
-          disabled={sending || input.trim().length === 0}
-          title="Send (Enter)"
+        <form
+          className="spec-chat-composer"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void sendReply();
+          }}
         >
-          {sending ? "…" : "SEND"}
-        </button>
-        {sendError && (
-          <span className="spec-chat-send-err" role="alert">
-            {sendError}
-          </span>
-        )}
-      </form>
+          <div className="spec-chat-input-wrap">
+            <textarea
+              ref={inputRef}
+              className="spec-chat-input"
+              placeholder="reply to your agents…"
+              rows={1}
+              maxLength={MAX_INPUT}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              disabled={sending}
+              aria-label="Type a reply"
+            />
+            <button
+              type="submit"
+              className="spec-chat-send"
+              disabled={sending || input.trim().length === 0}
+              title="Send (Enter)"
+            >
+              {sending ? "…" : "SEND"}
+            </button>
+          </div>
+          {sendError && (
+            <span className="spec-chat-send-err" role="alert">
+              {sendError}
+            </span>
+          )}
+        </form>
+      </div>
     </>
   );
 }
