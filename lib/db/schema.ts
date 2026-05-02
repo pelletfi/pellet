@@ -333,3 +333,31 @@ export const oliWebhookDeliveries = pgTable(
     ),
   }),
 );
+
+// ── Wallet chat substrate v1 ─────────────────────────────────────────────
+// In-wallet message thread between an agent (posts via bearer auth on its
+// session) and the user (reads via cookie auth in the wallet UI). Single
+// canonical thread per user; sessionId tags which agent posted so future
+// multi-thread UI can split without a migration. See drizzle/0008.
+export const walletChatMessages = pgTable(
+  "wallet_chat_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    // Which agent session posted (null for system or user messages).
+    sessionId: uuid("session_id").references(() => walletSessions.id, { onDelete: "set null" }),
+    // 'agent' | 'user' | 'system'
+    sender: text("sender").notNull(),
+    // 'status' | 'question' | 'approval_request' | 'reply' | 'report'
+    kind: text("kind").notNull(),
+    content: text("content").notNull(),
+    // Reserved for approval_request messages — FKs a future spend-intent table.
+    intentId: uuid("intent_id"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userTsIdx: index("wallet_chat_user_ts_idx").on(t.userId, t.createdAt),
+    sessionTsIdx: index("wallet_chat_session_ts_idx").on(t.sessionId, t.createdAt),
+  }),
+);
