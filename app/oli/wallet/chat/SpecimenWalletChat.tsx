@@ -66,10 +66,23 @@ export function SpecimenWalletChat({
           const next = [...prev, wire];
           return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
         });
+        // A new message from this agent ends its "typing" state.
+        setTypingAgent((prev) => (prev === wire.sessionId ? null : prev));
       } catch {
         // malformed payload — skip
       }
     };
+    // Named event: 'typing' — agent signaled it's composing. Auto-clears
+    // after 8s in case no message follows (e.g., agent crashed mid-task).
+    es.addEventListener("typing", (msg) => {
+      try {
+        const evt = msg as MessageEvent;
+        const wire = JSON.parse(evt.data) as { sessionId: string; ts: string };
+        setTypingAgent(wire.sessionId);
+      } catch {
+        /* skip */
+      }
+    });
     es.onerror = () => {
       setConnected(false);
       // EventSource auto-reconnects on transient errors.
@@ -79,6 +92,14 @@ export function SpecimenWalletChat({
       setConnected(false);
     };
   }, []);
+
+  // Auto-clear stale typing indicator. Each typing signal resets the
+  // timer; if no new signal or message arrives within 8s, hide it.
+  useEffect(() => {
+    if (!typingAgent) return;
+    const t = setTimeout(() => setTypingAgent(null), 8_000);
+    return () => clearTimeout(t);
+  }, [typingAgent]);
 
   // Auto-scroll to latest on new message OR when the typing indicator
   // appears/disappears (so the indicator stays visible during long

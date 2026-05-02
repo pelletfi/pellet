@@ -11,11 +11,13 @@ export const maxDuration = 60;
 //
 // Cookie-auth'd (the wallet UI is logged in via passkey). Server-Sent Events
 // stream of chat messages for the current user. Backed by the realtime bus
-// (lib/realtime/bus.ts) which LISTENs on the 'wallet_chat' Postgres channel.
+// (lib/realtime/bus.ts) which LISTENs on:
+//   * 'wallet_chat'        — message inserts (default SSE event)
+//   * 'wallet_chat_typing' — ephemeral typing pings (named SSE event 'typing')
 //
 // On connect: paints the last 50 messages oldest-first so the client appends
-// in chronological order. After that, every new message for this user is
-// pushed live.
+// in chronological order. After that, every new event for this user pushes
+// live.
 //
 // Heartbeat every 25s keeps the connection alive through Vercel/proxy idle
 // timeouts. Clients should reconnect on close.
@@ -73,6 +75,23 @@ export async function GET() {
       };
       bus().on("chat-message", onMessage);
 
+      // Typing pings — named SSE event 'typing' so the client can wire
+      // a separate handler. Payload is { sessionId, ts } so the UI can
+      // attribute which agent is composing.
+      const onTyping = (t: { userId: string; sessionId: string; ts: string }) => {
+        if (t.userId !== userId) return;
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `event: typing\ndata: ${JSON.stringify({ sessionId: t.sessionId, ts: t.ts })}\n\n`,
+            ),
+          );
+        } catch {
+          /* controller closed mid-write */
+        }
+      };
+      bus().on("chat-typing", onTyping);
+
       // Heartbeat — keeps the connection alive through proxies that drop
       // idle TCP after ~30s.
       const heartbeat = setInterval(() => {
@@ -86,6 +105,7 @@ export async function GET() {
       const cleanup = () => {
         clearInterval(heartbeat);
         bus().off("chat-message", onMessage);
+        bus().off("chat-typing", onTyping);
         try {
           controller.close();
         } catch {

@@ -9,8 +9,20 @@ import { getChatMessageById, type WalletChatRow } from "@/lib/db/wallet-chat";
 // listeners so every instance gets every event regardless of which one is
 // hosting the SSE client.
 //
-// Two channels: 'agent_events' for the public feed (existing) and
-// 'wallet_chat' for in-wallet messages (chat substrate v1).
+// Three channels:
+//   * 'agent_events'       — public OLI feed (table-trigger backed)
+//   * 'wallet_chat'        — in-wallet messages (table-trigger backed)
+//   * 'wallet_chat_typing' — ephemeral typing pings (no row; fired directly
+//                            by /api/wallet/chat/typing). Payload format
+//                            is "userId:sessionId" so SSE handlers can
+//                            filter by user.
+
+export type WalletChatTyping = {
+  userId: string;
+  sessionId: string;
+  ts: string;
+};
+
 class Bus extends EventEmitter {
   private started = false;
 
@@ -46,9 +58,20 @@ class Bus extends EventEmitter {
         }
         return;
       }
+      if (msg.channel === "wallet_chat_typing") {
+        const [userId, sessionId] = msg.payload.split(":");
+        if (!userId || !sessionId) return;
+        this.emit("chat-typing", {
+          userId,
+          sessionId,
+          ts: new Date().toISOString(),
+        } as WalletChatTyping);
+        return;
+      }
     });
     await client.query("LISTEN agent_events");
     await client.query("LISTEN wallet_chat");
+    await client.query("LISTEN wallet_chat_typing");
     // Connection is held for the process lifetime. No need to release.
   }
 }

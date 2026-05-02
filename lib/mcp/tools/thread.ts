@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { db } from "@/lib/db/client";
 import {
   insertChatMessage,
   recentChatMessages,
@@ -7,14 +9,15 @@ import {
 } from "@/lib/db/wallet-chat";
 import { type McpAuthInfo, requireScope } from "@/lib/mcp/auth";
 
-// Two thread tools:
-//   * wallet.thread.post  — agent posts a status update / question / report
-//                            into the user's wallet chat thread
-//   * wallet.thread.list  — agent reads recent thread history (its own +
-//                            other agents' visible to this user)
+// Three thread tools:
+//   * wallet.thread.post           — agent posts a status / question / report
+//   * wallet.thread.list           — agent reads recent thread history
+//   * wallet.thread.signal_typing  — agent signals "I'm composing", wallet
+//                                    UI shows pulsing dots until next message
+//                                    or 8s timeout
 //
-// Both require wallet:chat scope. Posts are tagged with the agent's
-// session id (from the OAuth token) so the wallet UI can group by agent.
+// All require wallet:chat scope. Posts are tagged with the agent's session
+// id (from the OAuth token) so the wallet UI can group by agent.
 
 const KIND_VALUES = ["status", "question", "approval_request", "reply", "report"] as const;
 type Kind = (typeof KIND_VALUES)[number];
@@ -117,6 +120,38 @@ export function registerThreadTools(
         structuredContent: {
           messages: rows.map(toWire),
         },
+      };
+    },
+  );
+
+  server.registerTool(
+    "wallet.thread.signal_typing",
+    {
+      title: "Signal that you're composing a response",
+      description:
+        "Tell the wallet UI you're in the middle of composing a response. Shows a pulsing-dots indicator until your next wallet.thread.post call OR an 8-second timeout. Call this whenever you're about to think for more than ~2 seconds before posting — it makes the wallet feel alive instead of frozen. No-op if no Access Key session is linked to this token.",
+      inputSchema: {},
+      annotations: { readOnlyHint: false, idempotentHint: true },
+    },
+    async () => {
+      const auth = getAuth();
+      if (!auth) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: "no authenticated session" }],
+        };
+      }
+      requireScope(auth, "wallet:chat");
+      if (!auth.session) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: "no session linked to this token" }],
+        };
+      }
+      const payload = `${auth.user.id}:${auth.session.id}`;
+      await db.execute(sql`SELECT pg_notify('wallet_chat_typing', ${payload})`);
+      return {
+        content: [{ type: "text", text: "typing signal sent" }],
       };
     },
   );
