@@ -47,6 +47,9 @@ export function SpecimenWalletChat({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  // typing — sessionId of the agent currently composing, or null. Wired to
+  // a server signal in a follow-up commit; for now stays null.
+  const [typingAgent, setTypingAgent] = useState<string | null>(null);
   const seen = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)));
   const tailRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -77,10 +80,12 @@ export function SpecimenWalletChat({
     };
   }, []);
 
-  // Auto-scroll to latest on new message.
+  // Auto-scroll to latest on new message OR when the typing indicator
+  // appears/disappears (so the indicator stays visible during long
+  // agent responses).
   useEffect(() => {
     tailRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length]);
+  }, [messages.length, typingAgent]);
 
   async function sendReply() {
     const content = input.trim();
@@ -184,6 +189,17 @@ export function SpecimenWalletChat({
                 </li>
               ))}
             </ol>
+          )}
+          {typingAgent && (
+            <div
+              className="spec-chat-typing"
+              role="status"
+              aria-label={`agent ${shortSession(typingAgent)} is composing`}
+            >
+              <span className="spec-chat-typing-dot" />
+              <span className="spec-chat-typing-dot" />
+              <span className="spec-chat-typing-dot" />
+            </div>
           )}
           <div ref={tailRef} />
         </section>
