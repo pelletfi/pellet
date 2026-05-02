@@ -378,6 +378,11 @@ export const oauthClients = pgTable(
     metadata: jsonb("metadata"),
     metadataFetchedAt: timestamp("metadata_fetched_at", { withTimezone: true }),
     redirectUris: text("redirect_uris").array().notNull().default([]),
+    // Webhook destination for user-side chat messages. POSTed with HMAC
+    // signature in X-Pellet-Signature header. NULL = no webhook (the
+    // client polls or uses MCP push instead).
+    webhookUrl: text("webhook_url"),
+    webhookSecret: text("webhook_secret"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

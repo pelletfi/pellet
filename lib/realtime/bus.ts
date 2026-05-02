@@ -3,6 +3,7 @@ import { listenPool } from "@/lib/db/client";
 import { getFeedRowById, type FeedRow } from "@/lib/db/agent-events";
 import { dispatchToWebhooks } from "@/lib/oli/webhooks/dispatcher";
 import { getChatMessageById, type WalletChatRow } from "@/lib/db/wallet-chat";
+import { dispatchUserChatToWebhooks } from "@/lib/wallet/chat-webhook-dispatcher";
 
 // Per-instance bus. Each Vercel function instance opens its own LISTEN
 // connection on first SSE request — postgres broadcasts NOTIFY to all
@@ -52,7 +53,15 @@ class Bus extends EventEmitter {
       if (msg.channel === "wallet_chat") {
         try {
           const row = await getChatMessageById(msg.payload);
-          if (row) this.emit("chat-message", row);
+          if (row) {
+            this.emit("chat-message", row);
+            // Fan user-side messages out to OAuth-client webhooks. Internal
+            // filter (sender='user' only) lives in the dispatcher; we call
+            // it for every row so the routing rules stay in one place.
+            void dispatchUserChatToWebhooks(row).catch((err) => {
+              console.warn("[bus] chat-webhook dispatch failed:", err);
+            });
+          }
         } catch {
           // swallow
         }
