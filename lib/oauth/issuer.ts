@@ -29,3 +29,7 @@ export function authorizationEndpoint(): string {
 export function tokenEndpoint(): string {
   return `${appUrl()}/oauth/token`;
 }
+
+export function registrationEndpoint(): string {
+  return `${appUrl()}/oauth/register`;
+}

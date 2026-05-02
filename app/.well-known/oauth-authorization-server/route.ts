@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   authorizationEndpoint,
   issuerUrl,
+  registrationEndpoint,
   tokenEndpoint,
 } from "@/lib/oauth/issuer";
 import { SCOPE_NAMES_ORDERED } from "@/lib/oauth/scopes";
@@ -23,6 +24,9 @@ export function GET() {
     issuer: issuerUrl(),
     authorization_endpoint: authorizationEndpoint(),
     token_endpoint: tokenEndpoint(),
+    // RFC 7591 Dynamic Client Registration — open registration, no auth
+    // required. Lets MCP clients self-register.
+    registration_endpoint: registrationEndpoint(),
     scopes_supported: SCOPE_NAMES_ORDERED,
     response_types_supported: ["code"],
     response_modes_supported: ["query"],

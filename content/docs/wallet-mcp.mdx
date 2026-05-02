@@ -1,271 +1,101 @@
 ---
 title: MCP
-description: Pellet Wallet as an MCP server. One config line installs five tools (pellet_pay, pellet_status, pellet_balance, pellet_recent_events, pellet_lookup_service) into Claude Code, Cursor, Cloudflare Agents, or the Anthropic API directly.
+description: Pellet wallet exposes an OAuth 2.1 + MCP server at /mcp. Add the URL to Claude Code, Claude Desktop, Cursor, or Claude.ai Connectors and your agent gets six wallet tools — read balances, post to chat, request approvals, signal typing, spend within caps. One config line + one passkey approval; no shared keys, no copy-pasted tokens.
 icon: Bot
 ---
 
-`@pelletnetwork/cli mcp` runs an MCP (Model Context Protocol) server on stdio. Drop one config line into your agent runtime and the agent gets `pellet_pay`, `pellet_status`, `pellet_balance`, `pellet_recent_events`, and `pellet_lookup_service` as callable tools.
+Pellet wallet runs a remote MCP server at `https://pellet.network/mcp` (or `http://localhost:3000/mcp` in dev). Connect any MCP-compatible agent — Claude Code, Claude Desktop, Cursor, Codex, Claude.ai Connectors, ChatGPT Connectors — and the agent gets six callable tools.
 
-> Same line that today's Stripe Treasury launch shipped: *"Use Treasury from any AI app with the Stripe MCP."* Pellet's MCP is the open / on-chain / self-custody equivalent.
+Auth is OAuth 2.1 with PKCE. The first time your agent calls a Pellet tool, your MCP client opens a browser, you approve the requested scopes via your wallet passkey, and the agent gets an audience-bound bearer token. No shared API keys.
 
-## Pre-requisite
-
-Pair your CLI once (browser passkey ceremony — agents can't drive that step):
-
-```bash
-npx -y @pelletnetwork/cli auth start
-```
-
-Approve in the browser. After this the agent can spend autonomously within your caps. Re-pair when caps run out or the session expires.
-
-## Install
+## Add Pellet to your client
 
 ### Claude Code
 
-Add to `~/.config/claude-code/mcp.json`:
+```bash
+claude mcp add pellet --transport http https://pellet.network/mcp
+```
+
+The first call triggers a browser-based OAuth flow. Approve via your wallet passkey. Tokens are cached per-client.
+
+### Claude Desktop
+
+Settings → Connectors → Add Connector → URL: `https://pellet.network/mcp`. Auth (OAuth 2.1 + dynamic registration) is auto-discovered.
+
+### Cursor
+
+In `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "pellet": {
-      "command": "npx",
-      "args": ["-y", "@pelletnetwork/cli", "mcp"]
+      "url": "https://pellet.network/mcp"
     }
   }
 }
 ```
 
-Restart Claude Code. The agent now sees `pellet_status` and `pellet_pay` in its tool list.
+### Codex / OpenCode
 
-### Cursor
-
-Settings → MCP → Add Server:
-
-```json
-{
-  "name": "pellet",
-  "command": "npx",
-  "args": ["-y", "@pelletnetwork/cli", "mcp"]
-}
-```
-
-### Cloudflare Agents
-
-Add to `wrangler.toml` agent config (or wherever your runtime expects MCP servers):
-
-```toml
-[[mcp.servers]]
-name = "pellet"
-command = "npx"
-args = ["-y", "@pelletnetwork/cli", "mcp"]
-```
-
-### Anthropic API direct
-
-Pass to the API as part of your messages request `mcp_servers`:
-
-```json
-{
-  "mcp_servers": [
-    {
-      "name": "pellet",
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@pelletnetwork/cli", "mcp"]
-    }
-  ]
-}
-```
-
-## Tools
-
-### `pellet_status`
-
-Read the local Pellet Wallet session — caps, expiry, label. Use to confirm wallet capability before attempting a payment.
-
-**Input:** none.
-
-**Output:**
-```json
-{
-  "ok": true,
-  "label": "claude-code · daily",
-  "spend_cap_usdc": 5.00,
-  "per_call_cap_usdc": 1.00,
-  "expires_at": "2026-04-30T22:52:35.862Z",
-  "paired_at": "2026-04-29T22:52:48.150Z",
-  "base_url": "https://pellet.network"
-}
-```
-
-If no session is paired:
-```json
-{ "ok": false, "error": "no active session — run `pellet auth start` to pair" }
-```
-
-### `pellet_pay`
-
-Sign + broadcast a `transferWithMemo` on Tempo. Uses the agent's on-chain-authorized session key; spend bounded by the user's caps.
-
-**Input:**
-- `to` (string, required) — recipient address (0x + 40 hex)
-- `amount_usdc` (number) **or** `amount_wei` (string) — required; one or the other
-- `memo` (string, optional) — bytes32 hex literal verbatim, or any text → keccak256-hashed to bytes32. For x402 settlement, pass the challenge id.
-- `token` (string, optional) — TIP-20 token address. Defaults to chain USDC.e.
-
-**Output (success):**
-```json
-{
-  "ok": true,
-  "tx_hash": "0x0af5f25c…",
-  "explorer_url": "https://explore.testnet.tempo.xyz/tx/0x0af5f25c…",
-  "from": "0x0eBd6a5D…74b5A",
-  "to": "0x000…dead",
-  "amount_usdc": 0.50,
-  "memo": "0x0ae1e216…",
-  "spend_used_usdc": 0.50,
-  "spend_cap_usdc": 5.00
-}
-```
-
-**Output (error):**
-- `per-call cap exceeded` (server-side reject)
-- `lifetime cap exceeded` (server-side reject)
-- `session expired`
-- `on-chain payment failed: <detail>` (viem / Tempo bubbled error)
-
-### `pellet_balance`
-
-Read the wallet's on-chain USDC.e balance plus the session's remaining cap, in one call. The answer to "can I afford this?" depends on BOTH on-chain balance AND server-side remaining cap, so this surfaces both.
-
-**Input:** none.
-
-**Output:**
-```json
-{
-  "ok": true,
-  "managed_address": "0x0eBd6a5D…74b5A",
-  "chain": "Moderato",
-  "chain_id": 42431,
-  "balances": [
-    { "symbol": "USDC.e", "address": "0x20c0…3726", "raw_wei": "12345678", "display": "12.345678" },
-    { "symbol": "pathUSD", "address": "0x20c0…001a", "raw_wei": "5000000",  "display": "5.000000" }
-  ],
-  "session": {
-    "label": "claude-code · daily",
-    "spend_cap_wei": "5000000",
-    "spend_used_wei": "600000",
-    "remaining_wei": "4400000",
-    "per_call_cap_wei": "1000000",
-    "expires_at": "2026-04-30T22:52:35.862Z"
-  }
-}
-```
-
-### `pellet_recent_events`
-
-List the user's recent payments. Killer use case: pass `memo_prefix` (an x402 challenge id) to ask **"did I already settle this?"** before re-paying. Closes the agent-side memory loop that every other payment-MCP leaves open.
-
-**Input:**
-- `memo_prefix` (string, optional) — case-insensitive challenge-id prefix
-- `since` (string, optional) — ISO-8601; defaults to 24h ago
-- `limit` (integer, optional, 1–100) — defaults to 25
-- `status` (`any` | `submitted` | `pending` | `failed`, optional) — defaults to `submitted`
-
-**Output:**
-```json
-{
-  "ok": true,
-  "managed_address": "0x0eBd6a5D…",
-  "count": 1,
-  "since": "2026-04-30T13:00:00Z",
-  "memo_prefix": "0xdeadbeef",
-  "events": [
-    {
-      "id": "…",
-      "ts": "2026-04-30T14:21:09.000Z",
-      "recipient": "0xabc…123",
-      "amount_wei": "100000",
-      "amount_usdc": 0.10,
-      "challenge_id": "0xdeadbeef…cafe",
-      "tx_hash": "0x…",
-      "explorer_url": "https://explore.testnet.tempo.xyz/tx/0x…",
-      "status": "submitted",
-      "reason": null
-    }
-  ]
-}
-```
-
-> Memo filtering only matches payments made after the `challenge_id` wiring landed (April 30, 2026). Older rows have null `challenge_id` and won't match `memo_prefix` even if you did pay them.
-
-### `pellet_lookup_service`
-
-Search OLI for a paid x402/MPP endpoint by name, label, or address fragment. Returns watched services with recent activity. Use before paying an unknown service to verify it's real and active. **Public endpoint — no session required.**
-
-**Input:**
-- `q` (string, required, min 2 chars) — service slug, label, or address fragment
-- `limit` (integer, optional, 1–25) — defaults to 10
-
-**Output:**
-```json
-{
-  "ok": true,
-  "count": 1,
-  "results": [
-    {
-      "kind": "service",
-      "id": "tempo-gateway-mpp",
-      "label": "Tempo MPP Gateway",
-      "sub": "0xca4e835f…",
-      "href": "/oli/services/tempo-gateway-mpp"
-    }
-  ]
-}
-```
-
-## Why pairing isn't an MCP tool
-
-`pellet_auth_start` would have to drive a browser passkey ceremony — but agents can't open browsers, present Touch ID prompts, or pick spend caps on the user's behalf. That step is intentionally human-only. The CLI handles it:
+Same as Claude Code:
 
 ```bash
-npx -y @pelletnetwork/cli auth start
+codex mcp add pellet --transport http https://pellet.network/mcp
 ```
 
-After that the agent can call `pellet_pay` autonomously, with the caps the user set in the browser.
+### Claude.ai (Pro/Team)
 
-## Example interaction
+Settings → Connectors → Add → paste `https://pellet.network/mcp`. The browser-based OAuth flow runs once; subsequent conversations have the tools available.
 
-```
-User: My agent needs to settle a $0.10 x402 challenge to 0xabc…123.
-       Challenge id: 0xdeadbeef…cafe.
+### ChatGPT (Pro/Team)
 
-Agent → pellet_recent_events({ memo_prefix: "0xdeadbeef" })
-Tool  → { "ok": true, "count": 0, "events": [] }
-        // No prior settlement — safe to pay.
+Same pattern via the Connectors feature — paste the URL, OAuth in browser, done.
 
-Agent → pellet_balance()
-Tool  → {
-  "ok": true,
-  "balances": [{ "symbol": "USDC.e", "display": "12.34" }],
-  "session": { "remaining_wei": "4400000" }
-}
-        // $4.40 remaining cap, $12.34 on-chain. Both > $0.10. Proceed.
+## Tools the agent gets
 
-Agent → pellet_pay({
-  to: "0xabc…123",
-  amount_usdc: 0.10,
-  memo: "0xdeadbeef…cafe"
-})
-Tool  → { "ok": true, "tx_hash": "0x…", "explorer_url": "https://…" }
+| Tool | Scope | What it does |
+|---|---|---|
+| `wallet.balance.get` | `wallet:read` | Read your stablecoin balances on Tempo |
+| `wallet.thread.post` | `wallet:chat` | Post a message into your wallet chat thread |
+| `wallet.thread.list` | `wallet:chat` | Read recent chat history |
+| `wallet.thread.signal_typing` | `wallet:chat` | Show "agent is thinking" pulsing dots in your wallet UI |
+| `wallet.spend.request_approval` | `wallet:spend:request` | Request your approval for a transaction |
+| `wallet.spend.execute` | `wallet:spend:authorized` | Spend within an authorized cap (no per-tx approval) |
 
-Agent: Paid. tx 0x… on Tempo testnet.
-       Receipt: https://explore.testnet.tempo.xyz/tx/0x…
-       Next time the same challenge fires, pellet_recent_events will
-       return this row and I'll skip the re-pay.
-```
+## Approval flow
 
-## Source
+When your client first connects:
 
-- [cli/src/commands/mcp.ts](https://github.com/pelletnetwork/pellet/blob/main/cli/src/commands/mcp.ts)
-- [skill.md companion install convention](/docs/skills)
+1. **Discovery.** Client fetches `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource` to find the auth + resource URLs.
+2. **Registration.** Client self-registers via RFC 7591 dynamic client registration at `/oauth/register`. No manual setup.
+3. **Authorization.** Client opens a browser to `/oauth/authorize?...` with PKCE challenge + requested scopes + audience bound to `/mcp`.
+4. **Consent.** You see Pellet's consent screen showing the agent name, requested scopes in plain English, and the resource it'll access. Approve via passkey.
+5. **Token.** Client redirects back, exchanges the code for an audience-bound bearer token via `/oauth/token` with PKCE verifier.
+6. **Tools.** Subsequent calls to `/mcp` use `Authorization: Bearer ...` and the tools become available.
+
+Tokens default to 1-hour TTL and are scoped narrowly. Revoke any time from your wallet settings.
+
+## For hosted agents (custom backend / Zapier)
+
+If your agent runs on a server with a public HTTPS endpoint, you can also receive user-side wallet messages via webhook. Pellet POSTs `chat.message` events to your registered URL with HMAC signing (`X-Pellet-Signature: sha256=...`).
+
+Webhook self-registration UI ships with the agent-management dashboard. For now, contact us to register your webhook destination manually.
+
+## Security model
+
+- **Audience binding (RFC 8707)** — every token is minted FOR `https://pellet.network/mcp` specifically. Tokens can't be replayed against other resources.
+- **PKCE-only** — no client secrets. Your client proves its identity via the verifier→challenge round-trip.
+- **Least-privilege scopes** — agents request only what they need; you approve each scope explicitly.
+- **Single-use authorization codes** — atomic consume prevents code-replay attacks.
+- **Passkey-rooted approval** — every `/oauth/authorize` consent requires you to be signed into your Pellet wallet via your passkey. Agents can't grant themselves access.
+
+## Troubleshooting
+
+**"Server not initialized" on every call** — your MCP client is in stateful mode but Pellet runs stateless. Most modern clients handle this transparently; if yours doesn't, check that it's sending `initialize` per-request or look for an `enableJsonResponse` option.
+
+**OAuth redirect loops** — usually means the client's `redirect_uri` doesn't match what was registered. Re-register or check your client's MCP config.
+
+**401 "invalid or expired token"** — your token aged out (1h default). Most clients refresh transparently; if not, re-run the connect flow.
+
+**Tools not showing up after connect** — check that the OAuth scopes you approved cover the tools you want. Re-OAuth with broader scopes if needed.
