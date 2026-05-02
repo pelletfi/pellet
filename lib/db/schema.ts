@@ -413,6 +413,35 @@ export const oauthAuthorizationCodes = pgTable(
   }),
 );
 
+// Wallet chat webhook delivery log — idempotency for the multi-instance
+// bus fan-out problem. See drizzle/0011 + lib/wallet/chat-webhook-dispatcher.
+export const walletChatWebhookDeliveries = pgTable(
+  "wallet_chat_webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => walletChatMessages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"),
+    httpStatus: integer("http_status"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  },
+  (t) => ({
+    clientMsgUq: uniqueIndex("wallet_chat_webhook_deliveries_client_msg_uq").on(
+      t.clientId,
+      t.messageId,
+    ),
+    userIdx: index("wallet_chat_webhook_deliveries_user_idx").on(t.userId, t.createdAt),
+  }),
+);
+
 export const oauthAccessTokens = pgTable(
   "oauth_access_tokens",
   {

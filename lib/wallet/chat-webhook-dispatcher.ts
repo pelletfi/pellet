@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
+import { walletChatWebhookDeliveries } from "@/lib/db/schema";
 import type { WalletChatRow } from "@/lib/db/wallet-chat";
 
 // User-side chat messages are pushed to every distinct OAuth client
@@ -105,9 +106,35 @@ export async function dispatchUserChatToWebhooks(row: WalletChatRow): Promise<vo
   const body = JSON.stringify(payload);
   const ts = new Date().toISOString();
 
-  // Parallel dispatch — webhooks are independent.
+  // Parallel dispatch — webhooks are independent. Atomic claim per
+  // (client, message) via the unique index prevents duplicate fan-out
+  // when multiple bus listeners (multi-instance, HMR, etc.) all see the
+  // same NOTIFY.
   await Promise.allSettled(
     targets.map(async (target) => {
+      // Claim the dispatch slot. Returns the new row only on first
+      // INSERT — every other instance gets nothing back and bails.
+      const claim = await db
+        .insert(walletChatWebhookDeliveries)
+        .values({
+          clientId: target.clientId,
+          messageId: row.id,
+          userId: row.userId,
+          attemptCount: 1,
+        })
+        .onConflictDoNothing({
+          target: [
+            walletChatWebhookDeliveries.clientId,
+            walletChatWebhookDeliveries.messageId,
+          ],
+        })
+        .returning({ id: walletChatWebhookDeliveries.id });
+      if (claim.length === 0) {
+        // Another instance already dispatched (or is dispatching) this
+        // (client, message). Skip — at-most-once guarantee.
+        return;
+      }
+      const deliveryRowId = claim[0].id;
       const deliveryId = randomUUID();
       const signature = target.secret
         ? signPayload(target.secret, deliveryId, ts, body)
@@ -119,6 +146,18 @@ export async function dispatchUserChatToWebhooks(row: WalletChatRow): Promise<vo
         [HEADER_SIGNATURE]: signature,
       };
       const result = await postWithTimeout(target.url, headers, body);
+      // Update the row with the outcome — useful for the future
+      // deliveries-drawer UI in the wallet.
+      await db
+        .update(walletChatWebhookDeliveries)
+        .set({
+          status: result.ok ? "delivered" : "failed",
+          httpStatus: result.status,
+          deliveredAt: result.ok ? new Date() : null,
+          lastError: result.ok ? null : `HTTP ${result.status}`,
+        })
+        .where(eq(walletChatWebhookDeliveries.id, deliveryRowId))
+        .catch(() => {});
       if (!result.ok) {
         console.warn(
           `[chat-webhook] ${target.clientId} → ${target.url} failed: HTTP ${result.status}`,
