@@ -464,3 +464,30 @@ export const oauthAccessTokens = pgTable(
     expiresIdx: index("oauth_tokens_expires_idx").on(t.expiresAt),
   }),
 );
+
+export const walletAgentConnections = pgTable(
+  "wallet_agent_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    clientId: text("client_id")
+      .notNull()
+      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    lastTokenId: uuid("last_token_id").references(() => oauthAccessTokens.id, { onDelete: "set null" }),
+    lastSessionId: uuid("last_session_id").references(() => walletSessions.id, { onDelete: "set null" }),
+    lastScopes: text("last_scopes").array().notNull().default([]),
+    lastAudience: text("last_audience"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userClientUq: uniqueIndex("wallet_agent_connections_user_client_uq").on(
+      t.userId,
+      t.clientId,
+    ),
+    userIdx: index("wallet_agent_connections_user_idx").on(t.userId),
+    clientIdx: index("wallet_agent_connections_client_idx").on(t.clientId),
+  }),
+);

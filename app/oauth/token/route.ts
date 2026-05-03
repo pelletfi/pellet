@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { consumeAuthorizationCode } from "@/lib/oauth/codes";
 import { verifyChallenge, isSupportedMethod } from "@/lib/oauth/pkce";
 import { issueAccessToken } from "@/lib/oauth/tokens";
+import { recordAgentConnection } from "@/lib/db/wallet-agent-connections";
 import type { ScopeName } from "@/lib/oauth/scopes";
 
 export const runtime = "nodejs";
@@ -100,10 +101,18 @@ export async function POST(req: Request) {
   // Mint the access token, audience-bound to the resource the code was for.
   // Scopes were validated at /authorize time before being stored, so we
   // can safely narrow the array type here.
-  const { token, expiresAt } = await issueAccessToken({
+  const scopes = codeRow.scopes as ScopeName[];
+  const { token, tokenId, expiresAt } = await issueAccessToken({
     clientId: codeRow.clientId,
     userId: codeRow.userId,
-    scopes: codeRow.scopes as ScopeName[],
+    scopes,
+    audience: codeRow.audience,
+  });
+  await recordAgentConnection({
+    clientId: codeRow.clientId,
+    userId: codeRow.userId,
+    tokenId,
+    scopes,
     audience: codeRow.audience,
   });
   const expiresInSeconds = Math.max(

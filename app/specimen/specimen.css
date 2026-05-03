@@ -2410,6 +2410,28 @@ body:has(.specimen-shell) main {
   color: color-mix(in oklch, var(--fg) 75%, var(--bg));
   font-variant-numeric: tabular-nums;
 }
+.spec-agents-token {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spec-agents-token-state {
+  width: max-content;
+  padding: 1px 5px;
+  border: 1px solid var(--line-thin);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.spec-agents-token-state-active {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+.spec-agents-token-state-expired,
+.spec-agents-token-state-revoked,
+.spec-agents-token-state-missing {
+  color: color-mix(in oklch, var(--fg) 55%, var(--bg));
+}
 .spec-agents-cell-action {
   display: flex;
   justify-content: flex-end;

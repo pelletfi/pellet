@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
-import { listConnectedAgents } from "@/lib/db/wallet-oauth-tokens";
+import { listConnectedAgents } from "@/lib/db/wallet-agent-connections";
 import { SpecimenConnectedAgents } from "./SpecimenConnectedAgents";
 
 export const metadata: Metadata = {
@@ -16,21 +16,23 @@ export default async function OliWalletAgentsPage() {
   const userId = await readUserSession();
   if (!userId) redirect("/oli/wallet/sign-in");
 
-  const tokens = await listConnectedAgents(userId);
+  const agents = await listConnectedAgents(userId);
 
   return (
     <SpecimenConnectedAgents
       basePath="/oli/wallet"
-      agents={tokens.map((t) => ({
-        id: t.id,
-        clientId: t.clientId,
-        clientName: t.clientName,
-        clientType: t.clientType,
-        scopes: t.scopes,
-        audience: t.audience,
-        createdAt: t.createdAt.toISOString(),
-        expiresAt: t.expiresAt.toISOString(),
-        lastUsedAt: t.lastUsedAt?.toISOString() ?? null,
+      agents={agents.map((agent) => ({
+        id: agent.id,
+        clientId: agent.clientId,
+        clientName: agent.clientName,
+        clientType: agent.clientType,
+        scopes: agent.scopes,
+        connectedAt: agent.connectedAt.toISOString(),
+        lastSeenAt: agent.lastSeenAt.toISOString(),
+        tokenExpiresAt: agent.tokenExpiresAt?.toISOString() ?? null,
+        tokenState: agent.tokenState,
+        activeTokenCount: agent.activeTokenCount,
+        webhookEnabled: agent.webhookEnabled,
       }))}
     />
   );

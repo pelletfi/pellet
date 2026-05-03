@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { oauthAccessTokens } from "@/lib/db/schema";
+import { touchAgentConnectionUse } from "@/lib/db/wallet-agent-connections";
 import type { ScopeName } from "./scopes";
 
 // Access tokens are 32 bytes of crypto-random data, base64url-encoded.
@@ -111,6 +112,12 @@ export async function validateAccessToken(
     .set({ lastUsedAt: new Date() })
     .where(eq(oauthAccessTokens.id, row.id))
     .catch(() => {});
+  void touchAgentConnectionUse({
+    userId: row.userId,
+    clientId: row.clientId,
+    tokenId: row.id,
+    sessionId: row.sessionId,
+  }).catch(() => {});
 
   return {
     tokenId: row.id,

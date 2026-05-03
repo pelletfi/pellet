@@ -4,10 +4,9 @@ import { db } from "@/lib/db/client";
 import { walletChatWebhookDeliveries } from "@/lib/db/schema";
 import type { WalletChatRow } from "@/lib/db/wallet-chat";
 
-// User-side chat messages are pushed to every distinct OAuth client
-// registered with a webhook_url for the message's user. One POST per
-// (user, client) pair, signed with the client's HMAC secret so the
-// receiver can verify authenticity.
+// User-side chat messages are pushed to every durable agent connection with a
+// webhook_url. One POST per (user, client) pair, signed with the client's HMAC
+// secret so the receiver can verify authenticity.
 //
 // Fire-and-forget: failures are logged but never block the bus or the
 // user's POST that triggered the message. A retry queue (mirroring the
@@ -37,9 +36,9 @@ async function findTargetsForUser(userId: string): Promise<WebhookTarget[]> {
   }>(sql`
     SELECT DISTINCT c.client_id, c.webhook_url, c.webhook_secret
     FROM oauth_clients c
-    JOIN oauth_access_tokens t ON t.client_id = c.client_id
-    WHERE t.user_id = ${userId}
-      AND t.revoked_at IS NULL
+    JOIN wallet_agent_connections cxn ON cxn.client_id = c.client_id
+    WHERE cxn.user_id = ${userId}
+      AND cxn.revoked_at IS NULL
       AND c.webhook_url IS NOT NULL
   `);
   return rows.rows.map((r) => ({

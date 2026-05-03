@@ -9,10 +9,12 @@ type Agent = {
   clientName: string;
   clientType: "cimd" | "pre" | "dynamic";
   scopes: string[];
-  audience: string;
-  createdAt: string;
-  expiresAt: string;
-  lastUsedAt: string | null;
+  connectedAt: string;
+  lastSeenAt: string;
+  tokenExpiresAt: string | null;
+  tokenState: "active" | "expired" | "revoked" | "missing";
+  activeTokenCount: number;
+  webhookEnabled: boolean;
 };
 
 function fmtAgo(iso: string | null): string {
@@ -27,7 +29,8 @@ function fmtAgo(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function fmtUntil(iso: string): string {
+function fmtUntil(iso: string | null): string {
+  if (!iso) return "none";
   const ms = new Date(iso).getTime() - Date.now();
   if (ms <= 0) return "expired";
   const s = Math.floor(ms / 1000);
@@ -43,6 +46,13 @@ function clientTypeLabel(t: Agent["clientType"]): string {
   if (t === "dynamic") return "DCR";
   if (t === "cimd") return "CIMD";
   return "PRE";
+}
+
+function tokenLabel(a: Agent): string {
+  if (a.tokenState === "active") return fmtUntil(a.tokenExpiresAt);
+  if (a.tokenState === "expired") return "expired";
+  if (a.tokenState === "revoked") return "revoked";
+  return "no token";
 }
 
 export function SpecimenConnectedAgents({
@@ -61,24 +71,24 @@ export function SpecimenConnectedAgents({
     [agents, revoked],
   );
 
-  async function revoke(tokenId: string) {
-    setRevoking((prev) => new Set(prev).add(tokenId));
+  async function revoke(agentId: string) {
+    setRevoking((prev) => new Set(prev).add(agentId));
     setError(null);
     try {
-      const res = await fetch(`/api/wallet/oauth/tokens/${tokenId}/revoke`, {
+      const res = await fetch(`/api/wallet/agents/${agentId}/revoke`, {
         method: "POST",
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? `failed (${res.status})`);
       }
-      setRevoked((prev) => new Set(prev).add(tokenId));
+      setRevoked((prev) => new Set(prev).add(agentId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "revoke failed");
     } finally {
       setRevoking((prev) => {
         const next = new Set(prev);
-        next.delete(tokenId);
+        next.delete(agentId);
         return next;
       });
     }
@@ -114,7 +124,7 @@ export function SpecimenConnectedAgents({
           <span>{visible.length}</span>
           <span className="spec-page-subhead-dot">·</span>
           <span className="spec-page-subhead-label">METHOD</span>
-          <span>OAuth 2.1 + PKCE</span>
+          <span>OAuth 2.1 + PKCE · durable registry</span>
         </div>
       </section>
 
@@ -134,8 +144,8 @@ export function SpecimenConnectedAgents({
             <span>AGENT</span>
             <span>SCOPES</span>
             <span>CONNECTED</span>
-            <span>LAST USED</span>
-            <span>EXPIRES</span>
+            <span>LAST SEEN</span>
+            <span>TOKEN</span>
             <span />
           </header>
           {visible.map((a) => (
@@ -150,27 +160,40 @@ export function SpecimenConnectedAgents({
                     {a.clientId.slice(0, 24)}
                     {a.clientId.length > 24 ? "…" : ""}
                   </span>
+                  {a.webhookEnabled && (
+                    <span className="spec-agents-id">WEBHOOK</span>
+                  )}
                 </span>
               </span>
               <span className="spec-agents-cell-scopes">
-                {a.scopes.map((s) => (
-                  <span key={s} className="spec-agents-scope">
-                    {s}
-                  </span>
-                ))}
+                {a.scopes.length === 0 ? (
+                  <span className="spec-agents-scope">none</span>
+                ) : (
+                  a.scopes.map((s) => (
+                    <span key={s} className="spec-agents-scope">
+                      {s}
+                    </span>
+                  ))
+                )}
               </span>
-              <span className="spec-agents-cell-time">{fmtAgo(a.createdAt)}</span>
+              <span className="spec-agents-cell-time">{fmtAgo(a.connectedAt)}</span>
               <span className="spec-agents-cell-time">
-                {fmtAgo(a.lastUsedAt)}
+                {fmtAgo(a.lastSeenAt)}
               </span>
-              <span className="spec-agents-cell-time">{fmtUntil(a.expiresAt)}</span>
+              <span className="spec-agents-cell-time spec-agents-token">
+                <span className={`spec-agents-token-state spec-agents-token-state-${a.tokenState}`}>
+                  {a.tokenState}
+                </span>
+                <span>{tokenLabel(a)}</span>
+                {a.activeTokenCount > 1 && <span>{a.activeTokenCount} active</span>}
+              </span>
               <span className="spec-agents-cell-action">
                 <button
                   type="button"
                   className="spec-agents-revoke"
                   disabled={revoking.has(a.id)}
                   onClick={() => void revoke(a.id)}
-                  title="Revoke this token. The agent will need to re-authorize via OAuth."
+                  title="Disconnect this agent and revoke its OAuth tokens."
                 >
                   {revoking.has(a.id) ? "…" : "REVOKE"}
                 </button>

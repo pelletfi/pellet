@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
-import { listConnectedAgents } from "@/lib/db/wallet-oauth-tokens";
+import { listConnectedAgents } from "@/lib/db/wallet-agent-connections";
 import { SpecimenOnboardConnect } from "./SpecimenOnboardConnect";
 
 export const metadata: Metadata = {
