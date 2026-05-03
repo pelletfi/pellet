@@ -1,4 +1,5 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   oauthAccessTokens,
@@ -135,9 +136,38 @@ function clientType(value: string): ClientType {
   return "dynamic";
 }
 
-export async function listConnectedAgents(
-  userId: string,
-): Promise<ConnectedAgent[]> {
+function mapConnectedAgentRows(rows: ConnectedAgentRow[]): ConnectedAgent[] {
+  return rows.map((row) => {
+    const scopes = row.token_scopes?.length
+      ? row.token_scopes
+      : row.last_scopes ?? [];
+    const connectedAt = toDate(row.connected_at) ?? new Date(0);
+    const lastSeenAt = toDate(row.token_last_used_at) ?? toDate(row.last_seen_at) ?? connectedAt;
+    const tokenCreatedAt = toDate(row.token_created_at);
+    const tokenExpiresAt = toDate(row.token_expires_at);
+    const tokenLastUsedAt = toDate(row.token_last_used_at);
+    return {
+      id: row.id,
+      clientId: row.client_id,
+      clientName: row.client_name,
+      clientType: clientType(row.client_type),
+      scopes: scopes as ScopeName[],
+      audience: row.token_audience ?? row.last_audience,
+      connectedAt,
+      lastSeenAt,
+      tokenId: row.token_id,
+      tokenCreatedAt,
+      tokenExpiresAt,
+      tokenLastUsedAt,
+      tokenState: tokenState(row, tokenExpiresAt),
+      activeTokenCount: Number(row.active_token_count ?? 0),
+      webhookEnabled: row.webhook_enabled,
+      sessionId: row.last_session_id,
+    };
+  });
+}
+
+async function connectedAgentsByWhere(whereSql: SQL): Promise<ConnectedAgent[]> {
   const rows = await db.execute<ConnectedAgentRow>(sql`
     SELECT
       cxn.id,
@@ -169,39 +199,56 @@ export async function listConnectedAgents(
         AND at.revoked_at IS NULL
         AND at.expires_at > now()
     ) active ON true
-    WHERE cxn.user_id = ${userId}
-      AND cxn.revoked_at IS NULL
+    WHERE ${whereSql}
     ORDER BY cxn.last_seen_at DESC, cxn.connected_at DESC
   `);
 
-  return rows.rows.map((row) => {
-    const scopes = row.token_scopes?.length
-      ? row.token_scopes
-      : row.last_scopes ?? [];
-    const connectedAt = toDate(row.connected_at) ?? new Date(0);
-    const lastSeenAt = toDate(row.token_last_used_at) ?? toDate(row.last_seen_at) ?? connectedAt;
-    const tokenCreatedAt = toDate(row.token_created_at);
-    const tokenExpiresAt = toDate(row.token_expires_at);
-    const tokenLastUsedAt = toDate(row.token_last_used_at);
-    return {
-      id: row.id,
-      clientId: row.client_id,
-      clientName: row.client_name,
-      clientType: clientType(row.client_type),
-      scopes: scopes as ScopeName[],
-      audience: row.token_audience ?? row.last_audience,
-      connectedAt,
-      lastSeenAt,
-      tokenId: row.token_id,
-      tokenCreatedAt,
-      tokenExpiresAt,
-      tokenLastUsedAt,
-      tokenState: tokenState(row, tokenExpiresAt),
-      activeTokenCount: Number(row.active_token_count ?? 0),
-      webhookEnabled: row.webhook_enabled,
-      sessionId: row.last_session_id,
-    };
-  });
+  return mapConnectedAgentRows(rows.rows);
+}
+
+export async function listConnectedAgents(
+  userId: string,
+): Promise<ConnectedAgent[]> {
+  return connectedAgentsByWhere(sql`
+    cxn.user_id = ${userId}
+    AND cxn.revoked_at IS NULL
+  `);
+}
+
+export async function getConnectedAgent(input: {
+  userId: string;
+  connectionId: string;
+}): Promise<ConnectedAgent | null> {
+  const rows = await connectedAgentsByWhere(sql`
+    cxn.user_id = ${input.userId}
+    AND cxn.id = ${input.connectionId}
+    AND cxn.revoked_at IS NULL
+  `);
+  return rows[0] ?? null;
+}
+
+export async function getConnectedAgentForClient(input: {
+  userId: string;
+  clientId: string;
+}): Promise<ConnectedAgent | null> {
+  const rows = await connectedAgentsByWhere(sql`
+    cxn.user_id = ${input.userId}
+    AND cxn.client_id = ${input.clientId}
+    AND cxn.revoked_at IS NULL
+  `);
+  return rows[0] ?? null;
+}
+
+export async function getConnectedAgentForSession(input: {
+  userId: string;
+  sessionId: string;
+}): Promise<ConnectedAgent | null> {
+  const rows = await connectedAgentsByWhere(sql`
+    cxn.user_id = ${input.userId}
+    AND cxn.last_session_id = ${input.sessionId}
+    AND cxn.revoked_at IS NULL
+  `);
+  return rows[0] ?? null;
 }
 
 export async function revokeAgentConnection(input: {

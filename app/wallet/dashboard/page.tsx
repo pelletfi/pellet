@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WalletDashboardPage() {
-  return renderDashboard("/wallet");
+  redirect("/wallet");
 }
 
 /**

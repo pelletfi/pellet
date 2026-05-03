@@ -1,16 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 type ChatMessage = {
   id: string;
+  connectionId: string | null;
+  clientId: string | null;
   sessionId: string | null;
   sender: "agent" | "user" | "system";
   kind: "status" | "question" | "approval_request" | "reply" | "report";
   content: string;
   intentId: string | null;
   ts: string;
+};
+
+type ChatAgent = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientType: "cimd" | "pre" | "dynamic";
+  tokenState: "active" | "expired" | "revoked" | "missing";
+  webhookEnabled: boolean;
+  lastSeenAt: string;
 };
 
 const MAX_MESSAGES = 500;
@@ -35,11 +47,30 @@ function shortSession(id: string | null): string {
   return id.slice(0, 8);
 }
 
+function shortClient(id: string): string {
+  return id.length > 14 ? `${id.slice(0, 14)}…` : id;
+}
+
+function fmtAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
 export function SpecimenWalletChat({
   basePath,
+  agents,
+  selectedAgentId,
   initialMessages,
 }: {
   basePath: string;
+  agents: ChatAgent[];
+  selectedAgentId: string | null;
   initialMessages: ChatMessage[];
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -47,15 +78,35 @@ export function SpecimenWalletChat({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  // typing — sessionId of the agent currently composing, or null. Wired to
-  // a server signal in a follow-up commit; for now stays null.
+  // typing — connectionId/sessionId of the agent currently composing, or null.
   const [typingAgent, setTypingAgent] = useState<string | null>(null);
   const seen = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)));
   const tailRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const selectedAgent = useMemo(
+    () => agents.find((agent) => agent.id === selectedAgentId) ?? null,
+    [agents, selectedAgentId],
+  );
+  const agentNameByConnection = useMemo(() => {
+    const map = new Map<string, string>();
+    agents.forEach((agent) => map.set(agent.id, agent.clientName));
+    return map;
+  }, [agents]);
+
   useEffect(() => {
-    const es = new EventSource("/api/wallet/chat/stream");
+    setMessages(initialMessages);
+    seen.current = new Set(initialMessages.map((m) => m.id));
+    setTypingAgent(null);
+    setSendError(null);
+    setInput("");
+  }, [initialMessages, selectedAgentId]);
+
+  useEffect(() => {
+    const query = selectedAgentId
+      ? `?agent=${encodeURIComponent(selectedAgentId)}`
+      : "";
+    const es = new EventSource(`/api/wallet/chat/stream${query}`);
     es.onopen = () => setConnected(true);
     es.onmessage = (msg) => {
       try {
@@ -67,7 +118,11 @@ export function SpecimenWalletChat({
           return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
         });
         // A new message from this agent ends its "typing" state.
-        setTypingAgent((prev) => (prev === wire.sessionId ? null : prev));
+        setTypingAgent((prev) =>
+          prev && (prev === wire.connectionId || prev === wire.sessionId)
+            ? null
+            : prev,
+        );
       } catch {
         // malformed payload — skip
       }
@@ -77,8 +132,12 @@ export function SpecimenWalletChat({
     es.addEventListener("typing", (msg) => {
       try {
         const evt = msg as MessageEvent;
-        const wire = JSON.parse(evt.data) as { sessionId: string; ts: string };
-        setTypingAgent(wire.sessionId);
+        const wire = JSON.parse(evt.data) as {
+          connectionId: string | null;
+          sessionId: string;
+          ts: string;
+        };
+        setTypingAgent(wire.connectionId ?? wire.sessionId);
       } catch {
         /* skip */
       }
@@ -91,7 +150,7 @@ export function SpecimenWalletChat({
       es.close();
       setConnected(false);
     };
-  }, []);
+  }, [selectedAgentId]);
 
   // Auto-clear stale typing indicator. Each typing signal resets the
   // timer; if no new signal or message arrives within 8s, hide it.
@@ -117,7 +176,7 @@ export function SpecimenWalletChat({
       const res = await fetch("/api/wallet/chat/reply", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, agentId: selectedAgentId }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -141,6 +200,17 @@ export function SpecimenWalletChat({
       void sendReply();
     }
   }
+
+  function senderLabel(m: ChatMessage): string {
+    if (m.sender === "user") return "you";
+    if (m.sender === "system") return "system";
+    if (m.connectionId) {
+      return agentNameByConnection.get(m.connectionId) ?? `agent:${m.connectionId.slice(0, 8)}`;
+    }
+    return `agent:${shortSession(m.sessionId)}`;
+  }
+
+  const canReply = Boolean(selectedAgent);
 
   return (
     <>
@@ -175,19 +245,65 @@ export function SpecimenWalletChat({
           <span className="spec-page-subhead-label">STATUS</span>
           <span>{connected ? "live · streaming" : "connecting…"}</span>
           <span className="spec-page-subhead-dot">·</span>
+          <span className="spec-page-subhead-label">THREAD</span>
+          <span>{selectedAgent?.clientName ?? "no agent selected"}</span>
+          <span className="spec-page-subhead-dot">·</span>
           <span className="spec-page-subhead-label">MESSAGES</span>
           <span>{messages.length}</span>
         </div>
       </section>
 
       <div className="spec-chat-container">
+        <aside className="spec-chat-agents" aria-label="Agent threads">
+          <div className="spec-chat-agents-head">
+            <span>AGENT THREADS</span>
+            <Link href={`${basePath}/onboard`}>CONNECT</Link>
+          </div>
+          {agents.length === 0 ? (
+            <div className="spec-chat-agents-empty">no connected agents</div>
+          ) : (
+            <ol className="spec-chat-agent-list">
+              {agents.map((agent) => (
+                <li key={agent.id}>
+                  <Link
+                    className={`spec-chat-agent-link${
+                      agent.id === selectedAgentId ? " spec-chat-agent-link-active" : ""
+                    }`}
+                    href={`${basePath}/chat?agent=${agent.id}`}
+                  >
+                    <span className="spec-chat-agent-name">{agent.clientName}</span>
+                    <span className="spec-chat-agent-meta">
+                      <span>{shortClient(agent.clientId)}</span>
+                      <span>·</span>
+                      <span>{agent.tokenState}</span>
+                      {agent.webhookEnabled && (
+                        <>
+                          <span>·</span>
+                          <span>webhook</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="spec-chat-agent-seen">
+                      last seen {fmtAgo(agent.lastSeenAt)} ago
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          )}
+        </aside>
+
+        <div className="spec-chat-main">
         <section className="spec-chat-pane" aria-label="Agent chat thread">
           {messages.length === 0 ? (
             <div className="spec-chat-empty">
-              <span className="spec-chat-empty-label">no messages yet</span>
+              <span className="spec-chat-empty-label">
+                {selectedAgent ? "no messages yet" : "no agent connected"}
+              </span>
               <span className="spec-chat-empty-hint">
-                pair an agent to start a thread. agents post status updates,
-                approval requests, and reports here in real time.
+                {selectedAgent
+                  ? `${selectedAgent.clientName} can post status updates, approval requests, and reports here in real time.`
+                  : "connect an AI client to start a wallet-native chat thread."}
               </span>
             </div>
           ) : (
@@ -202,11 +318,7 @@ export function SpecimenWalletChat({
                     <span className="spec-chat-time">{formatTime(m.ts)}</span>
                     <span className="spec-chat-sep">·</span>
                     <span className="spec-chat-sender">
-                      {m.sender === "agent"
-                        ? `agent:${shortSession(m.sessionId)}`
-                        : m.sender === "user"
-                          ? "you"
-                          : m.sender}
+                      {senderLabel(m)}
                     </span>
                     <span className="spec-chat-sep">·</span>
                     <span className={`spec-chat-kind spec-chat-kind-${m.kind}`}>
@@ -222,7 +334,7 @@ export function SpecimenWalletChat({
             <div
               className="spec-chat-typing"
               role="status"
-              aria-label={`agent ${shortSession(typingAgent)} is composing`}
+              aria-label={`${selectedAgent?.clientName ?? shortSession(typingAgent)} is composing`}
             >
               <span className="spec-chat-typing-dot" />
               <span className="spec-chat-typing-dot" />
@@ -249,13 +361,13 @@ export function SpecimenWalletChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              disabled={sending}
+              disabled={sending || !canReply}
               aria-label="Type a reply"
             />
             <button
               type="submit"
               className="spec-chat-send"
-              disabled={sending || input.trim().length === 0}
+              disabled={sending || !canReply || input.trim().length === 0}
               title="Send (Enter)"
             >
               {sending ? "…" : "SEND"}
@@ -267,6 +379,7 @@ export function SpecimenWalletChat({
             </span>
           )}
         </form>
+        </div>
       </div>
     </>
   );

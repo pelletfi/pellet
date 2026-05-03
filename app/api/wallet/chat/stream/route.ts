@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { bus, type WalletChatRow } from "@/lib/realtime/bus";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { recentChatMessages } from "@/lib/db/wallet-chat";
+import { getConnectedAgent } from "@/lib/db/wallet-agent-connections";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,8 @@ export const maxDuration = 60;
 
 type SSEPayload = {
   id: string;
+  connectionId: string | null;
+  clientId: string | null;
   sessionId: string | null;
   sender: WalletChatRow["sender"];
   kind: WalletChatRow["kind"];
@@ -36,6 +39,8 @@ type SSEPayload = {
 function toPayload(r: WalletChatRow): SSEPayload {
   return {
     id: r.id,
+    connectionId: r.connectionId,
+    clientId: r.clientId,
     sessionId: r.sessionId,
     sender: r.sender,
     kind: r.kind,
@@ -46,14 +51,26 @@ function toPayload(r: WalletChatRow): SSEPayload {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const userId = await readUserSession();
   if (!userId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const { searchParams } = new URL(req.url);
+  const requestedConnectionId = searchParams.get("agent") ?? searchParams.get("connectionId");
+  const connection = requestedConnectionId
+    ? await getConnectedAgent({ userId, connectionId: requestedConnectionId })
+    : null;
+  if (requestedConnectionId && !connection) {
+    return NextResponse.json(
+      { error: "agent connection not found" },
+      { status: 404 },
+    );
+  }
 
   await bus().start();
   const encoder = new TextEncoder();
+  let cleanup: () => void = () => {};
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -66,11 +83,14 @@ export async function GET() {
       };
 
       // Initial paint: last 50 messages, oldest first.
-      const recent = await recentChatMessages(userId, 50);
+      const recent = await recentChatMessages(userId, 50, {
+        connectionId: connection?.id ?? null,
+      });
       for (const r of recent.reverse()) send(toPayload(r));
 
       const onMessage = (row: WalletChatRow) => {
         if (row.userId !== userId) return;
+        if (connection && row.connectionId !== connection.id) return;
         send(toPayload(row));
       };
       bus().on("chat-message", onMessage);
@@ -78,12 +98,22 @@ export async function GET() {
       // Typing pings — named SSE event 'typing' so the client can wire
       // a separate handler. Payload is { sessionId, ts } so the UI can
       // attribute which agent is composing.
-      const onTyping = (t: { userId: string; sessionId: string; ts: string }) => {
+      const onTyping = (t: {
+        userId: string;
+        connectionId: string | null;
+        sessionId: string;
+        ts: string;
+      }) => {
         if (t.userId !== userId) return;
+        if (connection && t.connectionId !== connection.id) return;
         try {
           controller.enqueue(
             encoder.encode(
-              `event: typing\ndata: ${JSON.stringify({ sessionId: t.sessionId, ts: t.ts })}\n\n`,
+              `event: typing\ndata: ${JSON.stringify({
+                connectionId: t.connectionId,
+                sessionId: t.sessionId,
+                ts: t.ts,
+              })}\n\n`,
             ),
           );
         } catch {
@@ -102,18 +132,21 @@ export async function GET() {
         }
       }, 25_000);
 
-      const cleanup = () => {
+      cleanup = () => {
         clearInterval(heartbeat);
         bus().off("chat-message", onMessage);
         bus().off("chat-typing", onTyping);
+        req.signal.removeEventListener("abort", cleanup);
         try {
           controller.close();
         } catch {
           /* noop */
         }
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (controller as any).signal?.addEventListener?.("abort", cleanup);
+      req.signal.addEventListener("abort", cleanup, { once: true });
+    },
+    cancel() {
+      cleanup();
     },
   });
 

@@ -4,9 +4,9 @@ import { db } from "@/lib/db/client";
 import { walletChatWebhookDeliveries } from "@/lib/db/schema";
 import type { WalletChatRow } from "@/lib/db/wallet-chat";
 
-// User-side chat messages are pushed to every durable agent connection with a
-// webhook_url. One POST per (user, client) pair, signed with the client's HMAC
-// secret so the receiver can verify authenticity.
+// User-side chat messages are pushed to the durable agent connection they are
+// addressed to. Unscoped legacy replies fan out to every connected webhook so
+// old clients keep working.
 //
 // Fire-and-forget: failures are logged but never block the bus or the
 // user's POST that triggered the message. A retry queue (mirroring the
@@ -48,10 +48,37 @@ async function findTargetsForUser(userId: string): Promise<WebhookTarget[]> {
   }));
 }
 
+async function findTargetForClient(
+  userId: string,
+  clientId: string,
+): Promise<WebhookTarget[]> {
+  const rows = await db.execute<{
+    client_id: string;
+    webhook_url: string;
+    webhook_secret: string | null;
+  }>(sql`
+    SELECT c.client_id, c.webhook_url, c.webhook_secret
+    FROM oauth_clients c
+    JOIN wallet_agent_connections cxn ON cxn.client_id = c.client_id
+    WHERE cxn.user_id = ${userId}
+      AND cxn.client_id = ${clientId}
+      AND cxn.revoked_at IS NULL
+      AND c.webhook_url IS NOT NULL
+    LIMIT 1
+  `);
+  return rows.rows.map((r) => ({
+    clientId: r.client_id,
+    url: r.webhook_url,
+    secret: r.webhook_secret,
+  }));
+}
+
 function buildPayload(row: WalletChatRow) {
   return {
     type: "chat.message" as const,
     userId: row.userId,
+    connectionId: row.connectionId,
+    clientId: row.clientId,
     sessionId: row.sessionId,
     message: {
       id: row.id,
@@ -98,7 +125,9 @@ export async function dispatchUserChatToWebhooks(row: WalletChatRow): Promise<vo
   // replies; we don't echo agent messages back to themselves).
   if (row.sender !== "user") return;
 
-  const targets = await findTargetsForUser(row.userId);
+  const targets = row.clientId
+    ? await findTargetForClient(row.userId, row.clientId)
+    : await findTargetsForUser(row.userId);
   if (targets.length === 0) return;
 
   const payload = buildPayload(row);

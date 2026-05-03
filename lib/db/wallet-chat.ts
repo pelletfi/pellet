@@ -5,6 +5,8 @@ import { walletChatMessages } from "@/lib/db/schema";
 export type WalletChatRow = {
   id: string;
   userId: string;
+  connectionId: string | null;
+  clientId: string | null;
   sessionId: string | null;
   sender: "agent" | "user" | "system";
   kind: "status" | "question" | "approval_request" | "reply" | "report";
@@ -18,6 +20,8 @@ function toRow(r: typeof walletChatMessages.$inferSelect): WalletChatRow {
   return {
     id: r.id,
     userId: r.userId,
+    connectionId: r.connectionId,
+    clientId: r.clientId,
     sessionId: r.sessionId,
     sender: r.sender as WalletChatRow["sender"],
     kind: r.kind as WalletChatRow["kind"],
@@ -40,11 +44,18 @@ export async function getChatMessageById(id: string): Promise<WalletChatRow | nu
 export async function recentChatMessages(
   userId: string,
   limit = 100,
+  opts: { connectionId?: string | null } = {},
 ): Promise<WalletChatRow[]> {
+  const where = opts.connectionId
+    ? and(
+        eq(walletChatMessages.userId, userId),
+        eq(walletChatMessages.connectionId, opts.connectionId),
+      )
+    : eq(walletChatMessages.userId, userId);
   const rows = await db
     .select()
     .from(walletChatMessages)
-    .where(eq(walletChatMessages.userId, userId))
+    .where(where)
     .orderBy(desc(walletChatMessages.createdAt))
     .limit(limit);
   return rows.map(toRow);
@@ -52,6 +63,8 @@ export async function recentChatMessages(
 
 export async function insertChatMessage(input: {
   userId: string;
+  connectionId?: string | null;
+  clientId?: string | null;
   sessionId: string | null;
   sender: WalletChatRow["sender"];
   kind: WalletChatRow["kind"];
@@ -63,6 +76,8 @@ export async function insertChatMessage(input: {
     .insert(walletChatMessages)
     .values({
       userId: input.userId,
+      connectionId: input.connectionId ?? null,
+      clientId: input.clientId ?? null,
       sessionId: input.sessionId,
       sender: input.sender,
       kind: input.kind,

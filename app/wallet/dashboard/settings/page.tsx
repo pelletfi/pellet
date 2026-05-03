@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-  return renderSettings("/wallet");
+  redirect("/wallet");
 }
 
 export async function renderSettings(basePath: string) {

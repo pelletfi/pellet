@@ -16,8 +16,8 @@ import { type McpAuthInfo, requireScope } from "@/lib/mcp/auth";
 //                                    UI shows pulsing dots until next message
 //                                    or 8s timeout
 //
-// All require wallet:chat scope. Posts are tagged with the agent's session
-// id (from the OAuth token) so the wallet UI can group by agent.
+// All require wallet:chat scope. Posts are tagged with the durable OAuth
+// client connection so the wallet UI can keep one lane per BYOA agent.
 
 const KIND_VALUES = ["status", "question", "approval_request", "reply", "report"] as const;
 type Kind = (typeof KIND_VALUES)[number];
@@ -59,6 +59,8 @@ export function registerThreadTools(
 
       const row = await insertChatMessage({
         userId: auth.user.id,
+        connectionId: auth.connection?.id ?? null,
+        clientId: auth.token.clientId,
         sessionId: auth.session?.id ?? null,
         sender: "agent",
         kind: kind as Kind,
@@ -102,7 +104,9 @@ export function registerThreadTools(
       }
       requireScope(auth, "wallet:chat");
 
-      const rows = await recentChatMessages(auth.user.id, limit);
+      const rows = await recentChatMessages(auth.user.id, limit, {
+        connectionId: auth.connection?.id ?? null,
+      });
       const summary = rows
         .map(
           (r) =>
@@ -142,13 +146,17 @@ export function registerThreadTools(
         };
       }
       requireScope(auth, "wallet:chat");
-      if (!auth.session) {
+      if (!auth.connection && !auth.session) {
         return {
           isError: true,
-          content: [{ type: "text", text: "no session linked to this token" }],
+          content: [{ type: "text", text: "no agent connection linked to this token" }],
         };
       }
-      const payload = `${auth.user.id}:${auth.session.id}`;
+      const payload = [
+        auth.user.id,
+        auth.connection?.id ?? "",
+        auth.session?.id ?? "",
+      ].join(":");
       await db.execute(sql`SELECT pg_notify('wallet_chat_typing', ${payload})`);
       return {
         content: [{ type: "text", text: "typing signal sent" }],
@@ -160,6 +168,8 @@ export function registerThreadTools(
 function toWire(r: WalletChatRow) {
   return {
     id: r.id,
+    connectionId: r.connectionId,
+    clientId: r.clientId,
     sessionId: r.sessionId,
     sender: r.sender,
     kind: r.kind,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { requireSession } from "@/lib/wallet/bearer-auth";
+import { getConnectedAgentForSession } from "@/lib/db/wallet-agent-connections";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,8 +22,12 @@ export async function POST(req: Request) {
   const resolved = await requireSession(req);
   if (resolved instanceof NextResponse) return resolved;
   const { session, user } = resolved;
+  const connection = await getConnectedAgentForSession({
+    userId: user.id,
+    sessionId: session.id,
+  });
 
-  const payload = `${user.id}:${session.id}`;
+  const payload = [user.id, connection?.id ?? "", session.id].join(":");
   // pg_notify directly — no row, just the wire signal.
   await db.execute(sql`SELECT pg_notify('wallet_chat_typing', ${payload})`);
 

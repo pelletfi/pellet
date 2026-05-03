@@ -14,12 +14,13 @@ import { dispatchUserChatToWebhooks } from "@/lib/wallet/chat-webhook-dispatcher
 //   * 'agent_events'       — public OLI feed (table-trigger backed)
 //   * 'wallet_chat'        — in-wallet messages (table-trigger backed)
 //   * 'wallet_chat_typing' — ephemeral typing pings (no row; fired directly
-//                            by /api/wallet/chat/typing). Payload format
-//                            is "userId:sessionId" so SSE handlers can
-//                            filter by user.
+//                            by chat routes/tools). Payload format is
+//                            "userId:connectionId:sessionId" so SSE handlers
+//                            can filter by user + agent.
 
 export type WalletChatTyping = {
   userId: string;
+  connectionId: string | null;
   sessionId: string;
   ts: string;
 };
@@ -68,10 +69,14 @@ class Bus extends EventEmitter {
         return;
       }
       if (msg.channel === "wallet_chat_typing") {
-        const [userId, sessionId] = msg.payload.split(":");
-        if (!userId || !sessionId) return;
+        const [userId, second, third] = msg.payload.split(":");
+        if (!userId) return;
+        const connectionId = third === undefined ? null : second || null;
+        const sessionId = third === undefined ? second : third || "";
+        if (!connectionId && !sessionId) return;
         this.emit("chat-typing", {
           userId,
+          connectionId,
           sessionId,
           ts: new Date().toISOString(),
         } as WalletChatTyping);

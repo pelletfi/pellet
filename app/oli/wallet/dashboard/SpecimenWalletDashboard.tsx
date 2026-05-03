@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
 import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
 
 type User = {
@@ -41,15 +42,17 @@ type Payment = {
   createdAt: string;
 };
 
-const EXPLORER = "https://explore.testnet.tempo.xyz";
-
-function shortAddr(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
-
-function shortHash(h: string): string {
-  return `${h.slice(0, 6)}…${h.slice(-4)}`;
-}
+type Agent = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientType: string;
+  scopes: string[];
+  tokenState: string;
+  lastSeenAt: string;
+  webhookEnabled: boolean;
+  sessionId: string | null;
+};
 
 function fmtUsd(n: number, max = 2): string {
   if (!Number.isFinite(n)) return "$0";
@@ -61,6 +64,11 @@ function fmtUsdCompact(n: number): string {
   if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
   if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
   return fmtUsd(n);
+}
+
+function pct(used: number, cap: number): number {
+  if (!Number.isFinite(used) || !Number.isFinite(cap) || cap <= 0) return 0;
+  return Math.max(0, Math.min(100, (used / cap) * 100));
 }
 
 function timeAgo(iso: string): string {
@@ -98,6 +106,7 @@ export function SpecimenWalletDashboard({
   balances,
   sessions,
   payments,
+  agents,
   basePath = "/oli/wallet",
 }: {
   user: User;
@@ -105,6 +114,7 @@ export function SpecimenWalletDashboard({
   chart: ChartPoint[];
   sessions: Session[];
   payments: Payment[];
+  agents: Agent[];
   basePath?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -126,20 +136,48 @@ export function SpecimenWalletDashboard({
     (p) => now - new Date(p.createdAt).getTime() <= ms30d,
   ).length;
   const sent30dAvg = sent30dCount > 0 ? sent30d / sent30dCount : 0;
+  const ms7d = 7 * 24 * 3600 * 1000;
+  const signedPayments7d = payments.filter(
+    (p) => now - new Date(p.createdAt).getTime() <= ms7d,
+  );
 
   const activeSessions = sessions.filter((s) => sessionState(s) === "active");
   const pendingSessions = sessions.filter((s) => sessionState(s) === "pending");
+  const revokedOrExpired = sessions.filter((s) => {
+    const state = sessionState(s);
+    return state === "revoked" || state === "expired";
+  });
+  const failed7d = signedPayments7d.filter((p) =>
+    ["failed", "rejected"].includes(p.status.toLowerCase()),
+  ).length;
+  const allowanceCap = activeSessions.reduce(
+    (acc, s) => acc + Number(s.spendCapWei) / 1_000_000,
+    0,
+  );
+  const allowanceUsed = activeSessions.reduce(
+    (acc, s) => acc + Number(s.spendUsedWei) / 1_000_000,
+    0,
+  );
+  const allowanceRemaining = Math.max(0, allowanceCap - allowanceUsed);
+  const lastSpend = settled[0] ?? payments[0] ?? null;
+  const nextExpiring = activeSessions
+    .slice()
+    .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime())[0];
+  const connectedAgents = agents.filter((agent) => agent.tokenState !== "revoked");
+  const healthState =
+    activeSessions.length === 0
+      ? "setup needed"
+      : failed7d > 0
+        ? "review"
+        : pendingSessions.length > 0
+          ? "pending"
+          : "safe";
 
   const passkeyLabel = user.displayName?.trim() || "iCloud Keychain";
   const pairedDevices: string[] = user.displayName?.trim()
     ? [user.displayName.trim()]
     : ["this device"];
   const pairedCount = pairedDevices.length;
-
-  const ms7d = 7 * 24 * 3600 * 1000;
-  const signedPayments7d = payments.filter(
-    (p) => now - new Date(p.createdAt).getTime() <= ms7d,
-  );
 
   const copyAddress = async () => {
     try {
@@ -176,6 +214,7 @@ export function SpecimenWalletDashboard({
             <span>Wallet</span>
           </h1>
           <div className="spec-switch" role="group" aria-label="Wallet actions">
+            <span className="spec-switch-seg spec-switch-seg-active">DASHBOARD</span>
             <Link
               className="spec-switch-seg"
               href={`${basePath}/onboard`}
@@ -198,7 +237,7 @@ export function SpecimenWalletDashboard({
               AGENTS
             </Link>
             <Link
-              className="spec-switch-seg spec-switch-seg-active"
+              className="spec-switch-seg"
               href={`${basePath}/dashboard/settings`}
               title="Wallet settings"
             >
@@ -237,6 +276,37 @@ export function SpecimenWalletDashboard({
           <span>
             {pairedCount} {pairedCount === 1 ? "device" : "devices"}
           </span>
+        </div>
+      </section>
+
+      <section className="spec-wallet-health" aria-label="Wallet health">
+        <div className={`spec-wallet-health-state spec-wallet-health-state-${healthState.replace(" ", "-")}`}>
+          <span className="spec-wallet-health-dot" />
+          <span>{healthState}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">ACTIVE KEYS</span>
+          <span>{activeSessions.length}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">AGENTS</span>
+          <span>{connectedAgents.length}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">ALLOWANCE LEFT</span>
+          <span>{fmtUsdCompact(allowanceRemaining)}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">LAST SPEND</span>
+          <span>{lastSpend ? timeAgo(lastSpend.createdAt) : "none"}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">NEXT EXPIRY</span>
+          <span>{nextExpiring ? expiryIn(nextExpiring.expiresAt) : "none"}</span>
+        </div>
+        <div className="spec-wallet-health-item">
+          <span className="spec-wallet-health-label">PENDING</span>
+          <span>{pendingSessions.length}</span>
         </div>
       </section>
 
@@ -306,9 +376,11 @@ export function SpecimenWalletDashboard({
         <ActivityColumn payments={signedPayments7d} basePath={basePath} />
         <RightRail
           sessions={sessions}
+          agents={connectedAgents}
           basePath={basePath}
           revoking={revoking}
           onRevoke={onRevoke}
+          expiredCount={revokedOrExpired.length}
         />
       </section>
     </>
@@ -354,7 +426,7 @@ function ActivityColumn({
           <div className="spec-activity-head">
             <span style={{ width: 80, flexShrink: 0 }}>WHEN</span>
             <span style={{ width: 92, flexShrink: 0 }}>TX</span>
-            <span style={{ flex: 1, minWidth: 0 }}>MEMO / SERVICE</span>
+            <span style={{ flex: 1, minWidth: 0 }}>PAYMENT / POLICY</span>
             <span style={{ width: 86, flexShrink: 0 }} className="spec-cell-r">
               SESSION
             </span>
@@ -376,20 +448,27 @@ function ActivityColumn({
 
 function RightRail({
   sessions,
+  agents,
   basePath,
   revoking,
   onRevoke,
+  expiredCount,
 }: {
   sessions: Session[];
+  agents: Agent[];
   basePath: string;
   revoking: string | null;
   onRevoke: (id: string) => void;
+  expiredCount: number;
 }) {
   const active = sessions.filter((s) => sessionState(s) === "active");
   const pending = sessions.filter((s) => sessionState(s) === "pending");
   const visibleActive = active.slice(0, 4);
+  const primaryAgent = agents[0] ?? null;
   return (
     <div className="spec-col-rail">
+      <AgentIdentityCard agent={primaryAgent} basePath={basePath} />
+
       <div className="spec-col-head">
         <span className="spec-col-head-left">ACTIVE SESSION KEYS</span>
         <span className="spec-col-head-right">
@@ -397,6 +476,11 @@ function RightRail({
             <span style={{ opacity: 0.55 }}>QUOTA</span>{" "}
             {active.length} / {sessions.length}
           </span>
+          {expiredCount > 0 && (
+            <span>
+              <span style={{ opacity: 0.55 }}>INACTIVE</span> {expiredCount}
+            </span>
+          )}
         </span>
       </div>
 
@@ -411,25 +495,44 @@ function RightRail({
           const cap = Number(s.spendCapWei) / 1_000_000;
           const used = Number(s.spendUsedWei) / 1_000_000;
           const perCall = Number(s.perCallCapWei) / 1_000_000;
+          const remaining = Math.max(0, cap - used);
+          const usage = pct(used, cap);
+          const agent = agents.find((a) => a.sessionId === s.id);
           return (
             <div key={s.id} className="spec-session-card">
               <div className="spec-session-top">
-                <Link
-                  href={`${basePath}/dashboard/sessions/${s.id}`}
-                  style={{ fontSize: 13 }}
-                >
-                  {s.label ?? s.id.slice(0, 8)}
-                </Link>
+                <span className="spec-session-name-stack">
+                  <Link href={`${basePath}/dashboard/sessions/${s.id}`}>
+                    {s.label ?? s.id.slice(0, 8)}
+                  </Link>
+                  {agent && (
+                    <Link
+                      href={`${basePath}/chat?agent=${agent.id}`}
+                      className="spec-session-agent-link"
+                    >
+                      {agent.clientName}
+                    </Link>
+                  )}
+                </span>
                 <span className="spec-pill">[ ACTIVE ]</span>
+              </div>
+              <div className="spec-session-usage">
+                <div className="spec-session-usage-row">
+                  <span>{fmtUsd(remaining, 4)} remaining</span>
+                  <span>{usage.toFixed(0)}% used</span>
+                </div>
+                <div className="spec-session-progress" aria-hidden="true">
+                  <span style={{ width: `${usage}%` }} />
+                </div>
               </div>
               <div className="spec-meta-grid">
                 <span className="spec-meta-label">issued</span>
                 <span>{timeAgo(s.createdAt)}</span>
                 <span className="spec-meta-label">expires</span>
-                <span>{expiryIn(s.expiresAt)}</span>
-                <span className="spec-meta-label">scope</span>
+                <span>in {expiryIn(s.expiresAt)}</span>
+                <span className="spec-meta-label">per call</span>
                 <span>≤ {fmtUsd(perCall, 4)} / call</span>
-                <span className="spec-meta-label">used</span>
+                <span className="spec-meta-label">total cap</span>
                 <span>
                   {fmtUsd(used, 4)} / {fmtUsd(cap)}
                 </span>

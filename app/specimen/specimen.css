@@ -772,6 +772,9 @@ body:has(.specimen-shell) main {
   border-bottom: 1px solid var(--line);
   margin: 0 32px;
 }
+.spec-wallet-health + .spec-strip {
+  border-top: 0;
+}
 .spec-strip-cell {
   flex: 1 1 0;
   border-right: 1px solid var(--line);
@@ -1068,6 +1071,65 @@ body:has(.specimen-shell) main {
 
 /* ── Wallet — main columns ───────────────────────────────────────────────── */
 
+.spec-wallet-health {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0 32px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.spec-wallet-health-state,
+.spec-wallet-health-item {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-right: 1px solid var(--line-thin);
+  white-space: nowrap;
+}
+.spec-wallet-health-state {
+  min-width: 140px;
+  text-transform: uppercase;
+  color: var(--fg);
+  font-weight: 400;
+}
+.spec-wallet-health-state-safe,
+.spec-wallet-health-state-pending,
+.spec-wallet-health-state-review {
+  background: color-mix(in oklch, var(--fg) 5%, var(--bg));
+}
+.spec-wallet-health-state-setup-needed {
+  background: color-mix(in oklch, var(--fg) 10%, var(--bg));
+}
+.spec-wallet-health-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--fg);
+  flex-shrink: 0;
+}
+.spec-wallet-health-item {
+  flex: 1 1 0;
+  justify-content: space-between;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.spec-wallet-health-item:last-child {
+  border-right: 0;
+}
+.spec-wallet-health-label {
+  color: color-mix(in oklch, var(--fg) 55%, var(--bg));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .spec-cols {
   display: flex;
   align-items: stretch;
@@ -1112,6 +1174,152 @@ body:has(.specimen-shell) main {
   font-size: 11px;
 }
 
+/* Agent identity credential */
+.spec-agent-id-card {
+  position: relative;
+  isolation: isolate;
+  margin-bottom: 18px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.spec-agent-id-top,
+.spec-agent-id-name-row,
+.spec-agent-id-actions {
+  position: relative;
+  z-index: 1;
+}
+.spec-agent-id-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.spec-agent-id-kicker {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--fg) 58%, var(--bg));
+}
+.spec-agent-id-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.spec-agent-id-provider {
+  font-size: 20px;
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.spec-agent-id-name {
+  font-size: 12px;
+  color: color-mix(in oklch, var(--fg) 70%, var(--bg));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-agent-id-ascii {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  height: 146px;
+  padding: 0;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 7px;
+  line-height: 0.9;
+  letter-spacing: 0;
+  overflow: hidden;
+  opacity: 0.9;
+  user-select: none;
+}
+.spec-agent-id-ascii span {
+  display: block;
+  white-space: pre;
+  color: inherit !important;
+}
+.specimen-shell .spec-agent-id-card .spec-agent-id-ascii {
+  background: transparent !important;
+  color: color-mix(in oklch, var(--fg) 80%, var(--bg)) !important;
+}
+.spec-agent-id-meta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  row-gap: 5px;
+  column-gap: 10px;
+  font-size: 11px;
+}
+.spec-agent-id-meta span:nth-child(odd) {
+  color: color-mix(in oklch, var(--fg) 54%, var(--bg));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.spec-agent-id-meta span:nth-child(even) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-agent-id-actions {
+  display: flex;
+  border: 1px solid var(--line);
+}
+.spec-agent-id-actions a,
+.spec-agent-id-action {
+  flex: 1 1 0;
+  padding: 7px 10px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-right: 1px solid var(--line);
+}
+.spec-agent-id-actions a:last-child {
+  border-right: 0;
+}
+.spec-agent-id-actions a:hover,
+.spec-agent-id-action:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+.spec-agent-id-empty-mark {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 0;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: color-mix(in oklch, var(--fg) 46%, var(--bg));
+  border-top: 1px solid var(--line-thin);
+  border-bottom: 1px solid var(--line-thin);
+}
+.spec-agent-id-empty-copy {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in oklch, var(--fg) 70%, var(--bg));
+}
+.spec-agent-id-action {
+  position: relative;
+  z-index: 1;
+  display: block;
+  border: 1px solid var(--line);
+}
+
 /* Session card / pending card */
 .spec-session-card {
   padding: 14px 0;
@@ -1119,6 +1327,30 @@ body:has(.specimen-shell) main {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.spec-session-name-stack {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spec-session-name-stack > a:first-child {
+  font-size: 13px;
+  width: max-content;
+}
+.spec-session-agent-link {
+  width: max-content;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklch, var(--fg) 58%, var(--bg));
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.spec-session-agent-link:hover {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .spec-session-top {
   display: flex;
@@ -1147,6 +1379,32 @@ body:has(.specimen-shell) main {
 }
 .spec-meta-label {
   opacity: 0.55;
+}
+.spec-session-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.spec-session-usage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklch, var(--fg) 72%, var(--bg));
+}
+.spec-session-progress {
+  height: 4px;
+  width: 100%;
+  background: color-mix(in oklch, var(--fg) 13%, var(--bg));
+  overflow: hidden;
+}
+.spec-session-progress span {
+  display: block;
+  height: 100%;
+  background: var(--fg);
 }
 
 .spec-issue-new {
@@ -1255,6 +1513,50 @@ body:has(.specimen-shell) main {
 .spec-activity-row-open {
   background: color-mix(in oklch, var(--fg) 4%, var(--bg));
 }
+.spec-payment-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+.spec-payment-title,
+.spec-payment-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-payment-title {
+  font-size: 12px;
+}
+.spec-payment-sub {
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklch, var(--fg) 55%, var(--bg));
+  text-transform: uppercase;
+}
+.spec-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 66px;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.spec-status-pill-ok {
+  color: var(--fg);
+}
+.spec-status-pill-pending {
+  color: color-mix(in oklch, var(--fg) 72%, var(--bg));
+}
+.spec-status-pill-err {
+  color: var(--fg);
+  font-weight: 700;
+}
 
 /* Indent the data row to keep gutter visually aligned with chevron. */
 .spec-activity-head {
@@ -1318,6 +1620,30 @@ body:has(.specimen-shell) main {
 }
 .spec-faint {
   opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .spec-wallet-health {
+    flex-wrap: wrap;
+  }
+  .spec-wallet-health-state,
+  .spec-wallet-health-item {
+    flex: 1 1 33.333%;
+  }
+}
+
+@media (max-width: 720px) {
+  .spec-wallet-health {
+    margin: 0 16px;
+  }
+  .spec-wallet-health-state,
+  .spec-wallet-health-item {
+    flex-basis: 50%;
+    border-bottom: 1px solid var(--line-thin);
+  }
+  .spec-wallet-health-item:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
 }
 
 /* ── Prose surface (methodology, docs) ──────────────────────────────────── */
@@ -2082,13 +2408,100 @@ body:has(.specimen-shell) main {
  * Container is centered ~720px (chat is more intimate than a list view).
  */
 .spec-chat-container {
-  max-width: 720px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 0 24px;
   width: 100%;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  flex: 1;
+  min-height: 0;
+}
+.spec-chat-agents {
+  padding: 20px 0 24px;
+  border-right: 1px solid var(--line-thin);
+  min-width: 0;
+}
+.spec-chat-agents-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px 12px 0;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: color-mix(in oklch, var(--fg) 55%, var(--bg));
+}
+.spec-chat-agents-head a {
+  color: color-mix(in oklch, var(--fg) 70%, var(--bg));
+  text-decoration: none;
+}
+.spec-chat-agents-head a:hover {
+  color: var(--fg);
+}
+.spec-chat-agents-empty {
+  padding: 14px 18px 0 0;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: color-mix(in oklch, var(--fg) 50%, var(--bg));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.spec-chat-agent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px 0 0;
   display: flex;
   flex-direction: column;
-  flex: 1;
+}
+.spec-chat-agent-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  color: color-mix(in oklch, var(--fg) 68%, var(--bg));
+  text-decoration: none;
+  border-top: 1px solid var(--line-thin);
+}
+.spec-chat-agent-list li:last-child .spec-chat-agent-link {
+  border-bottom: 1px solid var(--line-thin);
+}
+.spec-chat-agent-link:hover,
+.spec-chat-agent-link-active {
+  color: var(--fg);
+}
+.spec-chat-agent-link-active {
+  box-shadow: inset 2px 0 0 var(--fg);
+  padding-left: 10px;
+}
+.spec-chat-agent-name {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-chat-agent-meta,
+.spec-chat-agent-seen {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, currentColor 72%, var(--bg));
+}
+.spec-chat-agent-seen {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.spec-chat-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 .spec-chat-pane {
@@ -2301,7 +2714,28 @@ body:has(.specimen-shell) main {
 
 @media (max-width: 600px) {
   .spec-chat-container {
+    grid-template-columns: 1fr;
+    gap: 0;
     padding: 0 16px;
+  }
+  .spec-chat-agents {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-thin);
+    padding: 12px 0;
+  }
+  .spec-chat-agents-head,
+  .spec-chat-agent-list {
+    padding-right: 0;
+  }
+  .spec-chat-agent-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .spec-chat-agent-list li {
+    min-width: 210px;
+  }
+  .spec-chat-agent-link {
+    border-bottom: 1px solid var(--line-thin);
   }
 }
 
@@ -2591,8 +3025,10 @@ body:has(.specimen-shell) main {
 }
 .spec-agents-cell-action {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
 }
+.spec-agents-chat,
 .spec-agents-revoke {
   padding: 6px 12px;
   font-family: var(--font-commit-mono), ui-monospace, monospace;
@@ -2604,8 +3040,10 @@ body:has(.specimen-shell) main {
   border: 1px solid var(--line);
   border-radius: 0;
   cursor: pointer;
+  text-decoration: none;
   transition: background 120ms ease, color 120ms ease;
 }
+.spec-agents-chat:hover,
 .spec-agents-revoke:hover:not(:disabled) {
   background: var(--fg);
   color: var(--bg);

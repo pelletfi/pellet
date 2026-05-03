@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { PelletMark } from "@/components/pellet-mark";
 
 const navLinks = [
   { label: "OLI", href: "/oli" },
-  { label: "Wallet", href: "/wallet" },
+  { label: "Wallet", href: "/wallet", title: "Pellet Wallet coming soon", soon: true },
   { label: "Docs", href: "/docs" },
 ];
 
@@ -23,6 +24,12 @@ function Logo() {
 }
 
 export function Nav() {
+  const pathname = usePathname();
+  if (pathname === "/") return null;
+  return <NavContent />;
+}
+
+function NavContent() {
   const [open, setOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState<"ok" | "drift" | "fail" | "unknown">("unknown");
 
@@ -44,8 +51,14 @@ export function Nav() {
           <Logo />
           <nav className="nav-links">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="nav-link">
-                {link.label}
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`nav-link${link.soon ? " nav-link-soon" : ""}`}
+                title={link.title}
+              >
+                <span className="nav-link-label">{link.label}</span>
+                {link.soon ? <span className="nav-link-soon-label">soon</span> : null}
               </Link>
             ))}
           </nav>
@@ -99,6 +112,7 @@ export function Nav() {
               <Link
                 key={link.href}
                 href={link.href}
+                title={link.title}
                 onClick={() => setOpen(false)}
                 style={{
                   display: "block",
@@ -109,7 +123,7 @@ export function Nav() {
                   borderBottom: "1px solid var(--color-border-subtle)",
                 }}
               >
-                {link.label}
+                {link.soon ? `${link.label} soon` : link.label}
               </Link>
             ))}
           </nav>

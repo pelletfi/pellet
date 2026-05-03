@@ -62,6 +62,8 @@ export function registerSpendTools(
 
       const row = await insertChatMessage({
         userId: auth.user.id,
+        connectionId: auth.connection?.id ?? null,
+        clientId: auth.token.clientId,
         sessionId: auth.session?.id ?? null,
         sender: "agent",
         kind: "approval_request",
@@ -121,6 +123,8 @@ export function registerSpendTools(
       // on-chain execution wires up with the Tempo Access Keys pivot.
       const row = await insertChatMessage({
         userId: auth.user.id,
+        connectionId: auth.connection?.id ?? null,
+        clientId: auth.token.clientId,
         sessionId: auth.session.id,
         sender: "agent",
         kind: "status",

@@ -19,7 +19,7 @@ export default async function SessionDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  return renderSession(params, "/wallet");
+  redirect("/wallet");
 }
 
 export async function renderSession(

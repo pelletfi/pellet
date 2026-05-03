@@ -7,6 +7,10 @@ import {
   validateAccessToken,
   type ValidatedToken,
 } from "@/lib/oauth/tokens";
+import {
+  getConnectedAgentForClient,
+  type ConnectedAgent,
+} from "@/lib/db/wallet-agent-connections";
 import type { ScopeName } from "@/lib/oauth/scopes";
 
 // MCP-side auth: validate the bearer token from /mcp requests against the
@@ -26,6 +30,7 @@ export type McpAuthInfo = {
     publicKeyUncompressed: string | null;
   };
   session: typeof walletSessions.$inferSelect | null;
+  connection: ConnectedAgent | null;
 };
 
 function wwwAuthenticate(): string {
@@ -86,7 +91,12 @@ export async function authenticateMcpRequest(
     session = rows[0] ?? null;
   }
 
-  return { token, user, session };
+  const connection = await getConnectedAgentForClient({
+    userId: user.id,
+    clientId: token.clientId,
+  });
+
+  return { token, user, session, connection };
 }
 
 export class ScopeError extends Error {

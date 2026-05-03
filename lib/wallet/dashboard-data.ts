@@ -2,6 +2,7 @@ import { db } from "@/lib/db/client";
 import { walletUsers, walletSessions, walletSpendLog } from "@/lib/db/schema";
 import { sql, eq, and, desc } from "drizzle-orm";
 import { readWalletBalances } from "@/lib/wallet/tempo-balance";
+import { listConnectedAgents } from "@/lib/db/wallet-agent-connections";
 
 export type DashboardData = {
   user: {
@@ -35,6 +36,17 @@ export type DashboardData = {
     txHash: string | null;
     status: string;
     createdAt: string;
+  }>;
+  agents: Array<{
+    id: string;
+    clientId: string;
+    clientName: string;
+    clientType: string;
+    scopes: string[];
+    tokenState: string;
+    lastSeenAt: string;
+    webhookEnabled: boolean;
+    sessionId: string | null;
   }>;
 };
 
@@ -102,6 +114,7 @@ export async function loadDashboardData(userId: string): Promise<DashboardData |
   } catch {
     /* leave empty; UI falls back gracefully */
   }
+  const agents = await listConnectedAgents(userId);
 
   return {
     user: {
@@ -135,6 +148,17 @@ export async function loadDashboardData(userId: string): Promise<DashboardData |
       txHash: p.txHash,
       status: p.status,
       createdAt: p.createdAt.toISOString(),
+    })),
+    agents: agents.map((agent) => ({
+      id: agent.id,
+      clientId: agent.clientId,
+      clientName: agent.clientName,
+      clientType: agent.clientType,
+      scopes: agent.scopes,
+      tokenState: agent.tokenState,
+      lastSeenAt: agent.lastSeenAt.toISOString(),
+      webhookEnabled: agent.webhookEnabled,
+      sessionId: agent.sessionId,
     })),
   };
 }

@@ -10,6 +10,7 @@ import { Footer } from "./Footer";
  */
 export function FooterGate() {
   const pathname = usePathname();
+  if (pathname === "/") return null;
   if (pathname?.startsWith("/oli")) return null;
   if (pathname?.startsWith("/specimen")) return null;
   return <Footer />;

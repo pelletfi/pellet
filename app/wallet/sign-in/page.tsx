@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { SignInForm } from "./SignInForm";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function WalletSignInPage() {
-  return renderSignIn("/wallet");
+  redirect("/wallet");
 }
 
 export function renderSignIn(basePath: string) {

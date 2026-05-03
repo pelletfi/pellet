@@ -188,6 +188,13 @@ export function SpecimenConnectedAgents({
                 {a.activeTokenCount > 1 && <span>{a.activeTokenCount} active</span>}
               </span>
               <span className="spec-agents-cell-action">
+                <Link
+                  className="spec-agents-chat"
+                  href={`${basePath}/chat?agent=${a.id}`}
+                  title="Open this agent's wallet chat thread."
+                >
+                  CHAT
+                </Link>
                 <button
                   type="button"
                   className="spec-agents-revoke"

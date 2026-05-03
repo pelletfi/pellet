@@ -48,6 +48,23 @@ function statusBracket(status: string): string {
   return s.toUpperCase();
 }
 
+function statusLabel(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "confirmed") return "settled";
+  if (s === "submitted") return "sent";
+  if (s === "signed") return "signed";
+  if (s === "failed" || s === "rejected") return "failed";
+  if (s === "pending") return "pending";
+  return status;
+}
+
+function statusKind(status: string): "ok" | "pending" | "err" {
+  const s = status.toLowerCase();
+  if (s === "failed" || s === "rejected") return "err";
+  if (s === "pending") return "pending";
+  return "ok";
+}
+
 /**
  * Click-to-expand drawer row for a wallet payment (`wallet_spend_log`).
  * Used on /oli/wallet/dashboard's signed-payments table and on the
@@ -102,16 +119,11 @@ export function SpecimenPaymentRow({
             <span style={{ opacity: 0.5 }}>—</span>
           )}
         </span>
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {shortAddr(p.recipient)}
+        <span className="spec-payment-summary">
+          <span className="spec-payment-title">Payment to {shortAddr(p.recipient)}</span>
+          <span className="spec-payment-sub">
+            policy check · session signed
+          </span>
         </span>
         {showSession && (
           <span
@@ -140,8 +152,8 @@ export function SpecimenPaymentRow({
           }}
           className="spec-cell-r"
         >
-          <span style={{ letterSpacing: "0.04em" }}>
-            [ {statusBracket(p.status)} ]
+          <span className={`spec-status-pill spec-status-pill-${statusKind(p.status)}`}>
+            [ {statusLabel(p.status)} ]
           </span>
         </span>
       </button>
@@ -207,12 +219,17 @@ export function SpecimenPaymentRow({
               </span>
             </span>
 
+            <span className="spec-activity-detail-label">Policy</span>
+            <span className="spec-activity-detail-value">
+              <span>Session key signed after wallet-side cap checks.</span>
+            </span>
+
             <span className="spec-activity-detail-label">Status</span>
             <span className="spec-activity-detail-value">
-              <span style={{ letterSpacing: "0.04em" }}>
-                [ {statusBracket(p.status)} ]
+              <span className={`spec-status-pill spec-status-pill-${statusKind(p.status)}`}>
+                [ {statusLabel(p.status)} ]
               </span>
-              <span style={{ opacity: 0.6 }}>{p.status}</span>
+              <span style={{ opacity: 0.6 }}>{statusBracket(p.status)}</span>
             </span>
 
             <span className="spec-activity-detail-label">When</span>
@@ -247,7 +264,7 @@ function CopyAction({ text }: { text: string }) {
       }}
       title="Copy to clipboard"
     >
-      {copied ? "copied" : "[copy]"}
+      {copied ? "copied" : "copy"}
     </button>
   );
 }

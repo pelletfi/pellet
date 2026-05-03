@@ -335,15 +335,16 @@ export const oliWebhookDeliveries = pgTable(
 );
 
 // ── Wallet chat substrate v1 ─────────────────────────────────────────────
-// In-wallet message thread between an agent (posts via bearer auth on its
-// session) and the user (reads via cookie auth in the wallet UI). Single
-// canonical thread per user; sessionId tags which agent posted so future
-// multi-thread UI can split without a migration. See drizzle/0008.
+// In-wallet message thread between an agent and the user. connectionId/clientId
+// bind messages to the durable BYOA agent connection; sessionId remains for
+// legacy Access Key callers and old rows. See drizzle/0008 + 0013.
 export const walletChatMessages = pgTable(
   "wallet_chat_messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull().references(() => walletUsers.id, { onDelete: "cascade" }),
+    connectionId: uuid("connection_id"),
+    clientId: text("client_id"),
     // Which agent session posted (null for system or user messages).
     sessionId: uuid("session_id").references(() => walletSessions.id, { onDelete: "set null" }),
     // 'agent' | 'user' | 'system'
@@ -358,6 +359,8 @@ export const walletChatMessages = pgTable(
   },
   (t) => ({
     userTsIdx: index("wallet_chat_user_ts_idx").on(t.userId, t.createdAt),
+    connectionTsIdx: index("wallet_chat_connection_ts_idx").on(t.connectionId, t.createdAt),
+    clientTsIdx: index("wallet_chat_client_ts_idx").on(t.userId, t.clientId, t.createdAt),
     sessionTsIdx: index("wallet_chat_session_ts_idx").on(t.sessionId, t.createdAt),
   }),
 );
