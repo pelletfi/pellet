@@ -552,6 +552,9 @@ body:has(.oli-shell) .nav-header {
   .oli-shell {
     padding-bottom: 0;
   }
+  .kpi-sparkline {
+    display: none;
+  }
 }
 
 /* ── Charts (TokenStack, TxCount, Trend) ──────────────────────────────────── */

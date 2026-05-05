@@ -104,7 +104,7 @@ function KpiStrip({
           style={{ display: "inline-flex", alignItems: "baseline", gap: 12 }}
         >
           <span>{txCount.toLocaleString()}</span>
-          <span style={{ opacity: 0.85, lineHeight: 1 }}>
+          <span className="kpi-sparkline" style={{ opacity: 0.85, lineHeight: 1 }}>
             <Sparkline values={txSeries} />
           </span>
         </span>
@@ -126,7 +126,7 @@ function KpiStrip({
           style={{ display: "inline-flex", alignItems: "baseline", gap: 12 }}
         >
           <span>{fmtUsdCompact(totalUsd || Number(amountSumWei) / 1_000_000)}</span>
-          <span style={{ opacity: 0.85, lineHeight: 1 }}>
+          <span className="kpi-sparkline" style={{ opacity: 0.85, lineHeight: 1 }}>
             <Sparkline values={revSeries} />
           </span>
         </span>
