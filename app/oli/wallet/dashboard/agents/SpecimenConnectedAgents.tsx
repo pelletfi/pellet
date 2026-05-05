@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { WalletTabs } from "@/components/oli/WalletTabs";
-import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 type Agent = {
   id: string;
@@ -97,10 +96,7 @@ export function SpecimenConnectedAgents({
   }
 
   return (
-    <div className="spec-wallet-float" style={{ position: "relative", isolation: "isolate" }}>
-      <LiquidGlass
-        style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none" }}
-      />
+    <div className="spec-wallet-float">
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">

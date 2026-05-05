@@ -176,7 +176,7 @@ export function LiquidGlass({
     const t0 = performance.now();
     let last = t0;
 
-    const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = () => 1;
 
     function resize() {
       const d = dpr();
@@ -194,16 +194,18 @@ export function LiquidGlass({
     let themeDirty = true;
 
     function readTheme() {
-      const parent = canvas!.closest(".specimen-shell");
+      const parent = canvas!.closest(".specimen-shell")
+        || document.querySelector(".specimen-shell");
       if (parent) {
-        const ps = getComputedStyle(parent);
-        bgCache = parseColor(ps.backgroundColor);
-        fgCache = parseColor(ps.color);
+        const isDark = parent.classList.contains("dark");
+        bgCache = isDark ? [17/255, 17/255, 17/255] : [188/255, 188/255, 188/255];
+        fgCache = isDark ? [188/255, 188/255, 188/255] : [17/255, 17/255, 17/255];
       }
       themeDirty = false;
     }
 
-    const shell = canvas!.closest(".specimen-shell");
+    const shell = canvas!.closest(".specimen-shell")
+      || document.querySelector(".specimen-shell");
     const observer = shell
       ? new MutationObserver(() => { themeDirty = true; })
       : null;
@@ -215,9 +217,16 @@ export function LiquidGlass({
       if (themeDirty) readTheme();
     }
 
+    const FRAME_MS = 33; // ~30fps cap
+
     function frame() {
       const now = performance.now();
       const dt = (now - last) / 1000;
+
+      if (now - last < FRAME_MS) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
       last = now;
 
       const lerp = 1 - Math.exp(-dt / 0.08);
@@ -227,8 +236,9 @@ export function LiquidGlass({
 
       sampleTheme();
       resize();
+      const realDpr = Math.min(window.devicePixelRatio || 1, 2);
       const mobile = canvas!.clientWidth <= 640;
-      gl.uniform1f(uCell, mobile ? 5.0 : 8.0);
+      gl.uniform1f(uCell, (mobile ? 5.0 : 8.0) / realDpr);
       gl.uniform1f(uDim, mobile ? 0.5 : 1.0);
       gl.uniform3f(uRes, canvas!.width, canvas!.height, 1);
       gl.uniform1f(uTime, (now - t0) / 1000);

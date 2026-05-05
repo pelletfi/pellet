@@ -111,8 +111,8 @@ export default async function OliEventDetailPage({
         </div>
       </section>
 
-      <section className="spec-strip">
-        <div className="spec-strip-cell">
+      <section className="spec-kpi-stack">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">AMOUNT</span>
           <span className="spec-strip-value spec-strip-value-md">
             {detail.amountWei ? formatUsdcAmount(detail.amountWei, 6) : "—"}
@@ -127,14 +127,14 @@ export default async function OliEventDetailPage({
             )}
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">KIND</span>
           <span className="spec-strip-value spec-strip-value-md">{detail.kind}</span>
           <span className="spec-strip-sub">
             <span>decoded event class</span>
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">BLOCK</span>
           <span className="spec-strip-value spec-strip-value-md">
             {formatBlockNumber(detail.sourceBlock)}
@@ -150,7 +150,7 @@ export default async function OliEventDetailPage({
             </a>
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">LOG INDEX</span>
           <span className="spec-strip-value spec-strip-value-md">{detail.logIndex}</span>
           <span className="spec-strip-sub">

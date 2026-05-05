@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CommandBar } from "@/components/oli/CommandBar";
+import { LiquidGlass } from "@/components/oli/LiquidGlass";
 import { SpecimenShell } from "@/components/specimen/SpecimenShell";
 import "./oli-theme.css";
 import "../specimen/specimen.css";
@@ -32,12 +33,12 @@ export const metadata: Metadata = {
 
 export default function OliLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SpecimenShell>
-      {children}
-      {/* Uncontrolled — CommandBar self-manages its ⌘K hotkey + open state.
-          Replaced the fumadocs SearchProvider wrapper that expected a
-          dedicated trigger button we don't render on the specimen surface. */}
-      <CommandBar />
-    </SpecimenShell>
+    <div className="oli-shader-wrap">
+      <LiquidGlass className="oli-shader-canvas" />
+      <SpecimenShell>
+        {children}
+        <CommandBar />
+      </SpecimenShell>
+    </div>
   );
 }

@@ -136,15 +136,15 @@ export default async function OliServiceDetailPage({
         </div>
       </section>
 
-      <section className="spec-strip">
-        <div className="spec-strip-cell">
+      <section className="spec-kpi-stack">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">REVENUE · 24H</span>
           <span className="spec-strip-value">{fmtUsdCompact(total24h)}</span>
           <span className="spec-strip-sub">
             <span>{tx24h.toLocaleString()} txs</span>
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">REVENUE · 30D</span>
           <span className="spec-strip-value">{fmtUsdCompact(total30d)}</span>
           <span className="spec-strip-sub">
@@ -152,7 +152,7 @@ export default async function OliServiceDetailPage({
             <span className="spec-strip-sub-faint">peak {fmtUsdExact(peakBucket)}/h</span>
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">7D TREND</span>
           <span className="spec-strip-value spec-strip-value-md" style={{ paddingTop: 6 }}>
             <span style={{ display: "inline-block", width: 140 }}>
@@ -163,7 +163,7 @@ export default async function OliServiceDetailPage({
             <span>{trend7d.length} hourly buckets</span>
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">PROVIDERS</span>
           <span className="spec-strip-value">{detail.providers.length}</span>
           <span className="spec-strip-sub">

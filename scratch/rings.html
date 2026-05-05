@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>rings</title>
+<style>
+  * { margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #bcbcbc; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: true, alpha: false });
+
+const vsrc = `#version 300 es
+in vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const fsrc = `#version 300 es
+precision highp float;
+
+uniform vec3 iResolution;
+uniform float iTime;
+uniform vec4 iMouse;
+uniform float uScroll;
+
+out vec4 fragColor;
+
+const float PI = 3.14159265;
+
+float sdSegment(vec2 p, vec2 a, vec2 b) {
+    vec2 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+float sdRect(vec2 p, vec2 sz) {
+    vec2 d = abs(p) - sz;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+float msign(float x) { return x < 0.0 ? -1.0 : 1.0; }
+
+mat4 rotMat(vec3 ax, float a) {
+    ax = normalize(ax);
+    float s = sin(a), c = cos(a), oc = 1.0 - c;
+    return mat4(
+        oc*ax.x*ax.x+c,       oc*ax.x*ax.y-ax.z*s, oc*ax.z*ax.x+ax.y*s, 0.0,
+        oc*ax.x*ax.y+ax.z*s,  oc*ax.y*ax.y+c,       oc*ax.y*ax.z-ax.x*s, 0.0,
+        oc*ax.z*ax.x-ax.y*s,  oc*ax.y*ax.z+ax.x*s,  oc*ax.z*ax.z+c,      0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+}
+
+vec2 smin(float a, float b, float k) {
+    k *= 6.0;
+    float h = max(k - abs(a - b), 0.0) / k;
+    float m = h * h * h * 0.5;
+    float s = m * k * (1.0 / 3.0);
+    return (a < b) ? vec2(a - s, m) : vec2(b - s, 1.0 - m);
+}
+
+float opOnion(float d, float h) { return abs(d) - h; }
+
+float sdEllipse(vec2 p, vec2 e) {
+    float ax = abs(p.x), ay = abs(p.y);
+    float a = e.x, b = e.y;
+    if (abs(a - b) < 0.0001) return length(p) - a;
+    float aa = a * a, bb = b * b;
+    float rx = p.x / a, ry = p.y / b;
+    float inside = rx * rx + ry * ry - 1.0;
+    float xx = p.x * p.x * aa, yy = p.y * p.y * bb;
+    float s2 = sqrt(2.0);
+    float tmin = max(a * ax - aa, b * ay - bb);
+    float tmax = max(s2 * a * ax - aa, s2 * b * ay - bb);
+    float rxx = rx * rx, ryy = ry * ry;
+    if (inside < 0.0) {
+        tmax = min(tmax, 0.0);
+        if (ryy < 1.0) tmin = max(tmin, sqrt(xx / (1.0 - ryy)) - aa);
+        if (rxx < 1.0) tmin = max(tmin, sqrt(yy / (1.0 - rxx)) - bb);
+    } else {
+        tmin = max(tmin, 0.0);
+        if (ryy < 1.0) tmax = min(tmax, sqrt(xx / (1.0 - ryy)) - aa);
+        if (rxx < 1.0) tmax = min(tmax, sqrt(yy / (1.0 - rxx)) - bb);
+    }
+    float t = clamp(inside < 0.0 ? tmin * 0.95 : tmin, tmin, tmax);
+    int steps = tmin >= tmax ? 0 : 12;
+    for (int i = 0; i < steps; i++) {
+        float at = aa + t, bt = bb + t, abt = at * bt;
+        float f0 = xx * bt * bt + yy * at * at - abt * abt;
+        float f1 = 2.0 * (xx * bt + yy * at - abt * (bt + at));
+        if (f0 < 0.0) tmax = t; else if (f0 > 0.0) tmin = t;
+        float newton = clamp(f0 / abs(f1), tmin - t, tmax - t);
+        t += min(newton, a * b * 2.0);
+        if (abs(newton) < 1e-6 * (abs(t) + 0.1)) break;
+    }
+    vec2 closest = normalize(vec2(p.x * a / (aa + t), p.y * b / (bb + t))) * e;
+    return length(closest - p) * msign(inside);
+}
+
+float sdRing3D(vec2 p, mat4 R, float ringR) {
+    vec2 u = (R * vec4(ringR, 0.0, 0.0, 0.0)).xy;
+    vec2 v = (R * vec4(0.0, ringR, 0.0, 0.0)).xy;
+    float uu = dot(u, u), vv = dot(v, v), uv = dot(u, v);
+    float theta = 0.5 * atan(2.0 * uv, uu - vv + 1e-6);
+    float ct = cos(theta), st = sin(theta);
+    vec2 ax1 = u * ct + v * st;
+    vec2 ax2 = -u * st + v * ct;
+    float s1 = length(ax1), s2 = length(ax2);
+    vec2 dir = ax1 / max(s1, 1e-6);
+    vec2 perp = vec2(-dir.y, dir.x);
+    vec2 pL = vec2(dot(p, dir), dot(p, perp));
+    return opOnion(sdEllipse(pL, vec2(max(s1, 1e-4), max(s2, 1e-4))), 0.005);
+}
+
+void main() {
+    vec2 p = (2.0 * gl_FragCoord.xy - iResolution.xy) / iResolution.y;
+    vec2 m = (2.0 * iMouse.xy - iResolution.xy) / iResolution.y;
+
+    float b = 0.02;
+    const float DURATION = 15.0;
+    const float TAU = 6.2831853;
+    float loop = fract(iTime / DURATION) * TAU;
+
+    float sd = sdRing3D(p, rotMat(normalize(vec3(1.0, 0.7, 0.3)), loop + uScroll), 0.75);
+    sd = smin(sd, sdRing3D(p, rotMat(normalize(vec3(0.3, 1.0, -0.5)), loop * 2.0 + uScroll * 0.6), 0.75), b).x;
+    sd = smin(sd, sdRing3D(p, rotMat(normalize(vec3(-0.5, 0.4, 1.0)), loop * 3.0 + uScroll * 1.5), 0.75), b).x;
+
+    float sH = sdRect(p - vec2(0.0, m.y), vec2(2.0, 0.0025));
+    sd = smin(sd, sH, b).x;
+    float sV = sdRect(p - vec2(m.x, 0.0), vec2(0.0025, 1.0));
+    sd = smin(sd, sV, b).x;
+
+    vec3 bg = vec3(0.768);
+    vec3 line = vec3(0.1);
+    float aa = max(fwidth(sd), 1e-4);
+    vec3 col = mix(bg, line, 1.0 - smoothstep(-aa, aa, sd));
+    fragColor = vec4(col, 1.0);
+}
+`;
+
+function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(s));
+        gl.deleteShader(s);
+        return null;
+    }
+    return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsrc));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsrc));
+gl.linkProgram(prog);
+gl.useProgram(prog);
+
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(loc);
+gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+const uRes = gl.getUniformLocation(prog, 'iResolution');
+const uTime = gl.getUniformLocation(prog, 'iTime');
+const uMouse = gl.getUniformLocation(prog, 'iMouse');
+const uScroll = gl.getUniformLocation(prog, 'uScroll');
+
+const dpr = () => Math.min(devicePixelRatio || 1, 2);
+function resize() {
+    const w = Math.floor(innerWidth * dpr());
+    const h = Math.floor(innerHeight * dpr());
+    if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+    }
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+
+const mouse = { x: innerWidth / 2 * dpr(), y: innerHeight / 2 * dpr(), tx: 0, ty: 0, init: false };
+window.addEventListener('mousemove', e => {
+    mouse.tx = e.clientX * dpr();
+    mouse.ty = (innerHeight - e.clientY) * dpr();
+    if (!mouse.init) { mouse.x = mouse.tx; mouse.y = mouse.ty; mouse.init = true; }
+});
+
+const scroll = { vel: 0, offset: 0 };
+window.addEventListener('wheel', e => {
+    scroll.vel += e.deltaY * 0.002;
+    scroll.vel = Math.max(-8, Math.min(8, scroll.vel));
+}, { passive: true });
+
+resize();
+window.addEventListener('resize', resize);
+
+const t0 = performance.now();
+let last = t0;
+
+(function loop() {
+    const now = performance.now();
+    const dt = (now - last) / 1000;
+    last = now;
+
+    const lerp = 1 - Math.exp(-dt / 0.12);
+    mouse.x += (mouse.tx - mouse.x) * lerp;
+    mouse.y += (mouse.ty - mouse.y) * lerp;
+
+    scroll.vel *= 1 - (1 - Math.exp(-dt / 0.6));
+    scroll.offset += scroll.vel * dt;
+
+    gl.uniform3f(uRes, canvas.width, canvas.height, 1);
+    gl.uniform1f(uTime, (now - t0) / 1000);
+    gl.uniform4f(uMouse, mouse.x, mouse.y, 0, 0);
+    gl.uniform1f(uScroll, scroll.offset);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

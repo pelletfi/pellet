@@ -10,7 +10,6 @@ import {
 } from "@/components/specimen/dashboard-charts";
 import { SpecimenSettlementRow } from "@/components/oli/SpecimenSettlementRow";
 import type { SettlementEvent } from "@/components/oli/SpecimenSettlementRow";
-import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 export const dynamic = "force-dynamic";
 
@@ -398,15 +397,7 @@ export default async function OliDashboardPage({
   ]);
 
   return (
-    <div className="spec-ledger-float" style={{ position: "relative", isolation: "isolate" }}>
-      <LiquidGlass
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: -1,
-          pointerEvents: "none",
-        }}
-      />
+    <div className="spec-ledger-float">
       <PageHeader currentHours={windowHours} />
       <KpiStrip
         windowLabel={windowLabel}

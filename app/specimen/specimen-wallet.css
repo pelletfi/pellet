@@ -406,7 +406,13 @@
 }
 .spec-agent-id-actions {
   display: flex;
-  border: 1px solid var(--line);
+  border: none !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 20px 60px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+.specimen-shell.dark .spec-agent-id-actions {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
 }
 .spec-agent-id-actions a,
 .spec-agent-id-action {
@@ -417,15 +423,24 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-decoration: none;
-  border-right: 1px solid var(--line);
+  border-right: none !important;
+  transition: background 150ms ease, color 150ms ease;
+}
+.spec-agent-id-actions a:first-child {
+  border-radius: 14px 0 0 14px !important;
 }
 .spec-agent-id-actions a:last-child {
-  border-right: 0;
+  border-radius: 0 14px 14px 0 !important;
 }
 .spec-agent-id-actions a:hover,
 .spec-agent-id-action:hover {
-  background: var(--fg);
-  color: var(--bg);
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--fg);
+}
+.specimen-shell.dark .spec-agent-id-actions a:hover,
+.specimen-shell.dark .spec-agent-id-action:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--fg);
 }
 .spec-agent-id-empty-mark {
   position: relative;
@@ -1071,6 +1086,7 @@
   padding-right: 8px;
 }
 
+
 .spec-ledger-float .spec-kpi-stack {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1124,8 +1140,12 @@
     padding-left: 4px;
     padding-right: 4px;
   }
+  .spec-ledger-float .spec-page-header-row {
+    flex-direction: row;
+    align-items: center;
+  }
   .spec-ledger-float .spec-kpi-stack {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
   .spec-ledger-float .spec-kpi-card {
