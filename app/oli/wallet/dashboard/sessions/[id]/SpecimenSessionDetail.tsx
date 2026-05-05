@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
+import { TEMPO_EXPLORER_URL } from "@/lib/wallet/tempo-config";
 
 type Session = {
   id: string;
@@ -25,7 +26,7 @@ type Payment = {
   createdAt: string;
 };
 
-const EXPLORER = "https://explore.testnet.tempo.xyz";
+const EXPLORER = TEMPO_EXPLORER_URL;
 
 function shortAddr(a: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;

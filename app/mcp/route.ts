@@ -1,6 +1,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { authenticateMcpRequest } from "@/lib/mcp/auth";
 import { buildPelletMcpServer } from "@/lib/mcp/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,9 @@ export const maxDuration = 60;
 async function handle(req: Request): Promise<Response> {
   const auth = await authenticateMcpRequest(req);
   if (auth instanceof Response) return auth;
+
+  const rl = rateLimit(`mcp:${auth.token.userId}`, { max: 120, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
 
   const server = buildPelletMcpServer(auth);
   const transport = new WebStandardStreamableHTTPServerTransport({

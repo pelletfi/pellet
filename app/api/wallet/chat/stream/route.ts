@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { bus, type WalletChatRow } from "@/lib/realtime/bus";
+import { bus, type WalletChatRow, type WalletChatChunk } from "@/lib/realtime/bus";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { recentChatMessages } from "@/lib/db/wallet-chat";
 import { getConnectedAgent } from "@/lib/db/wallet-agent-connections";
@@ -95,6 +95,27 @@ export async function GET(req: Request) {
       };
       bus().on("chat-message", onMessage);
 
+      // Streaming chunks — named SSE event 'chunk'. Client accumulates
+      // deltas by messageId and renders progressively.
+      const onChunk = (c: WalletChatChunk) => {
+        if (c.userId !== userId) return;
+        if (connection && c.connectionId !== connection.id) return;
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `event: chunk\ndata: ${JSON.stringify({
+                messageId: c.messageId,
+                delta: c.delta,
+                done: c.done,
+              })}\n\n`,
+            ),
+          );
+        } catch {
+          /* controller closed mid-write */
+        }
+      };
+      bus().on("chat-chunk", onChunk);
+
       // Typing pings — named SSE event 'typing' so the client can wire
       // a separate handler. Payload is { sessionId, ts } so the UI can
       // attribute which agent is composing.
@@ -135,6 +156,7 @@ export async function GET(req: Request) {
       cleanup = () => {
         clearInterval(heartbeat);
         bus().off("chat-message", onMessage);
+        bus().off("chat-chunk", onChunk);
         bus().off("chat-typing", onTyping);
         req.signal.removeEventListener("abort", cleanup);
         try {

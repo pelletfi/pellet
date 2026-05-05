@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { oauthAuthorizationCodes } from "@/lib/db/schema";
 import type { ScopeName } from "./scopes";
@@ -84,13 +84,12 @@ export async function consumeAuthorizationCode(
       and(
         eq(oauthAuthorizationCodes.codeHash, codeHash),
         isNull(oauthAuthorizationCodes.consumedAt),
-        // Use raw comparison rather than gt() — we want consume-on-not-expired.
+        gt(oauthAuthorizationCodes.expiresAt, now),
       ),
     )
     .returning();
   const row = updated[0];
   if (!row) return null;
-  if (row.expiresAt.getTime() < Date.now()) return null;
   return {
     clientId: row.clientId,
     userId: row.userId,

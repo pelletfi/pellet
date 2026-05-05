@@ -20,6 +20,7 @@
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.0",
     "@tabler/icons-react": "^3.41.1",
+    "accounts": "^0.8.10",
     "cbor-x": "^1.6.4",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.38.0",
@@ -31,6 +32,7 @@
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
     "viem": "^2.48.4"
   },

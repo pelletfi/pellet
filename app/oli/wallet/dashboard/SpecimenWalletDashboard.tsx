@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
 import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
 import { WalletTabs } from "@/components/oli/WalletTabs";
+import { ChatDrawer } from "@/app/wallet/dashboard/ChatDrawer";
+import { ChatRailCard } from "@/app/wallet/dashboard/ChatRailCard";
 
 type User = {
   id: string;
@@ -320,7 +322,7 @@ export function SpecimenWalletDashboard({
         </div>
       </section>
 
-      <section className="spec-cols">
+      <section className="spec-cols" style={{ paddingBottom: 48 }}>
         <ActivityColumn payments={signedPayments7d} basePath={basePath} />
         <RightRail
           sessions={sessions}
@@ -331,6 +333,8 @@ export function SpecimenWalletDashboard({
           expiredCount={revokedOrExpired.length}
         />
       </section>
+
+      <ChatDrawer />
     </div>
   );
 }
@@ -416,6 +420,8 @@ function RightRail({
   return (
     <div className="spec-col-rail">
       <AgentIdentityCard agent={primaryAgent} basePath={basePath} />
+
+      <ChatRailCard basePath={basePath} />
 
       <div className="spec-col-head">
         <span className="spec-col-head-left">ACTIVE SESSION KEYS</span>

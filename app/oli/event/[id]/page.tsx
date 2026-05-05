@@ -5,8 +5,9 @@ import { buildLabelMap } from "@/lib/oli/labelMap";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { TEMPO_EXPLORER_URL } from "@/lib/wallet/tempo-config";
 
-const EXPLORER = "https://explore.tempo.xyz";
+const EXPLORER = TEMPO_EXPLORER_URL;
 
 export const dynamic = "force-dynamic";
 

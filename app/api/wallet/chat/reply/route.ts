@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { insertChatMessage } from "@/lib/db/wallet-chat";
 import { getConnectedAgent } from "@/lib/db/wallet-agent-connections";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,9 @@ export async function POST(req: Request) {
   if (!userId) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+
+  const rl = rateLimit(`chat:${userId}`, { max: 30, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
 
   let body: unknown;
   try {

@@ -89,6 +89,16 @@ export async function insertChatMessage(input: {
   return toRow(row);
 }
 
+export async function updateChatMessageContent(
+  id: string,
+  content: string,
+): Promise<void> {
+  await db
+    .update(walletChatMessages)
+    .set({ content })
+    .where(eq(walletChatMessages.id, id));
+}
+
 // Filter helper for SSE consumers — only forward rows for the subscribed user.
 export function isForUser(row: WalletChatRow, userId: string): boolean {
   return row.userId === userId;

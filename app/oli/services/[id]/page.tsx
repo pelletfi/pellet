@@ -8,12 +8,13 @@ import {
   Sparkline,
 } from "@/components/specimen/dashboard-charts";
 import { SpecimenSettlementRow } from "@/components/oli/SpecimenSettlementRow";
+import { TEMPO_EXPLORER_URL } from "@/lib/wallet/tempo-config";
 
 export const dynamic = "force-dynamic";
 
 const USDCE_ADDR = "0x20c000000000000000000000b9537d11c60e8b50";
 const USDT0_ADDR = "0x20c00000000000000000000014f22ca97301eb73";
-const EXPLORER = "https://explore.testnet.tempo.xyz";
+const EXPLORER = TEMPO_EXPLORER_URL;
 
 function shortAddr(a: string): string {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;

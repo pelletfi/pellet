@@ -216,6 +216,8 @@ export function registerSpendTools(
           from: result.from,
           to: result.to,
           amountWei: result.amountWei,
+          feeWei: result.feeWei,
+          feeTxHash: result.feeTxHash,
           remainingWei: result.remainingWei,
           periodEnd: result.periodEnd,
           spendCapWei: result.spendCapWei,

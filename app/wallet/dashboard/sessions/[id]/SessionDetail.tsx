@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { TEMPO_EXPLORER_URL } from "@/lib/wallet/tempo-config";
 
 type Session = {
   id: string;
@@ -24,7 +25,7 @@ type Payment = {
   createdAt: string;
 };
 
-const EXPLORER = "https://explore.testnet.tempo.xyz";
+const EXPLORER = TEMPO_EXPLORER_URL;
 const COMPLETED = new Set(["signed", "submitted", "confirmed"]);
 
 export function SessionDetail({

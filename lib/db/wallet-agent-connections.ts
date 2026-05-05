@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
@@ -292,20 +292,18 @@ export async function revokeAgentConnection(input: {
   )];
   let revokedSessionCount = 0;
   if (sessionIds.length > 0) {
-    for (const sid of sessionIds) {
-      const res = await db
-        .update(walletSessions)
-        .set({ revokedAt: now })
-        .where(
-          and(
-            eq(walletSessions.id, sid),
-            eq(walletSessions.userId, input.userId),
-            isNull(walletSessions.revokedAt),
-          ),
-        )
-        .returning({ id: walletSessions.id });
-      revokedSessionCount += res.length;
-    }
+    const res = await db
+      .update(walletSessions)
+      .set({ revokedAt: now })
+      .where(
+        and(
+          inArray(walletSessions.id, sessionIds),
+          eq(walletSessions.userId, input.userId),
+          isNull(walletSessions.revokedAt),
+        ),
+      )
+      .returning({ id: walletSessions.id });
+    revokedSessionCount = res.length;
   }
 
   return {

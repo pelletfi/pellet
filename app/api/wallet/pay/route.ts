@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/wallet/bearer-auth";
 import { executePayment } from "@/lib/wallet/execute-payment";
 import { isAddress } from "viem";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export async function POST(req: Request) {
   const resolved = await requireSession(req, { requireOnChainAuthorize: true });
   if (resolved instanceof NextResponse) return resolved;
   const { session, user } = resolved;
+
+  const rl = rateLimit(`pay:${user.id}`, { max: 10, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
 
   let body: PayBody;
   try {
@@ -74,6 +78,8 @@ export async function POST(req: Request) {
     amount_wei: result.amountWei,
     memo: result.memo,
     token: result.token,
+    fee_wei: result.feeWei,
+    fee_tx_hash: result.feeTxHash,
     spend_used_wei_after: result.spendUsedWeiAfter,
     spend_cap_wei: result.spendCapWei,
     remaining_wei: result.remainingWei,

@@ -25,6 +25,14 @@ export type WalletChatTyping = {
   ts: string;
 };
 
+export type WalletChatChunk = {
+  messageId: string;
+  userId: string;
+  connectionId: string | null;
+  delta: string;
+  done: boolean;
+};
+
 class Bus extends EventEmitter {
   private started = false;
 
@@ -68,6 +76,15 @@ class Bus extends EventEmitter {
         }
         return;
       }
+      if (msg.channel === "wallet_chat_chunk") {
+        try {
+          const chunk = JSON.parse(msg.payload) as WalletChatChunk;
+          this.emit("chat-chunk", chunk);
+        } catch {
+          // malformed payload
+        }
+        return;
+      }
       if (msg.channel === "wallet_chat_typing") {
         const [userId, second, third] = msg.payload.split(":");
         if (!userId) return;
@@ -85,6 +102,7 @@ class Bus extends EventEmitter {
     });
     await client.query("LISTEN agent_events");
     await client.query("LISTEN wallet_chat");
+    await client.query("LISTEN wallet_chat_chunk");
     await client.query("LISTEN wallet_chat_typing");
     // Connection is held for the process lifetime. No need to release.
   }
