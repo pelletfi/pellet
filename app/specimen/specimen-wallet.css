@@ -1138,12 +1138,16 @@
   }
   .spec-ledger-float .spec-tables {
     flex-direction: column;
+    max-width: 100%;
+    overflow: hidden;
   }
   .spec-ledger-float .spec-table {
     padding: 16px 16px 18px;
     border-radius: 12px !important;
     overflow-x: auto;
     overflow-y: visible;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 
