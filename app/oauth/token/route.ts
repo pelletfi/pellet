@@ -3,7 +3,9 @@ import { consumeAuthorizationCode } from "@/lib/oauth/codes";
 import { verifyChallenge, isSupportedMethod } from "@/lib/oauth/pkce";
 import { issueAccessToken } from "@/lib/oauth/tokens";
 import { recordAgentConnection } from "@/lib/db/wallet-agent-connections";
+import { rateLimit } from "@/lib/rate-limit";
 import type { ScopeName } from "@/lib/oauth/scopes";
+import { getActiveSubscription, countActiveAgentConnections } from "@/lib/wallet/subscriptions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,6 +73,9 @@ export async function POST(req: Request) {
     );
   }
 
+  const rl = rateLimit(`oauth:${clientId}`, { max: 10, windowMs: 60_000 });
+  if (!rl.ok) return rl.response;
+
   // Atomic single-use consume — race-safe.
   const codeRow = await consumeAuthorizationCode(code);
   if (!codeRow) {
@@ -108,6 +113,21 @@ export async function POST(req: Request) {
     scopes,
     audience: codeRow.audience,
   });
+  // Free tier: 1 agent connection max.
+  const sub = await getActiveSubscription(codeRow.userId);
+  if (!sub) {
+    const count = await countActiveAgentConnections(codeRow.userId);
+    if (count >= 1) {
+      return NextResponse.json(
+        {
+          error: "agent_limit_reached",
+          error_description: "Free tier allows 1 agent. Upgrade to Pro for unlimited.",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   await recordAgentConnection({
     clientId: codeRow.clientId,
     userId: codeRow.userId,
