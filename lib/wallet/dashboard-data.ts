@@ -4,6 +4,7 @@ import { sql, eq, and, desc } from "drizzle-orm";
 import { readWalletBalances } from "@/lib/wallet/tempo-balance";
 import { listConnectedAgents } from "@/lib/db/wallet-agent-connections";
 import { syncSessionsChainStatus } from "@/lib/wallet/sync-chain-status";
+import { getActiveSubscription } from "@/lib/wallet/subscriptions";
 
 export type DashboardData = {
   user: {
@@ -49,6 +50,7 @@ export type DashboardData = {
     webhookEnabled: boolean;
     sessionId: string | null;
   }>;
+  subscription: { plan: string; expiresAt: string } | null;
 };
 
 export async function loadDashboardData(userId: string): Promise<DashboardData | null> {
@@ -121,6 +123,12 @@ export async function loadDashboardData(userId: string): Promise<DashboardData |
   }
   const agents = await listConnectedAgents(userId);
 
+  let subscription: DashboardData["subscription"] = null;
+  try {
+    const sub = await getActiveSubscription(userId);
+    if (sub) subscription = { plan: sub.plan, expiresAt: sub.expiresAt.toISOString() };
+  } catch { /* leave null */ }
+
   return {
     user: {
       id: user.id,
@@ -165,6 +173,7 @@ export async function loadDashboardData(userId: string): Promise<DashboardData |
       webhookEnabled: agent.webhookEnabled,
       sessionId: agent.sessionId,
     })),
+    subscription,
   };
 }
 
