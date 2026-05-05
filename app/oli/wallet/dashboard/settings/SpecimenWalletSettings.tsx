@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { WalletTabs } from "@/components/oli/WalletTabs";
+import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 type User = {
   id: string;
@@ -99,17 +101,19 @@ export function SpecimenWalletSettings({
   };
 
   return (
-    <>
+    <div className="spec-wallet-float" style={{ position: "relative", isolation: "isolate" }}>
+      <LiquidGlass
+        style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none" }}
+      />
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
-            <span>02</span>
             <span>Wallet</span>
             <span className="spec-page-title-em">— settings</span>
           </h1>
-          <Link href={`${basePath}/dashboard`} className="spec-switch">
-            <span className="spec-switch-seg">← DASHBOARD</span>
-          </Link>
+          <div className="spec-wallet-tabs-float">
+            <WalletTabs basePath={basePath} />
+          </div>
         </div>
         <div className="spec-page-subhead">
           <span className="spec-page-subhead-label">ADDR</span>
@@ -177,7 +181,7 @@ export function SpecimenWalletSettings({
           disabled={busy !== "none"}
         />
       </SettingsBlock>
-    </>
+    </div>
   );
 }
 

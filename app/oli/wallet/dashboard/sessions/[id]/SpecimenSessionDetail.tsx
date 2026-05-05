@@ -111,7 +111,6 @@ export function SpecimenSessionDetail({
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
-            <span>02</span>
             <span>Session</span>
             <span className="spec-page-title-em">— {session.label ?? session.id.slice(0, 8)}</span>
           </h1>
@@ -218,10 +217,10 @@ export function SpecimenSessionDetail({
           ) : (
             <>
               <div className="spec-activity-head" style={{ paddingLeft: 24 }}>
-                <span style={{ width: 80, flexShrink: 0 }}>WHEN</span>
-                <span style={{ width: 92, flexShrink: 0 }}>TX</span>
+                <span className="spec-pay-col-when" style={{ width: 80, flexShrink: 0 }}>WHEN</span>
+                <span className="spec-pay-col-tx" style={{ width: 92, flexShrink: 0 }}>TX</span>
                 <span style={{ flex: 1, minWidth: 0 }}>RECIPIENT</span>
-                <span style={{ width: 100, flexShrink: 0 }} className="spec-cell-r">
+                <span className="spec-pay-col-amount spec-cell-r" style={{ width: 100, flexShrink: 0 }}>
                   AMOUNT
                 </span>
                 <span style={{ width: 70, flexShrink: 0 }} className="spec-cell-r">

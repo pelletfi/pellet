@@ -1,0 +1,438 @@
+/* ── Page header block ───────────────────────────────────────────────────── */
+
+.spec-page-header {
+  padding: 36px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.spec-page-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+.spec-page-title {
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.spec-page-title-em {
+  font-family: inherit;
+  font-style: normal;
+  font-size: 30px;
+  line-height: 32px;
+  opacity: 0.55;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.spec-page-subhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.spec-page-subhead-dot {
+  opacity: 0.55;
+}
+.spec-page-subhead-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.spec-page-subhead-label {
+  opacity: 0.7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.spec-subhead-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.spec-subhead-addr {
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spec-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: -2px;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  opacity: 0.55;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+.spec-copy-btn:hover {
+  opacity: 1;
+  background: color-mix(in oklch, var(--fg) 10%, transparent);
+}
+.spec-copy-btn:active {
+  background: color-mix(in oklch, var(--fg) 22%, transparent);
+}
+.spec-copy-btn:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 1px;
+}
+
+/* ── Window switch (segmented control, e.g. 24H 7D 30D ALL) ──────────────── */
+
+.spec-switch {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.spec-switch-seg {
+  padding: 6px 14px;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  background: transparent;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.spec-switch-seg:last-child {
+  border-right: none;
+}
+/* Higher specificity than the global `.specimen-shell a { color: inherit }`
+   rule so the inverted text color survives when the active segment is an
+   <a> / Next <Link>, not just a <button>. */
+.specimen-shell .spec-switch-seg-active,
+.specimen-shell a.spec-switch-seg-active {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+/* ── KPI / stat strip ────────────────────────────────────────────────────── */
+
+.spec-strip {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin: 0 32px;
+}
+.spec-wallet-health + .spec-strip {
+  border-top: 0;
+}
+.spec-strip-cell {
+  flex: 1 1 0;
+  border-right: 1px solid var(--line);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.spec-strip-cell:last-child {
+  border-right: none;
+}
+.spec-strip-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.spec-strip-value {
+  font-size: 38px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.spec-strip-value-lg {
+  font-size: 52px;
+  line-height: 52px;
+}
+.spec-strip-value-md {
+  font-size: 32px;
+  line-height: 32px;
+}
+.spec-strip-sub {
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.spec-strip-sub-faint {
+  opacity: 0.55;
+}
+
+/* ── Charts row ──────────────────────────────────────────────────────────── */
+
+.spec-charts {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+  margin: 0 32px;
+}
+.spec-chart {
+  flex: 1 1 0;
+  border-right: 1px solid var(--line);
+  padding: 18px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.spec-chart:last-child {
+  border-right: none;
+}
+
+.spec-ticker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.spec-ticker-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.spec-ticker-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.spec-ticker-label {
+  opacity: 0.7;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.spec-ticker-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.spec-ticker-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.spec-legend-square {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+.spec-legend-square-filled {
+  background: var(--fg);
+}
+.spec-legend-square-outline {
+  border: 1px solid var(--fg);
+}
+.spec-legend-square-stripe {
+  background-image: repeating-linear-gradient(45deg, var(--fg) 0 2px, transparent 2px 4px);
+  border: 1px solid var(--fg);
+}
+
+/* Bar chart */
+.spec-chart-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.spec-chart-area-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.spec-chart-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.7;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+.spec-chart-area {
+  flex: 1;
+  height: 96px;
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 0 0 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.spec-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--fg);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+/* Stacked-bar segments — 3 monochrome opacity tiers with a 1px bg-color
+   hairline between segments so the stack reads as discrete tokens even on
+   short bars. No gradients/patterns/shadows — opacity + hairlines only. */
+.spec-bar-seg {
+  width: 100%;
+  background: var(--fg);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--bg);
+}
+.spec-bar-seg:last-child {
+  border-bottom: none;
+}
+.spec-bar-seg-usdce { opacity: 1; }
+.spec-bar-seg-usdt0 { opacity: 0.5; }
+.spec-bar-seg-other { opacity: 0.22; }
+.spec-legend-square-tier1 { background: var(--fg); opacity: 1; }
+.spec-legend-square-tier2 { background: var(--fg); opacity: 0.5; }
+.spec-legend-square-tier3 { background: var(--fg); opacity: 0.22; }
+.spec-chart-x {
+  display: flex;
+  justify-content: space-between;
+  padding-left: 38px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ── Tables row ──────────────────────────────────────────────────────────── */
+
+.spec-tables {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line);
+  margin: 0 32px;
+}
+.spec-table {
+  flex: 1 1 0;
+  border-right: 1px solid var(--line);
+  padding: 18px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.spec-table:last-child {
+  border-right: none;
+}
+.spec-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.spec-table-title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.spec-table-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.spec-table-meta-faint {
+  opacity: 0.55;
+}
+
+.spec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1;
+  height: 40px;
+  padding: 0;
+  border-top: 1px solid var(--line-thin);
+}
+.spec-row:first-of-type {
+  border-top: 1px solid var(--line);
+}
+.spec-table .spec-row:nth-last-of-type(1) {
+  border-bottom: 1px solid var(--line);
+}
+.spec-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  padding: 12px 0 8px;
+  white-space: nowrap;
+}
+.spec-cell-r {
+  text-align: right;
+}
+
+.spec-verify {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.spec-spark {
+  display: block;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.spec-delta {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.spec-status-dot-sm {
+  width: 6px;
+  height: 6px;
+  background: var(--fg);
+  flex-shrink: 0;
+}
+.spec-view-all {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  width: max-content;
+}
+

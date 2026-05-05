@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { SpecimenStatusStrip } from "./SpecimenStatusStrip";
+import Footer from "@/components/Footer";
 
 const STORAGE_KEY = "specimen-theme";
 
@@ -320,7 +320,7 @@ export function SpecimenShell({
     <div className={`specimen-shell${dark ? " dark" : ""}`}>
       <TopBar pathname={pathname} dark={dark} onToggleTheme={toggleTheme} />
       <div className="spec-main">{children}</div>
-      <SpecimenStatusStrip />
+      <Footer />
     </div>
   );
 }

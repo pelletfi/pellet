@@ -1,0 +1,645 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * /specimen — proportional-sans dashboard specimen
+ * ───────────────────────────────────────────────────────────────────────────
+ * Scoped to .specimen-shell. Two-token mirrored palette (paper + ink),
+ * proportional system sans, 1px square outlines, no chromatic accent.
+ *
+ * Light (default): bg = paper, fg = ink
+ * Dark (.dark on shell): bg = ink, fg = paper
+ *
+ * Aesthetic carried by layout discipline + tabular alignment, not by font.
+ * NO Commit Mono on this surface.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ───────────────────────────────────────────────────────────────── */
+
+.specimen-shell {
+  --paper: #bcbcbc;
+  --ink:   #111111;
+
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --line: var(--ink);
+  --line-thin: color-mix(in oklch, var(--ink) 40%, var(--paper));
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif;
+  font-feature-settings: "ss01", "tnum";
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.specimen-shell.dark {
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --line: var(--paper);
+  --line-thin: color-mix(in oklch, var(--paper) 40%, var(--ink));
+}
+
+/* Page backdrop matches shell bg so edges don't peek. */
+body:has(.specimen-shell:not(.dark)) {
+  background: #bcbcbc;
+}
+body:has(.specimen-shell.dark) {
+  background: #111111;
+}
+
+/* ── Square everything inside the shell ──────────────────────────────────── */
+
+.specimen-shell,
+.specimen-shell *,
+.specimen-shell *::before,
+.specimen-shell *::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-sizing: border-box;
+}
+
+.specimen-shell ::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.specimen-shell :focus-visible {
+  outline: 1px solid var(--fg) !important;
+  outline-offset: 0 !important;
+}
+
+/* Strip the global site nav blur for these routes. */
+body:has(.specimen-shell) .nav-header {
+  display: none !important;
+}
+body:has(.specimen-shell) main {
+  animation: none !important;
+}
+
+/* Suppress fumadocs RootProvider effects that might leak. */
+.specimen-shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+
+.spec-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding: 18px 32px;
+  border-bottom: none;
+  gap: 24px;
+  position: relative;
+}
+
+.spec-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  justify-self: start;
+}
+
+.spec-brand-mark {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.spec-brand-name {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.spec-brand-slash {
+  opacity: 0.55;
+  margin: 0 -1px;
+}
+.spec-brand-section {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.spec-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 112px);
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  justify-self: center;
+}
+.spec-nav-group {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.spec-nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in oklch, var(--fg) 72%, var(--bg));
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0;
+  list-style: none;
+  white-space: nowrap;
+  transition: color 120ms ease, opacity 120ms ease;
+}
+.spec-nav-trigger:hover,
+.spec-nav-trigger:focus-visible,
+.spec-nav-group-open .spec-nav-trigger {
+  color: var(--fg);
+  outline: none;
+}
+.spec-nav-label {
+  display: inline-block;
+  position: relative;
+}
+.spec-nav-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -7px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0.45);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.spec-nav-trigger:hover .spec-nav-label::after,
+.spec-nav-trigger:focus-visible .spec-nav-label::after,
+.spec-nav-group-open .spec-nav-label::after {
+  opacity: 0.7;
+  transform: scaleX(1);
+}
+.spec-nav-group-active > .spec-nav-trigger {
+  color: var(--fg);
+}
+.spec-nav-menu {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  z-index: 40;
+  display: none;
+  min-width: 172px;
+  transform: translateX(-50%);
+  flex-direction: column;
+  padding: 7px 0;
+  border: 0;
+  background: color-mix(in oklch, var(--bg) 94%, var(--fg));
+  box-shadow:
+    0 18px 38px color-mix(in oklch, var(--ink) 32%, transparent),
+    inset 0 1px 0 color-mix(in oklch, var(--fg) 12%, transparent);
+}
+.spec-nav-group-open .spec-nav-menu {
+  display: flex;
+}
+.spec-nav-menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 7px 12px;
+  border: 0;
+  color: color-mix(in oklch, var(--fg) 68%, var(--bg));
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+.spec-nav-menu-item:hover,
+.spec-nav-menu-item:focus-visible,
+.spec-nav-menu-item-active {
+  color: var(--fg);
+  outline: none;
+}
+.spec-nav-menu-item-active {
+  background: color-mix(in oklch, var(--fg) 7%, transparent);
+}
+.spec-nav-menu-item:hover,
+.spec-nav-menu-item:focus-visible {
+  background: color-mix(in oklch, var(--fg) 5%, transparent);
+}
+
+.spec-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.spec-status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--fg);
+  flex-shrink: 0;
+}
+
+.spec-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 42px;
+  justify-self: end;
+}
+
+/* Theme toggle (top-right) — bare icon, no chrome. The icon glyph itself
+   fills on hover/click; no border, no background tile. */
+.spec-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+.spec-theme-toggle:hover,
+.spec-theme-toggle:active,
+.spec-theme-toggle:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+.spec-theme-toggle svg circle,
+.spec-theme-toggle svg path {
+  transition: fill 0.12s ease;
+}
+.spec-theme-toggle:hover svg circle,
+.spec-theme-toggle:hover svg path,
+.spec-theme-toggle:active svg circle,
+.spec-theme-toggle:active svg path {
+  fill: currentColor;
+}
+
+.spec-mobile-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  opacity: 0.78;
+  cursor: pointer;
+}
+.spec-mobile-nav-toggle:hover,
+.spec-mobile-nav-toggle:focus-visible {
+  opacity: 1;
+  outline: none;
+}
+
+/* ── MDX prose / shiki code-block monochrome ──────────────────────────────
+ * Fumadocs MDX renders code blocks via shiki, which bakes per-token color
+ * vars (`--shiki-light` / `--shiki-dark`) on inline span styles for syntax
+ * highlighting (purple keywords, blue identifiers, etc.). The specimen
+ * surface is monochrome — chromatic tokens clash. Force every token to
+ * the foreground color while keeping the dark code-block background that
+ * gives the snippet its terminal feel.
+ *
+ * The code-block bg comes from globals.css's prose styling; we override
+ * that to a near-ink panel that reads as terminal output on both themes.
+ */
+.specimen-shell pre code,
+.specimen-shell pre code span {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+.specimen-shell pre {
+  background: var(--ink) !important;
+  border: 0 !important;
+}
+/* Fumadocs wraps shiki <pre> in a <figure class="bg-fd-card …"> with
+   its own card background (rgb(25,25,25)) — that paints a slightly-
+   lighter ring around the inner #111 pre. Flatten the figure so only
+   the pre bg shows. Border lives on the figure, not the pre. */
+.specimen-shell figure.shiki,
+.specimen-shell figure[class*="shiki"] {
+  background: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+}
+/* Dark-mode lift — page bg is also #111, so the code panel needs a
+   slight upward tint to read as a discrete surface instead of merging
+   into the page. Lifts both the figure and the pre by the same
+   amount so they stay coherent. */
+.specimen-shell.dark pre,
+.specimen-shell.dark figure.shiki,
+.specimen-shell.dark figure[class*="shiki"] {
+  background: color-mix(in oklch, var(--paper) 8%, var(--ink)) !important;
+}
+.specimen-shell :not(pre) > code {
+  background: color-mix(in oklch, var(--fg) 8%, transparent);
+  color: var(--fg) !important;
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ── ⌘K command bar overrides ─────────────────────────────────────────────
+ * The CommandBar's `oli-cmdk-*` styles (in globals.css) are tuned for the
+ * old OLI shell: rounded modal + box-shadow + soft backdrop. Specimen
+ * strips radii and shadows, leaving the modal flush + visually weak. These
+ * scoped overrides give the modal stronger contrast (ink backdrop, square
+ * 1px ink border, left-edge marker for selected results) so the surface
+ * feels deliberate inside the shell.
+ */
+.specimen-shell .oli-cmdk-backdrop {
+  background: color-mix(in oklch, var(--ink) 65%, transparent) !important;
+  backdrop-filter: none !important;
+}
+.specimen-shell .oli-cmdk-modal {
+  background: var(--bg) !important;
+  border: 1px solid var(--fg) !important;
+}
+.specimen-shell .oli-cmdk-input-wrap {
+  border-bottom: 1px solid var(--line) !important;
+}
+.specimen-shell .oli-cmdk-input-prefix {
+  color: var(--fg) !important;
+  opacity: 0.7;
+}
+.specimen-shell .oli-cmdk-input {
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+  letter-spacing: 0.02em !important;
+}
+.specimen-shell .oli-cmdk-input::placeholder {
+  color: var(--fg);
+  opacity: 0.4;
+}
+.specimen-shell .oli-cmdk-hint {
+  color: var(--fg) !important;
+  opacity: 0.55;
+}
+.specimen-shell .oli-cmdk-spinner {
+  border-color: var(--line) !important;
+  border-top-color: var(--fg) !important;
+}
+.specimen-shell .oli-cmdk-result[data-selected="true"] {
+  background: color-mix(in oklch, var(--fg) 8%, transparent) !important;
+  border-left: 2px solid var(--fg) !important;
+  padding-left: 10px !important;
+}
+.specimen-shell .oli-cmdk-result-kind {
+  color: var(--fg) !important;
+  opacity: 0.55;
+  border: 1px solid var(--line) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .oli-cmdk-result[data-selected="true"] .oli-cmdk-result-kind {
+  color: var(--fg) !important;
+  opacity: 1;
+  border-color: var(--fg) !important;
+}
+.specimen-shell .oli-cmdk-result-label {
+  color: var(--fg) !important;
+}
+.specimen-shell .oli-cmdk-result-sub {
+  color: var(--fg) !important;
+  opacity: 0.55;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+
+/* ── Pair-agent overrides ───────────────────────────────────────────────────
+ * The DeviceApproval form ships with `dev-*` styles + inline `style={...}`
+ * blocks tuned for the standalone /wallet/device page (dark fill, Instrument
+ * Serif, blue accent). When embedded inside the specimen shell at
+ * /oli/wallet/dashboard/pair we (1) remap the `--color-*` tokens it reads
+ * via inline styles to specimen equivalents, and (2) override the `dev-*`
+ * classes via CSS. Both layers are needed because inline `background:
+ * var(--color-bg-base)` beats class-level rules. Scoped to .specimen-shell
+ * so the legacy page is unaffected.
+ */
+.specimen-shell {
+  --color-bg-base: var(--bg);
+  --color-bg-subtle: var(--bg);
+  --color-bg-muted: var(--bg);
+  --color-bg-emphasis: var(--bg);
+  --color-border-subtle: var(--line);
+  --color-border-default: var(--line);
+  --color-border-emphasis: var(--line);
+  --color-text-primary: var(--fg);
+  --color-text-secondary: var(--fg);
+  --color-text-tertiary: var(--fg);
+  --color-text-quaternary: color-mix(in oklch, var(--fg) 55%, var(--bg));
+  --color-accent: var(--fg);
+}
+.specimen-shell .dev-h1 {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-size: 28px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--fg) !important;
+}
+.specimen-shell .dev-kicker {
+  color: var(--fg) !important;
+  opacity: 0.55;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+.specimen-shell .dev-mono,
+.specimen-shell .dev-mono-addr {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+  color: var(--fg) !important;
+}
+.specimen-shell .dev-input {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-input::placeholder {
+  color: var(--fg);
+  opacity: 0.4;
+}
+.specimen-shell .dev-input:focus {
+  border-color: var(--fg) !important;
+  outline: 1px solid var(--fg);
+  outline-offset: -2px;
+}
+.specimen-shell .dev-btn {
+  background: transparent !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
+  transition: background-color 0.12s ease;
+}
+.specimen-shell .dev-btn:hover {
+  background: color-mix(in oklch, var(--fg) 8%, transparent) !important;
+}
+.specimen-shell .dev-btn:active {
+  background: color-mix(in oklch, var(--fg) 18%, transparent) !important;
+}
+.specimen-shell .dev-btn-secondary {
+  background: transparent !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line) !important;
+  opacity: 0.7;
+}
+.specimen-shell .dev-btn:disabled {
+  opacity: 0.4;
+}
+.specimen-shell .dev-cap {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+  color: var(--fg) !important;
+  opacity: 0.7;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-cap:hover {
+  opacity: 1;
+  border-color: var(--fg) !important;
+}
+.specimen-shell .dev-cap-active {
+  background: var(--fg) !important;
+  color: var(--bg) !important;
+  border-color: var(--fg) !important;
+  opacity: 1;
+}
+.specimen-shell .dev-rule {
+  border-color: var(--line) !important;
+  opacity: 0.5;
+}
+.specimen-shell .dev-stage,
+.specimen-shell .dev-stage-active,
+.specimen-shell .dev-stage-done {
+  color: var(--fg) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
+}
+.specimen-shell .dev-stage-active {
+  font-weight: 700;
+}
+.specimen-shell .dev-stage-done {
+  opacity: 0.55;
+}
+/* Form card background — DeviceApproval wraps in a panel; flatten it onto
+   the specimen surface rather than floating a contrast box. */
+.specimen-shell .dev-shell,
+.specimen-shell [class*="dev-card"],
+.specimen-shell [class*="dev-panel"] {
+  background: transparent !important;
+  border: 1px solid var(--line) !important;
+}
+
+/* ── Live status strip (bottom of every OLI/wallet page) ────────────────── */
+/* Replaces the old keymap legend. Polls /api/wallet/status-strip every 30s
+ * and listens to the OLI feed SSE for live last-event updates. Mono ticker-
+ * tape type per the chart aesthetic memory. */
+
+.spec-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  height: 40px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-commit-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-top: auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.spec-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  height: 100%;
+  border-right: 1px solid var(--line-thin);
+}
+.spec-status-cell:first-child {
+  padding-left: 0;
+}
+.spec-status-cell-last {
+  flex: 1;
+  min-width: 0;
+  border-right: 0;
+  padding-right: 0;
+}
+.spec-status-label {
+  color: color-mix(in oklch, var(--fg) 55%, var(--bg));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+.spec-status-value {
+  color: var(--fg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.spec-status-value-trim {
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spec-status-agent {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.spec-status-sep {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.spec-status-summary {
+  font-weight: 400;
+  color: color-mix(in oklch, var(--fg) 75%, var(--bg));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.spec-status-spark {
+  color: var(--fg);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .spec-status-strip {
+    padding: 0 12px;
+    height: 36px;
+  }
+  .spec-status-cell {
+    padding: 0 10px;
+  }
+  /* Hide the volume + agents cells on narrow viewports — leave txs +
+   * sparkline + last-activity ticker, which is the most signal-rich. */
+  .spec-status-cell:nth-child(2),
+  .spec-status-cell:nth-child(3) {
+    display: none;
+  }
+}
+
+/* ── Shell layout: column flex so the strip pins to bottom of viewport-ish ── */
+
+.specimen-shell {
+  display: flex;
+  flex-direction: column;
+}
+.spec-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}

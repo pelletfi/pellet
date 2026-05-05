@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { listConnectedAgents } from "@/lib/db/wallet-agent-connections";
@@ -17,15 +18,17 @@ export default async function OliWalletOnboardPage() {
   const userId = await readUserSession();
   if (!userId) redirect("/oli/wallet/sign-in");
 
-  // For users who already have agents connected, show the same screen
-  // but the count gives them a contextual signal that they don't HAVE to
-  // add another. Skip button still goes straight to the dashboard.
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
+  const proto = headerList.get("x-forwarded-proto") ?? "http";
+  const mcpUrl = `${proto}://${host}/mcp`;
+
   const connected = await listConnectedAgents(userId);
 
   return (
     <SpecimenOnboardConnect
       basePath="/oli/wallet"
-      mcpUrl="http://localhost:3000/mcp"
+      mcpUrl={mcpUrl}
       connectedCount={connected.length}
     />
   );

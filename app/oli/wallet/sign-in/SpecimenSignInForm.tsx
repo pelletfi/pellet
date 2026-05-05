@@ -82,7 +82,6 @@ export function SpecimenSignInForm({ basePath = "/oli/wallet" }: { basePath?: st
     <div className="spec-signin-shell">
       <section className="spec-signin-explain">
         <h1 className="spec-page-title">
-          <span>02</span>
           <span>Wallet</span>
           <span className="spec-page-title-em">— sign in</span>
         </h1>

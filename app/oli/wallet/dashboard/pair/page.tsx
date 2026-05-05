@@ -36,7 +36,6 @@ export default async function PairAgentPage({
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
-            <span>02</span>
             <span>Wallet</span>
             <span className="spec-page-title-em">— pair agent</span>
           </h1>

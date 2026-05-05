@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { WalletTabs } from "@/components/oli/WalletTabs";
+import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 type ChatMessage = {
   id: string;
@@ -213,32 +215,17 @@ export function SpecimenWalletChat({
   const canReply = Boolean(selectedAgent);
 
   return (
-    <>
+    <div className="spec-wallet-float" style={{ position: "relative", isolation: "isolate" }}>
+      <LiquidGlass
+        style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none" }}
+      />
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
-            <span>02</span>
             <span>Wallet · Chat</span>
           </h1>
-          <div className="spec-switch" role="group" aria-label="Wallet sections">
-            <Link className="spec-switch-seg" href={`${basePath}/dashboard`}>
-              DASHBOARD
-            </Link>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/onboard`}
-              title="Connect Claude Code, Cursor, ChatGPT, or a custom agent"
-            >
-              CONNECT
-            </Link>
-            <span className="spec-switch-seg spec-switch-seg-active">CHAT</span>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/dashboard/agents`}
-              title="Manage connected agents and revoke tokens"
-            >
-              AGENTS
-            </Link>
+          <div className="spec-wallet-tabs-float">
+            <WalletTabs basePath={basePath} />
           </div>
         </div>
         <div className="spec-page-subhead">
@@ -381,6 +368,6 @@ export function SpecimenWalletChat({
         </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }

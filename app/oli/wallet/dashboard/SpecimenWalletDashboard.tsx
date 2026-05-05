@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
 import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
+import { WalletTabs } from "@/components/oli/WalletTabs";
+import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 type User = {
   id: string;
@@ -206,112 +208,65 @@ export function SpecimenWalletDashboard({
   };
 
   return (
-    <>
+    <div className="spec-wallet-float" style={{ position: "relative", isolation: "isolate" }}>
+      <LiquidGlass
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: "none",
+        }}
+      />
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
-            <span>02</span>
             <span>Wallet</span>
           </h1>
-          <div className="spec-switch" role="group" aria-label="Wallet actions">
-            <span className="spec-switch-seg spec-switch-seg-active">DASHBOARD</span>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/onboard`}
-              title="Connect Claude Code, Cursor, ChatGPT, Claude.ai, or a custom agent"
-            >
-              CONNECT
-            </Link>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/chat`}
-              title="Live chat thread between you and your agents"
-            >
-              CHAT
-            </Link>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/dashboard/agents`}
-              title="Manage connected agents and revoke OAuth tokens"
-            >
-              AGENTS
-            </Link>
-            <Link
-              className="spec-switch-seg"
-              href={`${basePath}/dashboard/settings`}
-              title="Wallet settings"
-            >
-              SETTINGS
-            </Link>
+          <div className="spec-wallet-tabs-float">
+            <WalletTabs basePath={basePath} />
           </div>
         </div>
         <div className="spec-page-subhead">
-          <span className="spec-page-subhead-label">ADDR</span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{user.managedAddress}</span>
-          <button
-            type="button"
-            onClick={copyAddress}
-            aria-label={copied ? "Address copied" : "Copy wallet address"}
-            title={copied ? "Copied" : "Copy address"}
-            className="spec-copy-btn"
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 13 13"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
+          <span className="spec-subhead-pair">
+            <span className="spec-page-subhead-label">ADDR</span>
+            <span className="spec-subhead-addr">{user.managedAddress}</span>
+            <button
+              type="button"
+              onClick={copyAddress}
+              aria-label={copied ? "Address copied" : "Copy wallet address"}
+              title={copied ? "Copied" : "Copy address"}
+              className="spec-copy-btn"
             >
-              <rect x="3.5" y="3.5" width="7" height="7" />
-              <path d="M2 8.5 L2 2 L8.5 2" />
-            </svg>
-          </button>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              >
+                <rect x="3.5" y="3.5" width="7" height="7" />
+                <path d="M2 8.5 L2 2 L8.5 2" />
+              </svg>
+            </button>
+          </span>
+          <span className="spec-subhead-pair">
+            <span className="spec-page-subhead-label">PASSKEY</span>
+            <span>{passkeyLabel}</span>
+          </span>
           <span className="spec-page-subhead-dot">·</span>
-          <span className="spec-page-subhead-label">PASSKEY</span>
-          <span>{passkeyLabel}</span>
-          <span className="spec-page-subhead-dot">·</span>
-          <span className="spec-page-subhead-label">PAIRED</span>
-          <span>
-            {pairedCount} {pairedCount === 1 ? "device" : "devices"}
+          <span className="spec-subhead-pair">
+            <span className="spec-page-subhead-label">PAIRED</span>
+            <span>
+              {pairedCount} {pairedCount === 1 ? "device" : "devices"}
+            </span>
           </span>
         </div>
       </section>
 
-      <section className="spec-wallet-health" aria-label="Wallet health">
-        <div className={`spec-wallet-health-state spec-wallet-health-state-${healthState.replace(" ", "-")}`}>
-          <span className="spec-wallet-health-dot" />
-          <span>{healthState}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">ACTIVE KEYS</span>
-          <span>{activeSessions.length}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">AGENTS</span>
-          <span>{connectedAgents.length}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">ALLOWANCE LEFT</span>
-          <span>{fmtUsdCompact(allowanceRemaining)}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">LAST SPEND</span>
-          <span>{lastSpend ? timeAgo(lastSpend.createdAt) : "none"}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">NEXT EXPIRY</span>
-          <span>{nextExpiring ? expiryIn(nextExpiring.expiresAt) : "none"}</span>
-        </div>
-        <div className="spec-wallet-health-item">
-          <span className="spec-wallet-health-label">PENDING</span>
-          <span>{pendingSessions.length}</span>
-        </div>
-      </section>
-
-      <section className="spec-strip">
-        <div className="spec-strip-cell" style={{ flex: "1.4 1 0" }}>
+      <section className="spec-kpi-stack">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">TOTAL BALANCE</span>
           <span className="spec-strip-value spec-strip-value-lg">{fmtUsd(totalUsd)}</span>
           <span
@@ -335,7 +290,7 @@ export function SpecimenWalletDashboard({
             )}
           </span>
         </div>
-        <div className="spec-strip-cell">
+        <div className="spec-kpi-card">
           <span className="spec-strip-label">SENT · 30D</span>
           <span className="spec-strip-value spec-strip-value-md">{fmtUsdCompact(sent30d)}</span>
           <span className="spec-strip-sub">
@@ -345,30 +300,32 @@ export function SpecimenWalletDashboard({
             </span>
           </span>
         </div>
-        <div className="spec-strip-cell">
-          <span className="spec-strip-label">SESSION KEYS</span>
-          <span className="spec-strip-value spec-strip-value-md">
-            {activeSessions.length} / {sessions.length || 0}
-          </span>
-          <span className="spec-strip-sub">
-            <span>active out of issued</span>
-            {pendingSessions.length > 0 && (
-              <span className="spec-strip-sub-faint">
-                {pendingSessions.length} pending
-              </span>
-            )}
-          </span>
-        </div>
-        <div className="spec-strip-cell">
-          <span className="spec-strip-label">PAIRED DEVICES</span>
-          <span className="spec-strip-value spec-strip-value-md">
-            {pairedCount}
-          </span>
-          <span className="spec-strip-sub">
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {pairedDevices.join(" · ")}
+        <div className="spec-kpi-row-2">
+          <div className="spec-kpi-card">
+            <span className="spec-strip-label">SESSION KEYS</span>
+            <span className="spec-strip-value spec-strip-value-md">
+              {activeSessions.length} / {sessions.length || 0}
             </span>
-          </span>
+            <span className="spec-strip-sub">
+              <span>active out of issued</span>
+              {pendingSessions.length > 0 && (
+                <span className="spec-strip-sub-faint">
+                  {pendingSessions.length} pending
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="spec-kpi-card">
+            <span className="spec-strip-label">PAIRED DEVICES</span>
+            <span className="spec-strip-value spec-strip-value-md">
+              {pairedCount}
+            </span>
+            <span className="spec-strip-sub">
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {pairedDevices.join(" · ")}
+              </span>
+            </span>
+          </div>
         </div>
       </section>
 
@@ -383,7 +340,7 @@ export function SpecimenWalletDashboard({
           expiredCount={revokedOrExpired.length}
         />
       </section>
-    </>
+    </div>
   );
 }
 
@@ -424,13 +381,13 @@ function ActivityColumn({
       ) : (
         <>
           <div className="spec-activity-head">
-            <span style={{ width: 80, flexShrink: 0 }}>WHEN</span>
-            <span style={{ width: 92, flexShrink: 0 }}>TX</span>
+            <span className="spec-pay-col-when" style={{ width: 80, flexShrink: 0 }}>WHEN</span>
+            <span className="spec-pay-col-tx" style={{ width: 92, flexShrink: 0 }}>TX</span>
             <span style={{ flex: 1, minWidth: 0 }}>PAYMENT / POLICY</span>
-            <span style={{ width: 86, flexShrink: 0 }} className="spec-cell-r">
+            <span className="spec-pay-col-session spec-cell-r" style={{ width: 86, flexShrink: 0 }}>
               SESSION
             </span>
-            <span style={{ width: 100, flexShrink: 0 }} className="spec-cell-r">
+            <span className="spec-pay-col-amount spec-cell-r" style={{ width: 100, flexShrink: 0 }}>
               AMOUNT
             </span>
             <span style={{ width: 70, flexShrink: 0 }} className="spec-cell-r">

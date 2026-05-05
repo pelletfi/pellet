@@ -107,10 +107,10 @@ export function SpecimenPaymentRow({
         <span className="spec-activity-row-chevron" aria-hidden="true">
           ›
         </span>
-        <span style={{ width: 80, flexShrink: 0, opacity: 0.7 }}>
+        <span className="spec-pay-col-when" style={{ width: 80, flexShrink: 0, opacity: 0.7 }}>
           {timeAgo(p.createdAt)}
         </span>
-        <span style={{ width: 92, flexShrink: 0 }}>
+        <span className="spec-pay-col-tx" style={{ width: 92, flexShrink: 0 }}>
           {p.txHash ? (
             <span style={{ textDecoration: "underline", textUnderlineOffset: 2 }}>
               {shortHash(p.txHash)}
@@ -127,6 +127,7 @@ export function SpecimenPaymentRow({
         </span>
         {showSession && (
           <span
+            className="spec-pay-col-session"
             style={{
               width: 86,
               flexShrink: 0,
@@ -139,7 +140,7 @@ export function SpecimenPaymentRow({
             {p.sessionId.slice(0, 6)}…
           </span>
         )}
-        <span style={{ width: 100, flexShrink: 0 }} className="spec-cell-r">
+        <span className="spec-pay-col-amount spec-cell-r" style={{ width: 100, flexShrink: 0 }}>
           {fmtUsd(amountUsdc, 4)}
         </span>
         <span
