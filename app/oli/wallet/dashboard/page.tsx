@@ -155,6 +155,7 @@ export default async function OliWalletDashboardPage({
     kind: r.kind,
     content: r.content,
     intentId: r.intentId,
+    metadata: r.metadata ?? null,
     ts: r.createdAt.toISOString(),
   }));
 

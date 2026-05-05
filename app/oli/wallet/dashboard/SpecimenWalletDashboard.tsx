@@ -113,6 +113,7 @@ type ChatMsg = {
   kind: string;
   content: string;
   intentId: string | null;
+  metadata: unknown;
   ts: string;
 };
 
