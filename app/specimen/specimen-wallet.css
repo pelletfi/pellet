@@ -1053,14 +1053,12 @@
     gap: 10px;
   }
   .spec-wallet-float .spec-kpi-stack {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
-  .spec-wallet-float .spec-kpi-stack .spec-kpi-row-2 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+  .spec-wallet-float .spec-kpi-stack > .spec-kpi-card:first-child {
+    grid-column: 1 / -1;
   }
   .spec-wallet-float .spec-kpi-card {
     padding: 14px;
@@ -1095,7 +1093,7 @@
 
   /* Session cards tighter */
   .spec-session-card {
-    padding: 12px 0;
+    padding: 14px 16px;
     gap: 8px;
   }
   .spec-meta-grid {
