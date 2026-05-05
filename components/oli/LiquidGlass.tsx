@@ -15,6 +15,8 @@ uniform float iTime;
 uniform vec4 iMouse;
 uniform vec3 uBg;
 uniform vec3 uFg;
+uniform float uCellSize;
+uniform float uDim;
 
 out vec4 fragColor;
 
@@ -64,7 +66,7 @@ void main() {
   vec2 p = (2.0 * gl_FragCoord.xy - iResolution.xy) / iResolution.y;
   vec2 m = (2.0 * iMouse.xy - iResolution.xy) / iResolution.y;
 
-  float cellSize = 8.0;
+  float cellSize = uCellSize;
   vec2 cellID = floor(gl_FragCoord.xy / cellSize);
   vec2 cellUV = fract(gl_FragCoord.xy / cellSize);
   vec2 cellCenter = (cellID + 0.5) * cellSize;
@@ -93,7 +95,7 @@ void main() {
   float aa = fwidth(d);
   float dt = 1.0 - smoothstep(r - aa, r + aa, d);
 
-  float intensity = dt * v * 2.5;
+  float intensity = dt * v * 2.5 * uDim;
 
   // on light bg, darken dots subtly; on dark bg, lighten them
   float bgLum = dot(uBg, vec3(0.299, 0.587, 0.114));
@@ -147,6 +149,8 @@ function initGL(canvas: HTMLCanvasElement) {
     uMouse: gl.getUniformLocation(prog, "iMouse"),
     uBg: gl.getUniformLocation(prog, "uBg"),
     uFg: gl.getUniformLocation(prog, "uFg"),
+    uCell: gl.getUniformLocation(prog, "uCellSize"),
+    uDim: gl.getUniformLocation(prog, "uDim"),
   };
 }
 
@@ -166,7 +170,7 @@ export function LiquidGlass({
 
     const ctx = initGL(canvas);
     if (!ctx) return;
-    const { gl, uRes, uTime, uMouse, uBg, uFg } = ctx;
+    const { gl, uRes, uTime, uMouse, uBg, uFg, uCell, uDim } = ctx;
 
     let raf = 0;
     const t0 = performance.now();
@@ -223,6 +227,9 @@ export function LiquidGlass({
 
       sampleTheme();
       resize();
+      const mobile = canvas!.clientWidth <= 640;
+      gl.uniform1f(uCell, mobile ? 5.0 : 8.0);
+      gl.uniform1f(uDim, mobile ? 0.5 : 1.0);
       gl.uniform3f(uRes, canvas!.width, canvas!.height, 1);
       gl.uniform1f(uTime, (now - t0) / 1000);
       gl.uniform4f(uMouse, m.x, m.y, 0, 0);
