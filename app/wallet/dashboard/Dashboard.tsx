@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ChatDrawer } from "./ChatDrawer";
+import { TEMPO_EXPLORER_URL, defaultTempoChainId, TEMPO_CHAIN_IDS } from "@/lib/wallet/tempo-config";
 
 type User = {
   id: string;
@@ -40,7 +42,13 @@ type Payment = {
   createdAt: string;
 };
 
-const EXPLORER = "https://explore.testnet.tempo.xyz";
+type Subscription = {
+  plan: string;
+  expiresAt: string;
+} | null;
+
+const EXPLORER = TEMPO_EXPLORER_URL;
+const IS_MAINNET = defaultTempoChainId() === TEMPO_CHAIN_IDS.PRESTO_MAINNET;
 
 export function Dashboard({
   user,
@@ -48,6 +56,7 @@ export function Dashboard({
   chart,
   sessions,
   payments,
+  subscription = null as Subscription,
   basePath = "/wallet",
 }: {
   user: User;
@@ -55,6 +64,7 @@ export function Dashboard({
   chart: ChartPoint[];
   sessions: Session[];
   payments: Payment[];
+  subscription?: Subscription;
   /**
    * URL prefix for internal navigation. "/wallet" for the canonical surface,
    * "/oli/wallet" when the wallet is embedded inside the OLI shell so the
@@ -64,6 +74,16 @@ export function Dashboard({
 }) {
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [swapFrom, setSwapFrom] = useState<string | null>(null);
+  const [swapTo, setSwapTo] = useState("");
+  const [swapAmt, setSwapAmt] = useState("");
+  const [swapQuote, setSwapQuote] = useState<string | null>(null);
+  const [swapQuoteSymbol, setSwapQuoteSymbol] = useState("");
+  const [swapping, setSwapping] = useState(false);
+
+  const swappableTokens = balances.filter((b) =>
+    ["pathUSD", "USDC.e", "USDT0"].includes(b.symbol),
+  );
 
   const onRevoke = async (sessionId: string) => {
     if (!confirm("Revoke this session? Bearer dies immediately. On-chain key revoke ships in a follow-up.")) return;
@@ -108,11 +128,8 @@ export function Dashboard({
           padding: 48px 32px 96px;
           display: flex;
           flex-direction: column;
-          gap: 32px;
+          gap: 28px;
         }
-        /* Type pattern (locked across wallet pages): h1 italic + stat-value
-         * italic; h2 upright. h1 size varies by surface importance; h2 fixed
-         * at 22, stat-value fixed at 28. */
         .dash-h1 {
           font-family: 'Instrument Serif', Georgia, serif;
           font-size: 48px;
@@ -128,13 +145,17 @@ export function Dashboard({
           color: var(--color-text-quaternary);
         }
         .dash-card {
-          border: 1px solid var(--color-border-subtle);
-          border-radius: 8px;
+          border: none;
+          border-radius: 24px;
           padding: 24px 28px;
           background: var(--color-bg-base);
           display: flex;
           flex-direction: column;
           gap: 12px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 16px 56px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+          .dash-card { box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 20px 64px rgba(0,0,0,0.35); }
         }
         .dash-card-head {
           display: flex;
@@ -142,7 +163,7 @@ export function Dashboard({
           gap: 12px;
           padding-bottom: 12px;
           margin-bottom: 4px;
-          border-bottom: 1px solid var(--color-border-subtle);
+          border-bottom: none;
         }
         .dash-card-h2 {
           font-family: 'Instrument Serif', Georgia, serif;
@@ -165,7 +186,7 @@ export function Dashboard({
         .dash-addr {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           font-family: var(--font-mono);
           font-size: 13px;
           color: var(--color-text-secondary);
@@ -174,22 +195,24 @@ export function Dashboard({
         .dash-btn {
           padding: 8px 14px;
           background: transparent;
-          border: 1px solid var(--color-border-subtle);
+          border: none;
+          border-radius: 12px;
           color: var(--color-text-secondary);
           font-family: var(--font-mono);
           font-size: 11px;
           letter-spacing: 0.06em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: border-color var(--duration-fast) ease;
+          transition: background 0.15s ease, color 0.15s ease;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.06);
         }
-        .dash-btn:hover { border-color: var(--color-accent); color: var(--color-text-primary); }
+        .dash-btn:hover { background: rgba(0,0,0,0.04); color: var(--color-text-primary); }
         .dash-btn-primary {
-          background: var(--color-accent);
-          border-color: var(--color-accent);
-          color: #fff;
+          background: var(--color-text-primary);
+          color: var(--color-bg-base);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.1);
         }
-        .dash-btn-primary:hover { opacity: 0.9; color: #fff; }
+        .dash-btn-primary:hover { opacity: 0.9; color: var(--color-bg-base); }
         .dash-empty {
           font-family: var(--font-mono);
           font-size: 12px;
@@ -197,21 +220,49 @@ export function Dashboard({
           padding: 24px 0;
           text-align: center;
         }
+        .dash-notice {
+          padding: 16px 20px;
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          line-height: 1.5;
+          color: var(--color-text-tertiary);
+        }
+        .dash-notice-icon {
+          flex-shrink: 0;
+          font-size: 14px;
+          line-height: 1.2;
+          opacity: 0.5;
+        }
+        .dash-notice a {
+          color: var(--color-text-secondary);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
         .dash-grid-stats {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 1px;
-          background: var(--color-border-subtle);
-          border: 1px solid var(--color-border-subtle);
-          border-radius: 8px;
-          overflow: hidden;
+          gap: 12px;
+          background: transparent;
+          border: none;
+          border-radius: 0;
+          overflow: visible;
         }
         .dash-stat {
           background: var(--color-bg-base);
-          padding: 18px 22px;
+          padding: 20px 24px;
           display: flex;
           flex-direction: column;
           gap: 6px;
+          border-radius: 20px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 16px 56px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+          .dash-stat { box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 20px 64px rgba(0,0,0,0.35); }
         }
         .dash-stat-label {
           font-family: var(--font-mono);
@@ -233,7 +284,7 @@ export function Dashboard({
           grid-template-columns: 1fr auto auto auto auto;
           gap: 12px 16px;
           padding: 12px 0;
-          border-bottom: 1px solid var(--color-border-subtle);
+          border-bottom: 1px solid color-mix(in srgb, var(--color-text-primary) 4%, transparent);
           align-items: center;
         }
         .dash-row:last-child { border-bottom: 0; }
@@ -244,17 +295,19 @@ export function Dashboard({
           color: var(--color-text-quaternary);
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          border-bottom: 1px solid var(--color-border-subtle);
         }
         .dash-cap-bar {
           width: 110px;
           height: 4px;
-          background: rgba(255,255,255,0.06);
+          background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+          border-radius: 2px;
           position: relative;
+          overflow: hidden;
         }
         .dash-cap-bar-fill {
           height: 100%;
-          background: var(--color-accent);
+          border-radius: 2px;
+          background: var(--color-text-primary);
           transition: width 0.6s ease;
         }
         .dash-cap-bar-text {
@@ -268,43 +321,106 @@ export function Dashboard({
           font-family: var(--font-mono);
           font-size: 9px;
           letter-spacing: 0.08em;
-          padding: 2px 6px;
-          border: 1px solid var(--color-border-subtle);
+          padding: 3px 8px;
+          border: none;
+          border-radius: 6px;
           color: var(--color-text-tertiary);
+          background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
         }
         .dash-pill-active {
-          color: var(--color-accent);
-          border-color: var(--color-accent);
+          color: var(--color-text-primary);
+          background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
         }
         .dash-pill-revoked {
           color: var(--color-text-quaternary);
-          border-style: dashed;
         }
         .dash-pill-expired {
           color: var(--color-text-quaternary);
         }
         .dash-link {
-          color: var(--color-accent);
+          color: var(--color-text-primary);
           font-family: var(--font-mono);
           font-size: 11px;
           text-decoration: none;
-          border-bottom: 1px solid var(--color-border-subtle);
+          opacity: 0.6;
+          transition: opacity 0.15s ease;
         }
-        .dash-link:hover { border-color: var(--color-accent); color: var(--color-text-primary); }
+        .dash-link:hover { opacity: 1; }
         .dash-addr-full { word-break: break-all; }
         .dash-addr-trunc { display: none; }
         @media (max-width: 700px) {
-          .dashpage { padding: 32px 20px 80px; }
+          .dashpage { padding: 32px 16px 80px; gap: 20px; }
           .dash-h1 { font-size: 36px; }
+          .dash-card { padding: 20px 20px; border-radius: 20px; }
+          .dash-stat { padding: 16px 18px; border-radius: 16px; }
           .dash-addr-full { display: none; }
           .dash-addr-trunc { display: inline; }
           .dash-row {
             grid-template-columns: 1fr auto;
             row-gap: 4px;
           }
-          /* Hide the 5-col header row when data rows collapse to 2 cols —
-           * label + status pill is enough context on mobile. */
           .dash-row-head { display: none; }
+          .dash-grid-stats { gap: 10px; }
+        }
+        .dash-balance-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--color-border-subtle);
+        }
+        .dash-balance-row:last-child { border-bottom: none; }
+        .dash-balance-symbol {
+          font-family: var(--font-mono);
+          font-size: 14px;
+          flex: 1;
+        }
+        .dash-balance-amount {
+          font-family: var(--font-mono);
+          font-size: 14px;
+          font-variant-numeric: tabular-nums;
+          color: var(--color-text-primary);
+        }
+        .dash-swap-icon {
+          padding: 4px 8px;
+          border-radius: 8px;
+          border: 1px solid var(--color-border-subtle);
+          background: transparent;
+          cursor: pointer;
+          font-size: 14px;
+          color: var(--color-text-tertiary);
+          transition: background 0.15s;
+        }
+        .dash-swap-icon:hover {
+          background: var(--color-bg-subtle);
+          color: var(--color-text-primary);
+        }
+        .dash-swap-panel {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 16px 0 4px;
+          border-top: 1px solid var(--color-border-subtle);
+          margin-top: 4px;
+        }
+        .dash-select {
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1px solid var(--color-border-subtle);
+          background: var(--color-bg-subtle);
+          font-size: 14px;
+          font-family: var(--font-mono);
+          outline: none;
+          color: var(--color-text-primary);
+        }
+        .dash-swap-input {
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1px solid var(--color-border-subtle);
+          background: var(--color-bg-subtle);
+          font-size: 14px;
+          font-family: var(--font-mono);
+          outline: none;
         }
       `}</style>
 
@@ -358,6 +474,18 @@ export function Dashboard({
         </div>
       </header>
 
+      {IS_MAINNET && (
+        <div className="dash-notice">
+          <span className="dash-notice-icon">!</span>
+          <span>
+            Your wallet is secured by a single passkey on this device.
+            If your device supports iCloud Keychain or Google Password Manager, your passkey syncs automatically.
+            Otherwise, losing this device means losing access to your funds.{" "}
+            <Link href={`${basePath}/dashboard/settings`}>review passkey →</Link>
+          </span>
+        </div>
+      )}
+
       {/* 7-day spend chart */}
       <SpendChart chart={chart} />
 
@@ -376,6 +504,156 @@ export function Dashboard({
           <span className="dash-stat-value">${totalUsedUsdc.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* Plan */}
+        <div className="dash-card">
+          <div className="dash-card-head">
+            <h2 className="dash-card-h2">Plan</h2>
+            <span className="dash-card-meta">
+              {subscription ? "PRO" : "FREE"}
+            </span>
+          </div>
+          {subscription ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <span className="dash-mono" style={{ fontSize: 14 }}>
+                Pro — expires {new Date(subscription.expiresAt).toLocaleDateString()}
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
+                Free tier — 1 agent, 1% fee
+              </span>
+              <button
+                className="dash-btn dash-btn-primary"
+                onClick={async () => {
+                  if (!confirm("Upgrade to Pro for 5 USDC/month?\n\nUnlimited agents, 0.25% fee.")) return;
+                  const res = await fetch("/api/wallet/subscribe", { method: "POST" });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    alert(`Upgrade failed: ${data.error}`);
+                    return;
+                  }
+                  window.location.reload();
+                }}
+              >
+                Upgrade to Pro — $5/mo
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Balances */}
+        <div className="dash-card">
+          <div className="dash-card-head">
+            <h2 className="dash-card-h2">Balances</h2>
+          </div>
+          {balances.map((b) => (
+            <div key={b.symbol}>
+              <div className="dash-balance-row">
+                <span className="dash-balance-symbol">{b.symbol}</span>
+                <span className="dash-balance-amount">${b.display}</span>
+                {swappableTokens.length >= 2 && swappableTokens.some((t) => t.symbol === b.symbol) && (
+                  <button
+                    className="dash-swap-icon"
+                    title={`Swap ${b.symbol}`}
+                    onClick={() => {
+                      if (swapFrom === b.symbol) {
+                        setSwapFrom(null);
+                        return;
+                      }
+                      setSwapFrom(b.symbol);
+                      const defaultTo = swappableTokens.find((t) => t.symbol !== b.symbol);
+                      setSwapTo(defaultTo?.symbol ?? "");
+                      setSwapAmt("");
+                      setSwapQuote(null);
+                    }}
+                  >
+                    ↔
+                  </button>
+                )}
+              </div>
+              {swapFrom === b.symbol && (
+                <div className="dash-swap-panel">
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span className="dash-mono" style={{ fontSize: 13, color: "var(--color-text-tertiary)", minWidth: 32 }}>To</span>
+                    <select
+                      className="dash-select"
+                      value={swapTo}
+                      onChange={(e) => { setSwapTo(e.target.value); setSwapQuote(null); }}
+                      style={{ flex: 1 }}
+                    >
+                      {swappableTokens.filter((t) => t.symbol !== b.symbol).map((t) => (
+                        <option key={t.symbol} value={t.symbol}>{t.symbol}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    className="dash-swap-input"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder={`Amount in ${b.symbol}`}
+                    value={swapAmt}
+                    onChange={(e) => { setSwapAmt(e.target.value); setSwapQuote(null); }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="dash-btn"
+                      disabled={!swapAmt}
+                      onClick={async () => {
+                        const tokenIn = swappableTokens.find((t) => t.symbol === b.symbol);
+                        const tokenOut = swappableTokens.find((t) => t.symbol === swapTo);
+                        if (!tokenIn || !tokenOut) return;
+                        const res = await fetch("/api/wallet/swap", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ token_in: tokenIn.address, token_out: tokenOut.address, amount: swapAmt, quote_only: true }),
+                        });
+                        const data = await res.json();
+                        if (data.ok) { setSwapQuote(data.amount_out); setSwapQuoteSymbol(swapTo); }
+                        else alert(data.error);
+                      }}
+                    >
+                      Quote
+                    </button>
+                    <button
+                      className="dash-btn dash-btn-primary"
+                      disabled={!swapQuote || swapping}
+                      onClick={async () => {
+                        const tokenIn = swappableTokens.find((t) => t.symbol === b.symbol);
+                        const tokenOut = swappableTokens.find((t) => t.symbol === swapTo);
+                        if (!tokenIn || !tokenOut) return;
+                        setSwapping(true);
+                        try {
+                          const res = await fetch("/api/wallet/swap", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ token_in: tokenIn.address, token_out: tokenOut.address, amount: swapAmt }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) { alert(`Swap failed: ${data.error}`); return; }
+                          setSwapFrom(null);
+                          setSwapAmt("");
+                          setSwapQuote(null);
+                          window.location.reload();
+                        } finally {
+                          setSwapping(false);
+                        }
+                      }}
+                    >
+                      {swapping ? "Swapping…" : "Swap"}
+                    </button>
+                  </div>
+                  {swapQuote && (
+                    <span className="dash-mono" style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
+                      ≈ {swapQuote} {swapQuoteSymbol}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
       {/* Active agent sessions */}
       <section className="dash-card">
@@ -524,10 +802,14 @@ export function Dashboard({
         )}
       </section>
 
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)", textAlign: "center", marginTop: 12 }}>
-        Testnet · all funds are play money. Mainnet pending sponsor + recovery.{" "}
-        <Link href={basePath} style={{ color: "var(--color-accent)" }}>roadmap →</Link>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-text-quaternary)", textAlign: "center", marginTop: 12, paddingBottom: 48 }}>
+        {IS_MAINNET
+          ? "Mainnet · self-custody · every payment is an on-chain transaction."
+          : "Testnet · all funds are play money."
+        }
       </p>
+
+      <ChatDrawer />
     </div>
   );
 }
@@ -606,7 +888,7 @@ function SpendChart({ chart }: { chart: ChartPoint[] }) {
           x2={W}
           y1={H - padB}
           y2={H - padB}
-          stroke="rgba(255,255,255,0.08)"
+          stroke="color-mix(in srgb, var(--color-text-primary) 6%, transparent)"
           strokeWidth={1}
         />
         {chart.map((p, i) => {

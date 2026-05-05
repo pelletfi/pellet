@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { walletUsers, walletSessions, walletSpendLog } from "@/lib/db/schema";
 import { sql, eq, and, desc } from "drizzle-orm";
 import { readWalletBalances } from "@/lib/wallet/tempo-balance";
+import { getActiveSubscription } from "@/lib/wallet/subscriptions";
 import { Dashboard } from "./Dashboard";
 
 export const dynamic = "force-dynamic";
@@ -99,6 +100,16 @@ export async function renderDashboard(basePath: string) {
     /* leave empty; UI falls back gracefully */
   }
 
+  let subscription: { plan: string; expiresAt: string } | null = null;
+  try {
+    const sub = await getActiveSubscription(user.id);
+    if (sub) {
+      subscription = { plan: sub.plan, expiresAt: sub.expiresAt.toISOString() };
+    }
+  } catch {
+    /* leave null */
+  }
+
   return (
     <Dashboard
       user={{
@@ -133,6 +144,7 @@ export async function renderDashboard(basePath: string) {
         status: p.status,
         createdAt: p.createdAt.toISOString(),
       }))}
+      subscription={subscription}
       basePath={basePath}
     />
   );
