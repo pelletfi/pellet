@@ -1057,3 +1057,100 @@
   }
 }
 
+/* ── Ledger float (shader bg + card sections) ────────────────────────────── */
+
+.spec-ledger-float {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 24px 32px;
+}
+
+.spec-ledger-float .spec-page-header {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.spec-ledger-float .spec-kpi-stack {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.spec-ledger-float .spec-kpi-card {
+  border: none;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.specimen-shell.dark .spec-ledger-float .spec-kpi-card {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+
+.spec-ledger-float .spec-tables {
+  margin: 0;
+  border: none;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.spec-ledger-float .spec-table {
+  border: none;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  overflow: clip;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+  padding: 22px 26px 26px;
+}
+
+.specimen-shell.dark .spec-ledger-float .spec-table {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+
+@media (max-width: 768px) {
+  .spec-ledger-float {
+    padding: 0 12px 24px;
+    gap: 14px;
+  }
+  .spec-ledger-float .spec-page-header {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .spec-ledger-float .spec-kpi-stack {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .spec-ledger-float .spec-kpi-card {
+    padding: 16px 18px;
+    gap: 10px;
+    border-radius: 12px !important;
+  }
+  .spec-ledger-float .spec-kpi-card .spec-strip-value {
+    font-size: 26px;
+    line-height: 26px;
+  }
+  .spec-ledger-float .spec-tables {
+    flex-direction: column;
+  }
+  .spec-ledger-float .spec-table {
+    padding: 16px 16px 18px;
+    border-radius: 12px !important;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 420px) {
+  .spec-ledger-float .spec-kpi-stack {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+

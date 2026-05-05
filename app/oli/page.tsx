@@ -10,6 +10,7 @@ import {
 } from "@/components/specimen/dashboard-charts";
 import { SpecimenSettlementRow } from "@/components/oli/SpecimenSettlementRow";
 import type { SettlementEvent } from "@/components/oli/SpecimenSettlementRow";
+import { LiquidGlass } from "@/components/oli/LiquidGlass";
 
 export const dynamic = "force-dynamic";
 
@@ -95,11 +96,11 @@ function KpiStrip({
 }) {
   const totalUsd = totalsByToken.usdce + totalsByToken.usdt0 + totalsByToken.other;
   return (
-    <section className="spec-strip">
-      <div className="spec-strip-cell">
+    <section className="spec-kpi-stack">
+      <div className="spec-kpi-card">
         <span className="spec-strip-label">MPP TXS · {windowLabel}</span>
         <span
-          className="spec-strip-value"
+          className="spec-strip-value spec-strip-value-md"
           style={{ display: "inline-flex", alignItems: "baseline", gap: 12 }}
         >
           <span>{txCount.toLocaleString()}</span>
@@ -111,17 +112,17 @@ function KpiStrip({
           <span>decoded transfer events · hourly shape</span>
         </span>
       </div>
-      <div className="spec-strip-cell">
+      <div className="spec-kpi-card">
         <span className="spec-strip-label">AGENTS ACTIVE</span>
-        <span className="spec-strip-value">{agentsActive.toLocaleString()}</span>
+        <span className="spec-strip-value spec-strip-value-md">{agentsActive.toLocaleString()}</span>
         <span className="spec-strip-sub">
           <span>watched entities · ≥1 event</span>
         </span>
       </div>
-      <div className="spec-strip-cell">
+      <div className="spec-kpi-card">
         <span className="spec-strip-label">SERVICE REVENUE · {windowLabel}</span>
         <span
-          className="spec-strip-value"
+          className="spec-strip-value spec-strip-value-md"
           style={{ display: "inline-flex", alignItems: "baseline", gap: 12 }}
         >
           <span>{fmtUsdCompact(totalUsd || Number(amountSumWei) / 1_000_000)}</span>
@@ -136,9 +137,9 @@ function KpiStrip({
           </span>
         </span>
       </div>
-      <div className="spec-strip-cell">
+      <div className="spec-kpi-card">
         <span className="spec-strip-label">PROVIDERS DETECTED</span>
-        <span className="spec-strip-value">{providersDetected.toLocaleString()}</span>
+        <span className="spec-strip-value spec-strip-value-md">{providersDetected.toLocaleString()}</span>
         <span className="spec-strip-sub">
           <span>distinct routed providers + fp groups</span>
         </span>
@@ -397,7 +398,15 @@ export default async function OliDashboardPage({
   ]);
 
   return (
-    <>
+    <div className="spec-ledger-float" style={{ position: "relative", isolation: "isolate" }}>
+      <LiquidGlass
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: "none",
+        }}
+      />
       <PageHeader currentHours={windowHours} />
       <KpiStrip
         windowLabel={windowLabel}
@@ -450,6 +459,6 @@ export default async function OliDashboardPage({
           }))}
         />
       </section>
-    </>
+    </div>
   );
 }
