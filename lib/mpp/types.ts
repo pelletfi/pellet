@@ -35,6 +35,14 @@ export interface MppService {
   fetchedAt?: string;
 }
 
+export interface MppDirectoryEntry {
+  id: string;
+  name: string;
+  serviceUrl: string;
+  description: string;
+  categories: string[];
+}
+
 export interface MppPreset {
   id: string;
   name: string;

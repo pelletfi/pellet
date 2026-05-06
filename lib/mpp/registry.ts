@@ -1,4 +1,4 @@
-import type { MppPreset, MppService } from "./types";
+import type { MppDirectoryEntry, MppPreset, MppService } from "./types";
 import { parseDiscoveryDoc } from "./parse-discovery";
 
 export interface RegistryEntry {
@@ -91,6 +91,25 @@ export const MPP_PRESETS: MppPreset[] = [
     defaultBudget: "10000000",
   },
 ];
+
+const MPP_DIRECTORY_URL = "https://mpp.dev/api/services";
+
+export async function fetchDirectory(
+  signal?: AbortSignal,
+): Promise<MppDirectoryEntry[]> {
+  try {
+    const res = await fetch(MPP_DIRECTORY_URL, {
+      signal,
+      headers: { Accept: "application/json" },
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    return body.services ?? [];
+  } catch {
+    return [];
+  }
+}
 
 export async function fetchServiceDiscovery(
   entry: RegistryEntry,

@@ -8,6 +8,7 @@ const TABS = [
   { label: "CONNECT", href: "/onboard" },
   { label: "TXS", href: "/dashboard/txs" },
   { label: "AGENTS", href: "/dashboard/agents" },
+  { label: "SERVICES", href: "/dashboard/services" },
   { label: "DOCS", href: "/docs", absolute: true },
   { label: "SETTINGS", href: "/dashboard/settings" },
 ] as const;

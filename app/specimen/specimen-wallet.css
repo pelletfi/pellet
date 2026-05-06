@@ -1294,3 +1294,141 @@
   }
 }
 
+/* ── Services catalog ──────────────────────────────────────────────────── */
+
+.spec-filter-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 150ms ease;
+}
+.spec-filter-btn:hover {
+  opacity: 0.8;
+}
+.spec-filter-btn-active {
+  opacity: 1;
+}
+
+.spec-services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  padding-top: 16px;
+}
+
+.spec-service-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 16px !important;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+.specimen-shell.dark .spec-service-card {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+
+.spec-service-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.spec-service-card-name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.spec-service-card-cat {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.spec-service-card-desc {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: color-mix(in oklch, var(--fg) 60%, var(--bg));
+}
+
+.spec-service-card-meta {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  row-gap: 4px;
+  column-gap: 8px;
+  font-size: 11px;
+}
+.spec-service-card-meta-label {
+  opacity: 0.45;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.spec-service-card-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line-thin);
+}
+.spec-service-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+.spec-service-endpoint-method {
+  width: 36px;
+  flex-shrink: 0;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.spec-service-endpoint-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+.spec-service-endpoint-price {
+  flex-shrink: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.spec-service-card-link {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.4;
+  transition: opacity 150ms ease;
+}
+.spec-service-card-link:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+  .spec-services-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+

@@ -3,6 +3,7 @@ export type {
   MppEndpoint,
   MppServiceInfo,
   MppService,
+  MppDirectoryEntry,
   MppPreset,
 } from "./types";
 
@@ -11,6 +12,7 @@ export type { RegistryEntry } from "./registry";
 export {
   MPP_SERVICES,
   MPP_PRESETS,
+  fetchDirectory,
   fetchServiceDiscovery,
   fetchAllServices,
 } from "./registry";
