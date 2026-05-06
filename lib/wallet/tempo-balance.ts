@@ -1,12 +1,5 @@
 // Read on-chain balances for a Pellet-managed Tempo account. Server-side
-// only; uses viem against the chain's RPC. No state, no caching beyond
-// what Vercel's edge cache handles per-page.
-//
-// We read USDC.e specifically because that's what wallets are
-// authorized for in v0. pathUSD (the canonical Moderato test stable from
-// tempo_fundAddress) lives at a separate address and is exposed
-// alongside, since faucet-funded users will have pathUSD before they
-// swap to USDC.e.
+// only; uses viem against the chain's RPC.
 
 import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
@@ -35,16 +28,10 @@ export async function readWalletBalances(account: Address): Promise<WalletBalanc
     transport: http(chain.rpcUrl),
   });
 
-  // Tokens to read — chain's USDC.e + (testnet only) pathUSD.
   const tokens: Array<{ address: Address; symbol: string }> = [
     { address: chain.usdcE, symbol: "USDC.e" },
+    { address: chain.demoStable, symbol: "pathUSD" },
   ];
-  if (chain.chainId === tempoModerato.id) {
-    tokens.push({ address: chain.demoStable, symbol: "pathUSD" });
-  }
-  if (chain.usdt0) {
-    tokens.push({ address: chain.usdt0, symbol: "USDT0" });
-  }
 
   const results = await Promise.all(
     tokens.map(async (t) => {

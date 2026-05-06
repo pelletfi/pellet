@@ -10,7 +10,13 @@ type State =
   | { kind: "busy"; what: Mode }
   | { kind: "error"; message: string };
 
-export function SpecimenSignInForm({ basePath = "/wallet" }: { basePath?: string }) {
+export function SpecimenSignInForm({
+  basePath = "/wallet",
+  returnTo,
+}: {
+  basePath?: string;
+  returnTo?: string | null;
+}) {
   const [mode, setMode] = useState<Mode>("signin");
   const [state, setState] = useState<State>({ kind: "idle" });
   const [pairCmd, setPairCmd] = useState<string>(
@@ -69,7 +75,7 @@ export function SpecimenSignInForm({ basePath = "/wallet" }: { basePath?: string
         setState({ kind: "error", message: verify.error ?? "sign-in failed" });
         return;
       }
-      window.location.href = `${basePath}/dashboard`;
+      window.location.href = returnTo ?? `${basePath}/dashboard`;
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
     }
@@ -97,7 +103,7 @@ export function SpecimenSignInForm({ basePath = "/wallet" }: { basePath?: string
         });
         return;
       }
-      window.location.href = `${basePath}/dashboard`;
+      window.location.href = returnTo ?? `${basePath}/dashboard`;
     } catch (e) {
       setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
     }

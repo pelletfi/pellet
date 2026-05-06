@@ -11,10 +11,18 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export default async function OliWalletSignInPage() {
-  // Already signed in → straight to the dashboard. Avoids re-auth prompts
-  // for users who land on /wallet (which redirects here).
+export default async function OliWalletSignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const returnTo =
+    typeof sp.returnTo === "string" && sp.returnTo.startsWith("/")
+      ? sp.returnTo
+      : null;
+
   const userId = await readUserSession();
-  if (userId) redirect("/wallet/dashboard");
-  return <SpecimenSignInForm basePath="/wallet" />;
+  if (userId) redirect(returnTo ?? "/wallet/dashboard");
+  return <SpecimenSignInForm basePath="/wallet" returnTo={returnTo} />;
 }

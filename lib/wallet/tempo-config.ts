@@ -46,10 +46,10 @@ const PRESTO: ChainConfig = {
   chainId: TEMPO_CHAIN_IDS.PRESTO_MAINNET,
   name: "Presto",
   rpcUrl: "https://rpc.tempo.xyz",
-  sponsorUrl: process.env.SPONSOR_URL ?? `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/wallet/sponsor`,
+  sponsorUrl: process.env.SPONSOR_URL ?? "https://sponsor.tempo.xyz",
   explorerUrl: "https://explore.tempo.xyz",
   usdcE: "0x20c000000000000000000000b9537d11c60e8b50",
-  demoStable: "0x20c000000000000000000000b9537d11c60e8b50", // mainnet uses real USDC.e
+  demoStable: "0x20c0000000000000000000000000000000000000", // pathUSD
   usdt0: "0x20c00000000000000000000014f22ca97301eb73",
 };
 

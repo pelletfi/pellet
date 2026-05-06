@@ -89,7 +89,12 @@ export async function authenticateMcpRequest(
     const rows = await db
       .select()
       .from(walletSessions)
-      .where(eq(walletSessions.id, token.sessionId))
+      .where(
+        and(
+          eq(walletSessions.id, token.sessionId),
+          isNull(walletSessions.revokedAt),
+        ),
+      )
       .limit(1);
     session = rows[0] ?? null;
   }

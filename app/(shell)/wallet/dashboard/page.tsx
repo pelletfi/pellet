@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { loadDashboardData, type DashboardData } from "@/lib/wallet/dashboard-data";
+import { defaultTempoChainId, TEMPO_CHAIN_IDS } from "@/lib/wallet/tempo-config";
 import { recentChatMessages } from "@/lib/db/wallet-chat";
 import { SpecimenWalletDashboard } from "./SpecimenWalletDashboard";
 
@@ -169,6 +170,7 @@ export default async function OliWalletDashboardPage({
       agents={displayData.agents}
       basePath="/wallet"
       chatMessages={chatMessages}
+      testnet={defaultTempoChainId() === TEMPO_CHAIN_IDS.MODERATO_TESTNET}
     />
   );
 }

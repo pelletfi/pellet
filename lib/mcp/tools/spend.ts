@@ -19,7 +19,7 @@ function resolveTokenAddress(symbol: TokenSymbol): `0x${string}` | null {
     case "pathUSD":
       return chain.demoStable;
     case "USDT0":
-      return null;
+      return chain.usdt0 ?? null;
   }
 }
 
@@ -44,7 +44,7 @@ export function registerSpendTools(
           .describe("Amount as a decimal string, e.g. '1.50'."),
         token: z
           .enum(TOKEN_SYMBOLS)
-          .describe("Token symbol — USDC.e or USDT0 on mainnet, pathUSD on testnet."),
+          .describe("Token symbol."),
         memo: z
           .string()
           .max(200)

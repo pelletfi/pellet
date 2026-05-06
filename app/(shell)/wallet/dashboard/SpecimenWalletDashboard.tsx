@@ -429,6 +429,7 @@ export function SpecimenWalletDashboard({
   agents,
   basePath = "/wallet",
   chatMessages = [],
+  testnet = false,
 }: {
   user: User;
   balances: Balance[];
@@ -438,6 +439,7 @@ export function SpecimenWalletDashboard({
   agents: Agent[];
   basePath?: string;
   chatMessages?: ChatMsg[];
+  testnet?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -584,26 +586,28 @@ export function SpecimenWalletDashboard({
         <div className="spec-kpi-card">
           <span className="spec-strip-label">TOTAL BALANCE</span>
           <span className="spec-strip-value spec-strip-value-lg">{fmtUsd(totalUsd)}</span>
-          <button
-            type="button"
-            className="spec-faucet-btn"
-            disabled={dripping}
-            onClick={async () => {
-              setDripping(true);
-              try {
-                const res = await fetch("/api/wallet/faucet", { method: "POST" });
-                const d = await res.json();
-                if (!res.ok) { alert(d.error ?? "Faucet failed"); return; }
-                window.location.reload();
-              } catch {
-                alert("Faucet request failed");
-              } finally {
-                setDripping(false);
-              }
-            }}
-          >
-            {dripping ? "DRIPPING…" : "TESTNET FAUCET"}
-          </button>
+          {testnet && (
+            <button
+              type="button"
+              className="spec-faucet-btn"
+              disabled={dripping}
+              onClick={async () => {
+                setDripping(true);
+                try {
+                  const res = await fetch("/api/wallet/faucet", { method: "POST" });
+                  const d = await res.json();
+                  if (!res.ok) { alert(d.error ?? "Faucet failed"); return; }
+                  window.location.reload();
+                } catch {
+                  alert("Faucet request failed");
+                } finally {
+                  setDripping(false);
+                }
+              }}
+            >
+              {dripping ? "DRIPPING…" : "TESTNET FAUCET"}
+            </button>
+          )}
         </div>
         <div className="spec-kpi-card spec-balances-card">
           <div className="spec-col-head">

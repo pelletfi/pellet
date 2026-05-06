@@ -3,6 +3,7 @@ import { consumeAuthorizationCode } from "@/lib/oauth/codes";
 import { verifyChallenge, isSupportedMethod } from "@/lib/oauth/pkce";
 import { issueAccessToken } from "@/lib/oauth/tokens";
 import { recordAgentConnection } from "@/lib/db/wallet-agent-connections";
+import { findActiveSession } from "@/lib/oauth/session-link";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ScopeName } from "@/lib/oauth/scopes";
 import { getActiveSubscription, countActiveAgentConnections } from "@/lib/wallet/subscriptions";
@@ -107,9 +108,12 @@ export async function POST(req: Request) {
   // Scopes were validated at /authorize time before being stored, so we
   // can safely narrow the array type here.
   const scopes = codeRow.scopes as ScopeName[];
+  const activeSession = await findActiveSession(codeRow.userId);
+  console.log("[oauth/token] userId:", codeRow.userId, "activeSession:", activeSession?.id ?? "none");
   const { token, tokenId, expiresAt } = await issueAccessToken({
     clientId: codeRow.clientId,
     userId: codeRow.userId,
+    sessionId: activeSession?.id ?? null,
     scopes,
     audience: codeRow.audience,
   });

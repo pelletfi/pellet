@@ -255,11 +255,7 @@ export function SpecimenConnectedAgents({
         init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
       const chain = { ...baseChain, feeToken: init.chain.usdc_e };
 
-      const transport = init.chain.sponsor_url
-        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url), {
-            policy: "sign-only",
-          })
-        : http(init.chain.rpc_url);
+      const transport = http(init.chain.rpc_url);
 
       const client = createWalletClient({
         account: userAccount,
@@ -271,7 +267,6 @@ export function SpecimenConnectedAgents({
       const result = await client.accessKey.authorizeSync({
         accessKey,
         expiry: init.expiry_unix,
-        feePayer: true,
         gas: BigInt(5_000_000),
         limits: [
           {
@@ -546,14 +541,23 @@ export function SpecimenConnectedAgents({
             })
           )}
 
-          <Link
-            href={`${basePath}/dashboard/sessions`}
-            className="spec-issue-new"
-            style={{ marginTop: 0 }}
-          >
-            <span className="spec-keycap" aria-hidden="true">+</span>
-            <span>ISSUE NEW KEY</span>
-          </Link>
+          {visible.length > 0 && (
+            <div className="spec-agent-id-actions" style={{ alignSelf: "center", marginTop: 8 }}>
+              <a
+                role="button"
+                tabIndex={0}
+                className="spec-agent-id-action"
+                style={{ cursor: "pointer", padding: "9px 24px" }}
+                onClick={() => {
+                  const first = visible[0];
+                  setIssueCap(0);
+                  setIssuing({ clientId: first.clientId, stage: "caps" });
+                }}
+              >
+                + ISSUE NEW KEY
+              </a>
+            </div>
+          )}
 
           {/* ── Activity ──────────────────────────────────── */}
           <div className="spec-page-subhead" style={{ paddingTop: 4, paddingLeft: 8 }}>

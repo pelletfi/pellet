@@ -5,16 +5,22 @@ import { tempoChainConfig, platformFeeConfig, computeFee } from "@/lib/wallet/te
 import { resolveFeeBps } from "@/lib/wallet/subscriptions";
 import { eq, sql } from "drizzle-orm";
 import {
+  fillTransaction,
+  sendRawTransaction,
+} from "viem/actions";
+import {
+  createPublicClient,
   createWalletClient,
   http,
   parseAbi,
+  encodeFunctionData,
   isHex,
   keccak256,
   stringToHex,
   pad,
 } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
-import { Account, withRelay, tempoActions } from "viem/tempo";
+import { Account, tempoActions, withRelay } from "viem/tempo";
 import { privateKeyToAddress } from "viem/accounts";
 
 type WalletSessionRow = typeof walletSessions.$inferSelect;
@@ -64,6 +70,29 @@ export type PaymentResult = PaymentSuccess | PaymentError;
 const TIP20_ABI = parseAbi([
   "function transferWithMemo(address to, uint256 amount, bytes32 memo)",
 ]);
+
+async function sendSponsoredTx(
+  client: any,
+  account: any,
+  tx: { to: `0x${string}`; data: `0x${string}` },
+): Promise<`0x${string}`> {
+  // 1. Fill via relay — sets fee payer address/nonce but does NOT co-sign yet.
+  const filled = await fillTransaction(client, {
+    account,
+    ...tx,
+    feePayer: true,
+    gas: BigInt(800_000),
+  } as any);
+  // 2. Sign WITH feePayer:true — produces 0x78 "awaiting co-sign" format
+  //    (feePayerSignature === null). The default Tempo serializer handles
+  //    this; do NOT override with client.chain.serializers.transaction.
+  const signed = await account.signTransaction({
+    ...filled.transaction,
+    feePayer: true,
+  } as any);
+  // 3. Send — transport sees 0x78 → relay co-signs → 0x76 → broadcast.
+  return sendRawTransaction(client, { serializedTransaction: signed });
+}
 
 export async function executePayment(input: PaymentInput): Promise<PaymentResult> {
   const { session, user, to, amountWei, token: tokenOverride } = input;
@@ -133,16 +162,21 @@ export async function executePayment(input: PaymentInput): Promise<PaymentResult
   );
   const accessKey = Account.fromSecp256k1(agentPk, { access: userAccount });
 
-  if (!chain.sponsorUrl) {
-    return { ok: false, error: "no sponsor configured for this chain", status: 500 };
-  }
+  // Separate read client — the walletClient's Tempo formatters add account
+  // context to eth_call that the AccountKeychain precompile rejects.
+  const readClient = createPublicClient({
+    chain: viemChain,
+    transport: http(chain.rpcUrl),
+  }).extend(tempoActions());
+
+  const transport = chain.sponsorUrl
+    ? withRelay(http(chain.rpcUrl), http(chain.sponsorUrl))
+    : http(chain.rpcUrl);
 
   const client = createWalletClient({
     account: accessKey,
     chain: viemChain,
-    transport: withRelay(http(chain.rpcUrl), http(chain.sponsorUrl), {
-      policy: "sign-only",
-    }),
+    transport,
   }).extend(tempoActions());
 
   // On-chain checks: key status + period-aware remaining limit in parallel.
@@ -151,8 +185,8 @@ export async function executePayment(input: PaymentInput): Promise<PaymentResult
   try {
     const accountAddr = user.managedAddress as `0x${string}`;
     const [meta, limitInfo] = await Promise.all([
-      client.accessKey.getMetadata({ account: accountAddr, accessKey: agentAddress }),
-      client.accessKey.getRemainingLimit({
+      readClient.accessKey.getMetadata({ account: accountAddr, accessKey: agentAddress }),
+      readClient.accessKey.getRemainingLimit({
         account: accountAddr,
         accessKey: agentAddress,
         token,
@@ -219,14 +253,14 @@ export async function executePayment(input: PaymentInput): Promise<PaymentResult
   let feeTxHash: `0x${string}` | null = null;
   if (feeConfig.enabled && feeWei > BigInt(0)) {
     try {
-      feeTxHash = await client.writeContract({
-        address: token,
-        abi: TIP20_ABI,
-        functionName: "transferWithMemo",
-        args: [feeConfig.treasury, feeWei, pad("0x00", { size: 32 })],
-        feePayer: true,
-        gas: BigInt(800_000),
-      } as never);
+      feeTxHash = await sendSponsoredTx(client, accessKey, {
+        to: token,
+        data: encodeFunctionData({
+          abi: TIP20_ABI,
+          functionName: "transferWithMemo",
+          args: [feeConfig.treasury, feeWei, pad("0x00", { size: 32 })],
+        }),
+      });
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       console.error("[wallet/pay] fee transfer failed:", detail);
@@ -240,14 +274,14 @@ export async function executePayment(input: PaymentInput): Promise<PaymentResult
 
   let txHash: `0x${string}`;
   try {
-    txHash = await client.writeContract({
-      address: token,
-      abi: TIP20_ABI,
-      functionName: "transferWithMemo",
-      args: [to, recipientWei, memo],
-      feePayer: true,
-      gas: BigInt(800_000),
-    } as never);
+    txHash = await sendSponsoredTx(client, accessKey, {
+      to: token,
+      data: encodeFunctionData({
+        abi: TIP20_ABI,
+        functionName: "transferWithMemo",
+        args: [to, recipientWei, memo],
+      }),
+    });
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);
     console.error("[wallet/pay] sign+send failed:", detail);
