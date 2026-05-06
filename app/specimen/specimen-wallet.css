@@ -739,6 +739,67 @@
   opacity: 1;
 }
 
+.spec-issue-key-btn {
+  margin-top: 4px;
+  padding: 8px 16px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: inherit;
+  border: 1px solid color-mix(in oklch, var(--fg) 20%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+  align-self: flex-start;
+}
+.spec-issue-key-btn:hover {
+  background: color-mix(in oklch, var(--fg) 8%, transparent);
+  border-color: color-mix(in oklch, var(--fg) 40%, transparent);
+}
+
+.spec-issue-inline {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.spec-issue-cap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.spec-issue-cap-btn {
+  padding: 8px 6px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-family: inherit;
+  border: 1px solid color-mix(in oklch, var(--fg) 15%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.spec-issue-cap-btn:hover {
+  border-color: color-mix(in oklch, var(--fg) 40%, transparent);
+}
+.spec-issue-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.spec-issue-error {
+  font-size: 11px;
+  color: #c44;
+  line-height: 1.4;
+}
+.spec-issue-progress {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.8;
+  opacity: 0.8;
+}
+
 .spec-pending-card {
   margin-top: 14px;
   border: none;

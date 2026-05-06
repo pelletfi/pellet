@@ -37,6 +37,7 @@ export default async function OliWalletAgentsPage() {
         tokenState: agent.tokenState,
         activeTokenCount: agent.activeTokenCount,
         webhookEnabled: agent.webhookEnabled,
+        sessionId: agent.sessionId,
       }))}
       sessions={data?.sessions ?? []}
       payments={data?.payments ?? []}

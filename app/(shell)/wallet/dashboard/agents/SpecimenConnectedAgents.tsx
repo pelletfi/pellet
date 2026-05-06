@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { WalletTabs } from "@/components/oli/WalletTabs";
+import { createWalletClient, http } from "viem";
+import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
+import { Account, withRelay, tempoActions } from "viem/tempo";
 
 type Agent = {
   id: string;
@@ -16,6 +19,7 @@ type Agent = {
   tokenState: "active" | "expired" | "revoked" | "missing";
   activeTokenCount: number;
   webhookEnabled: boolean;
+  sessionId: string | null;
 };
 
 type Session = {
@@ -39,6 +43,43 @@ type Payment = {
   status: string;
   createdAt: string;
 };
+
+type IssuingState = {
+  clientId: string;
+  stage: "caps" | "init" | "signing" | "broadcasting" | "finalizing";
+  error?: string;
+} | null;
+
+type InitResponse = {
+  session_id: string;
+  credential_id: string;
+  public_key_uncompressed: `0x${string}`;
+  managed_address: `0x${string}`;
+  rp_id: string;
+  agent_key_address: `0x${string}`;
+  agent_private_key: `0x${string}`;
+  chain: {
+    id: number;
+    name: string;
+    rpc_url: string;
+    sponsor_url: string | null;
+    explorer_url: string;
+    usdc_e: `0x${string}`;
+  };
+  account_keychain_address: `0x${string}`;
+  expiry_unix: number;
+  spend_cap_wei: string;
+  per_call_cap_wei: string;
+  client_id: string | null;
+};
+
+const PRESET_CAPS = [
+  { label: "$5 / 24h", spendCapUsdc: 5, perCallUsdc: 1, ttlSeconds: 24 * 3600 },
+  { label: "$25 / 7d", spendCapUsdc: 25, perCallUsdc: 5, ttlSeconds: 7 * 24 * 3600 },
+  { label: "$100 / 30d", spendCapUsdc: 100, perCallUsdc: 10, ttlSeconds: 30 * 24 * 3600 },
+];
+
+const TRANSFER_WITH_MEMO = "0x95777d59" as const;
 
 function fmtAgo(iso: string | null): string {
   if (!iso) return "never";
@@ -101,6 +142,8 @@ export function SpecimenConnectedAgents({
   const [revoking, setRevoking] = useState<Set<string>>(new Set());
   const [revoked, setRevoked] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [issuing, setIssuing] = useState<IssuingState>(null);
+  const [issueCap, setIssueCap] = useState(0);
 
   const visible = useMemo(
     () => agents.filter((a) => !revoked.has(a.id)),
@@ -163,6 +206,126 @@ export function SpecimenConnectedAgents({
     }
   }
 
+  async function issueKey(clientId: string) {
+    const cap = PRESET_CAPS[issueCap];
+
+    setIssuing({ clientId, stage: "init" });
+    setError(null);
+
+    let init: InitResponse;
+    try {
+      const res = await fetch("/api/wallet/sessions/issue", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          spend_cap_wei: String(cap.spendCapUsdc * 1_000_000),
+          per_call_cap_wei: String(cap.perCallUsdc * 1_000_000),
+          session_ttl_seconds: cap.ttlSeconds,
+          client_id: clientId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setIssuing({ clientId, stage: "caps", error: data.error ?? "issue failed" });
+        return;
+      }
+      init = data as InitResponse;
+    } catch (e) {
+      setIssuing({ clientId, stage: "caps", error: e instanceof Error ? e.message : String(e) });
+      return;
+    }
+
+    setIssuing({ clientId, stage: "signing" });
+    let txHash: `0x${string}`;
+    try {
+      const userAccount = Account.fromWebAuthnP256(
+        {
+          id: init.credential_id,
+          publicKey: init.public_key_uncompressed,
+        },
+        { rpId: init.rp_id },
+      );
+
+      const accessKey = Account.fromSecp256k1(init.agent_private_key, {
+        access: userAccount,
+      });
+
+      const baseChain =
+        init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      const chain = { ...baseChain, feeToken: init.chain.usdc_e };
+
+      const transport = init.chain.sponsor_url
+        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url), {
+            policy: "sign-only",
+          })
+        : http(init.chain.rpc_url);
+
+      const client = createWalletClient({
+        account: userAccount,
+        chain,
+        transport,
+      }).extend(tempoActions());
+
+      setIssuing({ clientId, stage: "broadcasting" });
+      const result = await client.accessKey.authorizeSync({
+        accessKey,
+        expiry: init.expiry_unix,
+        feePayer: true,
+        gas: BigInt(5_000_000),
+        limits: [
+          {
+            token: init.chain.usdc_e,
+            limit: BigInt(init.spend_cap_wei),
+            period: 86400,
+          },
+        ],
+        scopes: [
+          { address: init.chain.usdc_e, selector: TRANSFER_WITH_MEMO },
+        ],
+      });
+      txHash = result.receipt.transactionHash as `0x${string}`;
+    } catch (e) {
+      setIssuing({
+        clientId,
+        stage: "caps",
+        error: "on-chain authorize failed: " + (e instanceof Error ? e.message : String(e)),
+      });
+      return;
+    }
+
+    setIssuing({ clientId, stage: "finalizing" });
+    try {
+      const finRes = await fetch("/api/wallet/sessions/issue-finalize", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          session_id: init.session_id,
+          tx_hash: txHash,
+          client_id: clientId,
+        }),
+      });
+      const finData = await finRes.json();
+      if (!finRes.ok) {
+        setIssuing({
+          clientId,
+          stage: "caps",
+          error: finData.error ?? "finalize failed",
+        });
+        return;
+      }
+    } catch (e) {
+      setIssuing({
+        clientId,
+        stage: "caps",
+        error: e instanceof Error ? e.message : String(e),
+      });
+      return;
+    }
+
+    setIssuing(null);
+    window.location.reload();
+  }
+
   return (
     <div className="spec-wallet-float">
       <section className="spec-page-header">
@@ -196,46 +359,117 @@ export function SpecimenConnectedAgents({
       ) : (
         <>
           {/* ── Identity ──────────────────────────────────── */}
-          {visible.map((a) => (
-            <div key={a.id} className="spec-agent-detail-card">
-              <div className="spec-agent-detail-top">
-                <div className="spec-agent-detail-name">
-                  <span className="spec-agent-detail-title">{a.clientName.replace(/\s*\(.*\)$/, "")}</span>
-                  <span className="spec-agent-detail-meta">
-                    <span className={`spec-agents-tag spec-agents-tag-${a.clientType}`}>
-                      {clientTypeLabel(a.clientType)}
+          {visible.map((a) => {
+            const isIssuingThis = issuing?.clientId === a.clientId;
+            const needsKey = !a.sessionId && a.tokenState === "active";
+
+            return (
+              <div key={a.id} className="spec-agent-detail-card">
+                <div className="spec-agent-detail-top">
+                  <div className="spec-agent-detail-name">
+                    <span className="spec-agent-detail-title">{a.clientName.replace(/\s*\(.*\)$/, "")}</span>
+                    <span className="spec-agent-detail-meta">
+                      <span className={`spec-agents-tag spec-agents-tag-${a.clientType}`}>
+                        {clientTypeLabel(a.clientType)}
+                      </span>
+                      <span className="spec-faint">{a.clientId.slice(0, 24)}{a.clientId.length > 24 ? "…" : ""}</span>
                     </span>
-                    <span className="spec-faint">{a.clientId.slice(0, 24)}{a.clientId.length > 24 ? "…" : ""}</span>
-                  </span>
+                  </div>
+                  <div className="spec-agent-detail-status">
+                    <span className={`spec-agents-token-state spec-agents-token-state-${a.tokenState}`}>
+                      {a.tokenState}
+                    </span>
+                    <button
+                      type="button"
+                      className="spec-agents-revoke"
+                      disabled={revoking.has(a.id)}
+                      onClick={() => void revokeAgent(a.id)}
+                    >
+                      {revoking.has(a.id) ? "…" : "REVOKE"}
+                    </button>
+                  </div>
                 </div>
-                <div className="spec-agent-detail-status">
-                  <span className={`spec-agents-token-state spec-agents-token-state-${a.tokenState}`}>
-                    {a.tokenState}
-                  </span>
+                <div className="spec-agent-detail-grid">
+                  <span className="spec-meta-label">scopes</span>
+                  <span>{a.scopes.map((s) => s.replace(/^wallet:/, "")).join(" · ")}</span>
+                  <span className="spec-meta-label">connected</span>
+                  <span>{fmtAgo(a.connectedAt)}</span>
+                  <span className="spec-meta-label">last seen</span>
+                  <span>{fmtAgo(a.lastSeenAt)}</span>
+                  <span className="spec-meta-label">token</span>
+                  <span>{fmtUntil(a.tokenExpiresAt)}</span>
+                  <span className="spec-meta-label">transport</span>
+                  <span>{a.webhookEnabled ? "webhook" : "poll"}</span>
+                  <span className="spec-meta-label">access key</span>
+                  <span>{a.sessionId ? "linked" : "none"}</span>
+                </div>
+
+                {/* ── Inline issue key flow ── */}
+                {needsKey && !isIssuingThis && (
                   <button
                     type="button"
-                    className="spec-agents-revoke"
-                    disabled={revoking.has(a.id)}
-                    onClick={() => void revokeAgent(a.id)}
+                    className="spec-issue-key-btn"
+                    onClick={() => {
+                      setIssueCap(0);
+                      setIssuing({ clientId: a.clientId, stage: "caps" });
+                    }}
                   >
-                    {revoking.has(a.id) ? "…" : "REVOKE"}
+                    ISSUE ACCESS KEY
                   </button>
-                </div>
+                )}
+
+                {isIssuingThis && issuing.stage === "caps" && (
+                  <div className="spec-issue-inline">
+                    <div className="spec-issue-cap-grid">
+                      {PRESET_CAPS.map((c, i) => (
+                        <button
+                          key={c.label}
+                          type="button"
+                          className="spec-issue-cap-btn"
+                          style={{
+                            background: i === issueCap ? "var(--fg)" : "transparent",
+                            color: i === issueCap ? "var(--bg)" : "var(--fg)",
+                            borderColor: i === issueCap ? "var(--fg)" : undefined,
+                          }}
+                          onClick={() => setIssueCap(i)}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                    {issuing.error && (
+                      <div className="spec-issue-error">{issuing.error}</div>
+                    )}
+                    <div className="spec-issue-actions">
+                      <button
+                        type="button"
+                        className="spec-issue-key-btn"
+                        onClick={() => void issueKey(a.clientId)}
+                      >
+                        APPROVE · {PRESET_CAPS[issueCap].label}
+                      </button>
+                      <button
+                        type="button"
+                        className="spec-agents-revoke"
+                        onClick={() => setIssuing(null)}
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {isIssuingThis && issuing.stage !== "caps" && (
+                  <div className="spec-issue-progress">
+                    <div style={{ opacity: issuing.stage === "init" ? 1 : 0.4 }}>· preparing key</div>
+                    <div style={{ opacity: issuing.stage === "signing" ? 1 : 0.4 }}>· waiting for passkey</div>
+                    <div style={{ opacity: issuing.stage === "broadcasting" ? 1 : 0.4 }}>· broadcasting tx</div>
+                    <div style={{ opacity: issuing.stage === "finalizing" ? 1 : 0.4 }}>· finalizing</div>
+                  </div>
+                )}
               </div>
-              <div className="spec-agent-detail-grid">
-                <span className="spec-meta-label">scopes</span>
-                <span>{a.scopes.map((s) => s.replace(/^wallet:/, "")).join(" · ")}</span>
-                <span className="spec-meta-label">connected</span>
-                <span>{fmtAgo(a.connectedAt)}</span>
-                <span className="spec-meta-label">last seen</span>
-                <span>{fmtAgo(a.lastSeenAt)}</span>
-                <span className="spec-meta-label">token</span>
-                <span>{fmtUntil(a.tokenExpiresAt)}</span>
-                <span className="spec-meta-label">transport</span>
-                <span>{a.webhookEnabled ? "webhook" : "poll"}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* ── Session Keys ──────────────────────────────── */}
           <div className="spec-page-subhead" style={{ paddingTop: 4, paddingLeft: 8 }}>
