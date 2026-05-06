@@ -861,21 +861,22 @@ function PresetPicker({ basePath }: { basePath: string }) {
                 <span className="spec-preset-card-desc">{preset.description}</span>
               </button>
               {active && (
-                <div className="spec-preset-detail">
-                  <div className="spec-preset-service-list">
-                    {preset.serviceIds.map((id) => (
-                      <span key={id} className="spec-preset-service-tag">
-                        {SERVICE_NAMES[id] ?? id}
-                      </span>
-                    ))}
+                <>
+                  <div className="spec-preset-detail">
+                    <div className="spec-preset-service-list">
+                      {preset.serviceIds.map((id) => (
+                        <span key={id} className="spec-preset-service-tag">
+                          {SERVICE_NAMES[id] ?? id}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <Link
-                    href={`${basePath}/onboard?preset=${preset.id}`}
-                    className="spec-preset-activate"
-                  >
-                    ACTIVATE PRESET
-                  </Link>
-                </div>
+                  <div className="spec-agent-id-actions">
+                    <Link href={`${basePath}/onboard?preset=${preset.id}`}>
+                      ACTIVATE PRESET
+                    </Link>
+                  </div>
+                </>
               )}
             </div>
           );

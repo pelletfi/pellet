@@ -183,6 +183,17 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
 }
 
+.spec-wallet-float .spec-preset-card {
+  border: none;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+
+.specimen-shell.dark .spec-wallet-float .spec-preset-card {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
 
 /* ── Terminal card ──────────────────────────────────────────────────────── */
 .spec-terminal-card {
@@ -513,6 +524,15 @@
 .specimen-shell .spec-agent-id-card .spec-agent-id-ascii {
   background: transparent !important;
   color: color-mix(in oklch, var(--fg) 80%, var(--bg)) !important;
+}
+.spec-agent-id-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.specimen-shell.dark .spec-agent-id-video {
+  filter: invert(1) hue-rotate(180deg);
 }
 .spec-agent-id-meta {
   position: relative;
@@ -1478,16 +1498,27 @@
 .spec-preset-activate {
   display: block;
   text-align: center;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  padding: 10px 0;
-  border: 1px solid var(--fg);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 14px;
   color: inherit;
   text-decoration: none;
-  transition: background 150ms ease;
+  transition: background 150ms ease, color 150ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 20px 60px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+.specimen-shell.dark .spec-preset-activate {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .spec-preset-activate:hover {
-  background: color-mix(in oklch, var(--fg) 8%, transparent);
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--fg);
+}
+.specimen-shell.dark .spec-preset-activate:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
 }
 
 /* ── Services catalog ──────────────────────────────────────────────────── */
