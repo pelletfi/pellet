@@ -63,6 +63,22 @@ Rendered inside the terminal card area in monospace, not a separate UI:
     "dev": "next dev & npx pellet-terminal"
 ```
 
+### First-Run Onboarding (connected, no agent yet)
+When the terminal bridge connects and no agent has been paired to this wallet, the shell session starts with a guided welcome instead of a bare prompt. This runs as a shell script (`.pellet/welcome.sh`) that the bridge executes on first connection:
+
+```
+  welcome to pellet
+
+  let's connect your first agent.
+  type its name to get started:
+
+  $ _
+```
+
+The user types `claude`, `codex`, or any CLI name. The shell runs it normally — the agent launches, discovers wallet context via environment variables (`PELLET_WALLET_ADDRESS`, etc.), and the pairing completes as a side effect of usage. No tokens to copy, no separate pairing page.
+
+After the first agent connection, subsequent terminal sessions drop straight to a normal shell prompt. The onboarding only runs once (tracked via a `.pellet/.onboarded` flag file).
+
 ## Backend: Local WebSocket Bridge
 
 ### pellet-terminal binary
