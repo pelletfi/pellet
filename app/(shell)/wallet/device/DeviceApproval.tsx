@@ -98,6 +98,8 @@ const PRESET_CAPS = [
 ];
 
 const TRANSFER_WITH_MEMO = "0x95777d59" as const;
+const SWAP_EXACT_AMOUNT_IN = "0xf8856c0f" as const;
+const STABLECOIN_DEX = "0xdec0000000000000000000000000000000000000" as const;
 
 type InitResponse = {
   user_id: string;
@@ -281,6 +283,7 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
           ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
             ? [{ address: init.chain.demo_stable, selector: TRANSFER_WITH_MEMO }]
             : []),
+          { address: STABLECOIN_DEX, selector: SWAP_EXACT_AMOUNT_IN },
         ],
       });
       txHash = result.receipt.transactionHash as `0x${string}`;

@@ -95,7 +95,12 @@ export const SELECTORS = {
   getRemainingLimitWithPeriod: "0xa7f72cab",
   // x402 settlement primitive on TIP-20.
   transferWithMemo: "0x95777d59",
+  // Stablecoin DEX (0xdec0…) swap.
+  swapExactAmountIn: "0xf8856c0f",
 } as const;
+
+export const STABLECOIN_DEX_ADDRESS =
+  "0xdec0000000000000000000000000000000000000" as const;
 
 export type PlatformFeeConfig =
   | { enabled: true; bps: number; treasury: `0x${string}` }
