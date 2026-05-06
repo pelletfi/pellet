@@ -97,6 +97,24 @@ export function ChatDrawer({
     if (!text || sending) return;
     setSending(true);
     setDraft("");
+
+    const optimisticId = `local-${Date.now()}`;
+    const optimistic: ChatMessage = {
+      id: optimisticId,
+      connectionId: null,
+      clientId: null,
+      sessionId: null,
+      sender: "user",
+      kind: "reply",
+      content: text,
+      intentId: null,
+      metadata: null,
+      ts: new Date().toISOString(),
+    };
+    seenIds.current.add(optimisticId);
+    setMessages((prev) => [...prev, optimistic]);
+    setTimeout(scrollToBottom, 30);
+
     try {
       await fetch("/api/wallet/chat/reply", {
         method: "POST",
