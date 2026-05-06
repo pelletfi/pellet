@@ -1,6 +1,7 @@
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, http, encodeFunctionData } from "viem";
+import { fillTransaction, sendRawTransaction } from "viem/actions";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
-import { Account, withRelay, tempoActions } from "viem/tempo";
+import { Account, Actions, withRelay, tempoActions } from "viem/tempo";
 import { decryptSessionKey } from "./session-keys";
 import { tempoChainConfig } from "./tempo-config";
 
@@ -95,23 +96,34 @@ export async function executeSwap(input: SwapExecuteInput): Promise<SwapExecuteR
   );
   const accessKey = Account.fromSecp256k1(agentPk, { access: userAccount });
 
-  if (!chain.sponsorUrl) {
-    return { ok: false, error: "no sponsor configured", status: 500 };
-  }
+  const transport = chain.sponsorUrl
+    ? withRelay(http(chain.rpcUrl), http(chain.sponsorUrl))
+    : http(chain.rpcUrl);
 
   const client = createWalletClient({
     account: accessKey,
     chain: viemChain,
-    transport: withRelay(http(chain.rpcUrl), http(chain.sponsorUrl), { policy: "sign-only" }),
+    transport,
   }).extend(tempoActions());
 
   try {
-    const txHash = await client.dex.sell({
-      tokenIn,
-      tokenOut,
-      amountIn,
-      minAmountOut,
-    });
+    const call = Actions.dex.sell.call({ tokenIn, tokenOut, amountIn, minAmountOut });
+
+    const filled = await fillTransaction(client, {
+      account: accessKey,
+      to: call.to,
+      data: call.data,
+      feePayer: true,
+      gas: BigInt(800_000),
+    } as any);
+
+    const signed = await accessKey.signTransaction({
+      ...filled.transaction,
+      feePayer: true,
+    } as any);
+
+    const txHash = await sendRawTransaction(client, { serializedTransaction: signed });
+
     return {
       ok: true,
       txHash,
