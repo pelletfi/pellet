@@ -136,8 +136,8 @@ export async function executeSwap(input: SwapExecuteInput): Promise<SwapExecuteR
       gas: BigInt(800_000),
     } as any);
 
-    const txHash = swapResult.transactionHash as `0x${string}`;
-    if (swapResult.status !== "success") {
+    const txHash = swapResult.receipt.transactionHash as `0x${string}`;
+    if (swapResult.receipt.status !== "success") {
       return { ok: false, error: "swap tx reverted on-chain", detail: txHash, status: 500 };
     }
 
