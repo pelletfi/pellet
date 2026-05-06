@@ -19,7 +19,12 @@ wss.on("connection", (ws) => {
     return;
   }
 
-  const term = pty.spawn(SHELL, [], {
+  const onboarded = require("fs").existsSync(
+    require("path").join(os.homedir(), ".pellet", ".onboarded")
+  );
+  const shellCmd = onboarded ? SHELL : require("path").resolve(__dirname, "welcome.sh");
+
+  const term = pty.spawn(shellCmd, [], {
     name: "xterm-256color",
     cols: 80,
     rows: 24,
@@ -28,6 +33,7 @@ wss.on("connection", (ws) => {
       ...process.env,
       PELLET_WALLET: "1",
       TERM: "xterm-256color",
+      SHELL: SHELL,
     },
   });
 

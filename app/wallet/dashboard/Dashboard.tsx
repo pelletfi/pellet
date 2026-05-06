@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChatDrawer } from "./ChatDrawer";
 import { TEMPO_EXPLORER_URL, defaultTempoChainId, TEMPO_CHAIN_IDS } from "@/lib/wallet/tempo-config";
 
 type User = {
@@ -808,8 +807,6 @@ export function Dashboard({
           : "Testnet · all funds are play money."
         }
       </p>
-
-      <ChatDrawer />
     </div>
   );
 }
