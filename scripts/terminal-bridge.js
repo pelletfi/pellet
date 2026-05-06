@@ -22,9 +22,11 @@ wss.on("connection", (ws) => {
   const onboarded = require("fs").existsSync(
     require("path").join(os.homedir(), ".pellet", ".onboarded")
   );
-  const shellCmd = onboarded ? SHELL : require("path").resolve(__dirname, "welcome.sh");
+  const welcomeScript = require("path").resolve(__dirname, "welcome.sh");
+  const shellCmd = onboarded ? SHELL : "/bin/bash";
+  const shellArgs = onboarded ? [] : [welcomeScript];
 
-  const term = pty.spawn(shellCmd, [], {
+  const term = pty.spawn(shellCmd, shellArgs, {
     name: "xterm-256color",
     cols: 80,
     rows: 24,
