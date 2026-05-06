@@ -50,7 +50,8 @@ function TopBar({
       <nav
         className={`spec-nav${mobileNavOpen ? " spec-nav-open" : ""}`}
         aria-label="Pellet sections"
-      >
+      />
+      <div className="spec-topbar-actions">
         {!isSignIn && NAV_LINKS.map((link) => (
           <Link
             key={link.href}
@@ -61,8 +62,6 @@ function TopBar({
             {link.label}
           </Link>
         ))}
-      </nav>
-      <div className="spec-topbar-actions">
         <ThemeToggleButton dark={dark} onToggle={onToggleTheme} />
         {!isSignIn && (
           <button

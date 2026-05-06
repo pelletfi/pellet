@@ -12,8 +12,8 @@ type AgentCard = {
   group: "assistant" | "dev" | "custom";
   status: CardStatus;
   blurb: string;
-  // For 'live' clients: a one-line install command + a config snippet.
   install?: { command?: string; config?: string };
+  steps?: string[];
 };
 
 function buildCards(mcpUrl: string): AgentCard[] {
@@ -24,27 +24,39 @@ function buildCards(mcpUrl: string): AgentCard[] {
       name: "Claude.ai",
       group: "assistant",
       status: "live",
-      blurb:
-        "Pro/Team. Settings → Connectors → Add. Paste the URL below; OAuth runs in browser.",
+      blurb: "Pro/Team plan required.",
       install: { config: mcpUrl },
+      steps: [
+        "Settings → Connectors → Add",
+        "Paste the MCP URL below",
+        "Approve wallet permissions in the OAuth popup",
+      ],
     },
     {
       id: "chatgpt",
       name: "ChatGPT",
       group: "assistant",
       status: "live",
-      blurb:
-        "Pro/Team. Settings → Connectors → Add. Paste the URL; OAuth runs in browser.",
+      blurb: "Pro/Team plan required.",
       install: { config: mcpUrl },
+      steps: [
+        "Settings → Connectors → Add",
+        "Paste the MCP URL below",
+        "Approve wallet permissions in the OAuth popup",
+      ],
     },
     {
       id: "gemini",
       name: "Gemini",
       group: "assistant",
       status: "live",
-      blurb:
-        "Pro. Settings → Extensions → Add. Paste the URL; OAuth runs in browser.",
+      blurb: "Pro plan required.",
       install: { config: mcpUrl },
+      steps: [
+        "Settings → Extensions → Add",
+        "Paste the MCP URL below",
+        "Approve wallet permissions in the OAuth popup",
+      ],
     },
 
     // Dev Environments
@@ -53,10 +65,15 @@ function buildCards(mcpUrl: string): AgentCard[] {
       name: "Claude Code",
       group: "dev",
       status: "live",
-      blurb: "Native MCP. One command in your terminal.",
+      blurb: "Native MCP support.",
       install: {
         command: `claude mcp add pellet --transport http ${mcpUrl}`,
       },
+      steps: [
+        "Run the command below in your terminal",
+        "Use any wallet tool — OAuth starts automatically",
+        "Approve wallet permissions in your browser",
+      ],
     },
     {
       id: "cursor",
@@ -75,16 +92,26 @@ function buildCards(mcpUrl: string): AgentCard[] {
           2,
         ),
       },
+      steps: [
+        "Add the config below to your MCP settings",
+        "Restart Cursor and use a wallet tool",
+        "Approve wallet permissions in the OAuth popup",
+      ],
     },
     {
       id: "codex",
       name: "Codex / OpenCode",
       group: "dev",
       status: "live",
-      blurb: "Same shape as Claude Code:",
+      blurb: "Same shape as Claude Code.",
       install: {
         command: `codex mcp add pellet --transport http ${mcpUrl}`,
       },
+      steps: [
+        "Run the command below in your terminal",
+        "Use any wallet tool — OAuth starts automatically",
+        "Approve wallet permissions in your browser",
+      ],
     },
 
     {
@@ -104,6 +131,11 @@ function buildCards(mcpUrl: string): AgentCard[] {
           2,
         ),
       },
+      steps: [
+        "Add the config below to your MCP settings",
+        "Use any wallet tool — OAuth starts automatically",
+        "Approve wallet permissions in your browser",
+      ],
     },
 
     // Custom backends
@@ -217,6 +249,13 @@ function Card({ card }: { card: AgentCard }) {
         <StatusPill status={card.status} />
       </header>
       <p className="spec-onboard-card-blurb">{card.blurb}</p>
+      {card.steps && (
+        <ol className="spec-onboard-steps">
+          {card.steps.map((step, i) => (
+            <li key={i} className="spec-onboard-step">{step}</li>
+          ))}
+        </ol>
+      )}
       {card.install?.command && (
         <div className="spec-onboard-snippet spec-onboard-snippet-shell">
           <code>{card.install.command}</code>

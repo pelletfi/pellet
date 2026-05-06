@@ -2017,6 +2017,23 @@
   margin: 0;
   color: color-mix(in oklch, var(--fg) 80%, var(--bg));
 }
+.spec-onboard-steps {
+  margin: 0;
+  padding: 0 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spec-onboard-step {
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in oklch, var(--fg) 65%, var(--bg));
+}
+.spec-onboard-step::marker {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklch, var(--fg) 35%, var(--bg));
+}
 .spec-onboard-snippet {
   display: flex;
   align-items: center;

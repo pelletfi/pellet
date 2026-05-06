@@ -1294,6 +1294,112 @@
   }
 }
 
+/* ── Preset picker ─────────────────────────────────────────────────────── */
+
+.spec-preset-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.spec-preset-browse {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.45;
+  transition: opacity 150ms ease;
+}
+.spec-preset-browse:hover {
+  opacity: 0.8;
+}
+.spec-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+}
+.spec-preset-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-thin);
+  background: transparent;
+  transition: border-color 150ms ease;
+}
+.spec-preset-card:hover {
+  border-color: var(--fg);
+}
+.spec-preset-card-active {
+  border-color: var(--fg);
+}
+.spec-preset-card-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.spec-preset-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.spec-preset-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.spec-preset-card-budget {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.45;
+}
+.spec-preset-card-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.55;
+}
+.spec-preset-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 14px;
+  border-top: 1px solid var(--line-thin);
+  padding-top: 12px;
+}
+.spec-preset-service-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.spec-preset-service-tag {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border: 1px solid var(--line-thin);
+  opacity: 0.7;
+}
+.spec-preset-activate {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 10px 0;
+  border: 1px solid var(--fg);
+  color: inherit;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.spec-preset-activate:hover {
+  background: color-mix(in oklch, var(--fg) 8%, transparent);
+}
+
 /* ── Services catalog ──────────────────────────────────────────────────── */
 
 .spec-filter-btn {

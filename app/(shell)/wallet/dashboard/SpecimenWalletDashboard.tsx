@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
-import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
 import { WalletTabs } from "@/components/oli/WalletTabs";
+import { MPP_PRESETS, MPP_SERVICES } from "@/lib/mpp";
 import { TerminalCard } from "@/app/(shell)/wallet/dashboard/TerminalCard";
 
 type User = {
@@ -691,7 +691,6 @@ export function SpecimenWalletDashboard({
           sessions={sessions}
           agents={connectedAgents}
           basePath={basePath}
-          payments={signedPayments7d}
           revoking={revoking}
           onRevoke={onRevoke}
           expiredCount={revokedOrExpired.length}
@@ -720,11 +719,64 @@ function ActivityColumn({
   );
 }
 
+const SERVICE_NAMES: Record<string, string> = Object.fromEntries(
+  MPP_SERVICES.map((s) => [s.id, s.name]),
+);
+
+function PresetPicker({ basePath }: { basePath: string }) {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  return (
+    <div className="spec-preset-picker">
+      <div className="spec-preset-list">
+        {MPP_PRESETS.map((preset) => {
+          const budget = Number(preset.defaultBudget) / 1_000_000;
+          const active = selected === preset.id;
+          return (
+            <div
+              key={preset.id}
+              className={`spec-preset-card${active ? " spec-preset-card-active" : ""}`}
+            >
+              <button
+                type="button"
+                className="spec-preset-card-toggle"
+                onClick={() => setSelected(active ? null : preset.id)}
+              >
+                <div className="spec-preset-card-top">
+                  <span className="spec-preset-card-name">{preset.name}</span>
+                  <span className="spec-preset-card-budget">${budget} budget</span>
+                </div>
+                <span className="spec-preset-card-desc">{preset.description}</span>
+              </button>
+              {active && (
+                <div className="spec-preset-detail">
+                  <div className="spec-preset-service-list">
+                    {preset.serviceIds.map((id) => (
+                      <span key={id} className="spec-preset-service-tag">
+                        {SERVICE_NAMES[id] ?? id}
+                      </span>
+                    ))}
+                  </div>
+                  <Link
+                    href={`${basePath}/onboard?preset=${preset.id}`}
+                    className="spec-preset-activate"
+                  >
+                    ACTIVATE PRESET
+                  </Link>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RightRail({
   sessions,
   agents,
   basePath,
-  payments,
   revoking,
   onRevoke,
   expiredCount,
@@ -732,44 +784,18 @@ function RightRail({
   sessions: Session[];
   agents: Agent[];
   basePath: string;
-  payments: Payment[];
   revoking: string | null;
   onRevoke: (id: string) => void;
   expiredCount: number;
 }) {
   const active = sessions.filter((s) => sessionState(s) === "active");
   const pending = sessions.filter((s) => sessionState(s) === "pending");
-  const visibleActive = active.slice(0, 4);
   const primaryAgent = agents[0] ?? null;
   return (
     <div className="spec-col-rail">
       <AgentIdentityCard agent={primaryAgent} basePath={basePath} />
 
-      <div className="spec-rail-payments">
-        <div className="spec-col-head">
-          <span className="spec-col-head-left">SIGNED PAYMENTS</span>
-          <span className="spec-col-head-right">
-            <span>{payments.length} total</span>
-          </span>
-        </div>
-        <div className="spec-rail-payments-scroll">
-          {payments.length === 0 ? (
-            <div style={{ padding: "16px 0", opacity: 0.5, fontSize: 11, textAlign: "center" }}>
-              No signed payments yet.
-            </div>
-          ) : (
-            payments.map((p) => (
-              <SpecimenPaymentRow key={p.id} payment={p} basePath={basePath} />
-            ))
-          )}
-        </div>
-        <Link
-          href={`${basePath}/dashboard/txs`}
-          className="spec-rail-payments-link"
-        >
-          View all transactions →
-        </Link>
-      </div>
+      <PresetPicker basePath={basePath} />
 
       {pending.length > 0 && (
         <div className="spec-pending-card">
