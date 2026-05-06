@@ -223,9 +223,15 @@
 
 .spec-terminal-body .xterm {
   padding: 12px 14px;
+  border: none !important;
+  outline: none !important;
 }
 .spec-terminal-body .xterm-viewport {
   border-radius: 12px;
+  border: none !important;
+}
+.spec-terminal-body .xterm-screen {
+  border: none !important;
 }
 
 .spec-terminal-offline {
