@@ -1,9 +1,8 @@
-import { createPublicClient, createWalletClient, http, encodeFunctionData } from "viem";
-import { fillTransaction, sendRawTransaction } from "viem/actions";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
-import { Account, Actions, withRelay, tempoActions } from "viem/tempo";
+import { Account, withRelay, tempoActions } from "viem/tempo";
 import { decryptSessionKey } from "./session-keys";
-import { tempoChainConfig } from "./tempo-config";
+import { tempoChainConfig, STABLECOIN_DEX_ADDRESS } from "./tempo-config";
 
 type WalletSessionRow = {
   sessionKeyCiphertext: Buffer | null;
@@ -106,23 +105,41 @@ export async function executeSwap(input: SwapExecuteInput): Promise<SwapExecuteR
     transport,
   }).extend(tempoActions());
 
-  try {
-    const call = Actions.dex.sell.call({ tokenIn, tokenOut, amountIn, minAmountOut });
+  const readClient = createPublicClient({
+    chain: viemChain,
+    transport: http(chain.rpcUrl),
+  }).extend(tempoActions());
 
-    const filled = await fillTransaction(client, {
+  // Check allowance — set during pairing via passkey-signed approve.
+  const allowance = await readClient.token.getAllowance({
+    token: tokenIn,
+    account: user.managedAddress as `0x${string}`,
+    spender: STABLECOIN_DEX_ADDRESS,
+  });
+
+  if (allowance < amountIn) {
+    return {
+      ok: false,
+      error: "DEX not approved — revoke this session and re-pair to fix",
+      status: 403,
+    };
+  }
+
+  try {
+    const swapResult = await client.dex.sellSync({
       account: accessKey,
-      to: call.to,
-      data: call.data,
+      tokenIn,
+      tokenOut,
+      amountIn,
+      minAmountOut,
       feePayer: true,
       gas: BigInt(800_000),
     } as any);
 
-    const signed = await accessKey.signTransaction({
-      ...filled.transaction,
-      feePayer: true,
-    } as any);
-
-    const txHash = await sendRawTransaction(client, { serializedTransaction: signed });
+    const txHash = swapResult.transactionHash as `0x${string}`;
+    if (swapResult.status !== "success") {
+      return { ok: false, error: "swap tx reverted on-chain", detail: txHash, status: 500 };
+    }
 
     return {
       ok: true,

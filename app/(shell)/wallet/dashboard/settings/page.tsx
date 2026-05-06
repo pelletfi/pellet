@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { db } from "@/lib/db/client";
 import { walletUsers, walletSessions } from "@/lib/db/schema";
+import { tempoChainConfig } from "@/lib/wallet/tempo-config";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { SpecimenWalletSettings } from "./SpecimenWalletSettings";
 
@@ -41,6 +42,8 @@ export default async function OliWalletSettingsPage() {
   const pubKeyHex =
     user.publicKeyUncompressed ?? `0x${Buffer.from(user.passkeyPublicKey).toString("hex")}`;
 
+  const chain = tempoChainConfig();
+
   return (
     <SpecimenWalletSettings
       user={{
@@ -54,6 +57,7 @@ export default async function OliWalletSettingsPage() {
         lastSeenAt: user.lastSeenAt.toISOString(),
       }}
       activeSessionCount={activeSessionCount}
+      chain={{ name: chain.name, chainId: chain.chainId, rpcUrl: chain.rpcUrl, explorerUrl: chain.explorerUrl }}
       basePath="/wallet"
     />
   );

@@ -98,6 +98,7 @@ const PRESET_CAPS = [
 ];
 
 const TRANSFER_WITH_MEMO = "0x95777d59" as const;
+const APPROVE = "0x095ea7b3" as const;
 const SWAP_EXACT_AMOUNT_IN = "0xf8856c0f" as const;
 const STABLECOIN_DEX = "0xdec0000000000000000000000000000000000000" as const;
 
@@ -263,7 +264,7 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         accessKey,
         expiry: init.expiry_unix,
         feePayer: true,
-        gas: BigInt(5_000_000),
+        gas: BigInt(10_000_000),
         limits: [
           {
             token: init.chain.usdc_e,
@@ -280,13 +281,39 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         ],
         scopes: [
           { address: init.chain.usdc_e, selector: TRANSFER_WITH_MEMO },
+          { address: init.chain.usdc_e, selector: APPROVE },
           ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
-            ? [{ address: init.chain.demo_stable, selector: TRANSFER_WITH_MEMO }]
+            ? [
+                { address: init.chain.demo_stable, selector: TRANSFER_WITH_MEMO },
+                { address: init.chain.demo_stable, selector: APPROVE },
+              ]
             : []),
           { address: STABLECOIN_DEX, selector: SWAP_EXACT_AMOUNT_IN },
         ],
       });
       txHash = result.receipt.transactionHash as `0x${string}`;
+
+      // Pre-approve stablecoin DEX from the user's passkey so the access
+      // key never needs the approve scope (which older keys lack).
+      const maxUint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const tokens = [init.chain.usdc_e];
+      if (init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e) {
+        tokens.push(init.chain.demo_stable);
+      }
+      for (const tkn of tokens) {
+        try {
+          await client.token.approveSync({
+            account: userAccount,
+            token: tkn as `0x${string}`,
+            spender: STABLECOIN_DEX,
+            amount: maxUint,
+            feePayer: true,
+            gas: BigInt(500_000),
+          } as any);
+        } catch {
+          // Non-fatal — swap will prompt approve later if needed.
+        }
+      }
     } catch (e) {
       setState({
         kind: "error",

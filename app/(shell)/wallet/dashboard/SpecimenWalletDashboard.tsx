@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
+import { Account, withRelay, tempoActions } from "viem/tempo";
 import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
 import { WalletTabs } from "@/components/oli/WalletTabs";
 import { MPP_PRESETS, MPP_SERVICES } from "@/lib/mpp";
@@ -254,14 +258,47 @@ function TokenIcon({ symbol }: { symbol: string }) {
   );
 }
 
+const STABLECOIN_DEX = "0xdec0000000000000000000000000000000000000" as const;
+
+async function passkeyApproveDex(tokenAddress: `0x${string}`) {
+  const chainRes = await fetch("/api/wallet/chain-config");
+  const cfg = await chainRes.json();
+  if (!chainRes.ok) throw new Error(cfg.error ?? "failed to load chain config");
+
+  const userAccount = Account.fromWebAuthnP256(
+    { id: cfg.credential_id, publicKey: cfg.public_key_uncompressed },
+    { rpId: cfg.rp_id },
+  );
+
+  const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+  const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+  const transport = cfg.sponsor_url
+    ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
+    : http(cfg.rpc_url);
+
+  const client = createWalletClient({ account: userAccount, chain, transport }).extend(tempoActions());
+  const maxUint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+  await client.token.approveSync({
+    account: userAccount,
+    token: tokenAddress,
+    spender: STABLECOIN_DEX,
+    amount: maxUint,
+    feePayer: true,
+    gas: BigInt(500_000),
+  } as any);
+}
+
 function SwapModal({
   from,
   balances,
   onClose,
+  onSuccess,
 }: {
   from: Balance;
   balances: Balance[];
   onClose: () => void;
+  onSuccess: () => void;
 }) {
   const others = balances.filter((b) => b.address !== from.address);
   const [toToken, setToToken] = useState(others[0]?.symbol ?? "");
@@ -269,6 +306,7 @@ function SwapModal({
   const [quote, setQuote] = useState<string | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [swapping, setSwapping] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const toBalance = others.find((b) => b.symbol === toToken);
@@ -303,24 +341,70 @@ function SwapModal({
     if (!amount || !toBalance) return;
     setSwapping(true);
     setError(null);
+    setStatus(null);
     try {
-      const res = await fetch("/api/wallet/swap", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          token_in: from.address,
-          token_out: toBalance.address,
-          amount,
-        }),
+      // Get chain config + passkey identity.
+      const chainRes = await fetch("/api/wallet/chain-config");
+      const cfg = await chainRes.json();
+      if (!chainRes.ok) throw new Error(cfg.error ?? "failed to load chain config");
+
+      const userAccount = Account.fromWebAuthnP256(
+        { id: cfg.credential_id, publicKey: cfg.public_key_uncompressed },
+        { rpId: cfg.rp_id },
+      );
+      const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const transport = cfg.sponsor_url
+        ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
+        : http(cfg.rpc_url);
+      const client = createWalletClient({ account: userAccount, chain, transport }).extend(tempoActions());
+      const readClient = createPublicClient({ chain, transport: http(cfg.rpc_url) }).extend(tempoActions());
+
+      const tokenIn = from.address as `0x${string}`;
+      const tokenOut = toBalance.address as `0x${string}`;
+      const amountIn = BigInt(Math.round(parseFloat(amount) * 1_000_000));
+
+      // Approve DEX if needed.
+      const allowance = await readClient.token.getAllowance({
+        token: tokenIn,
+        account: userAccount.address,
+        spender: STABLECOIN_DEX,
       });
-      const d = await res.json();
-      if (!res.ok) { setError(d.error ?? "Swap failed"); return; }
+      if (allowance < amountIn) {
+        setStatus("Approving DEX — sign with passkey…");
+        const maxUint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        await client.token.approveSync({
+          account: userAccount,
+          token: tokenIn,
+          spender: STABLECOIN_DEX,
+          amount: maxUint,
+          feePayer: true,
+          gas: BigInt(500_000),
+        } as any);
+      }
+
+      // Execute swap — passkey signs directly.
+      setStatus("Swapping — sign with passkey…");
+      const quoteOut = await readClient.dex.getSellQuote({ tokenIn, tokenOut, amountIn });
+      const minAmountOut = quoteOut - (quoteOut * BigInt(100)) / BigInt(10_000); // 1% slippage
+
+      const result = await client.dex.sellSync({
+        account: userAccount,
+        tokenIn,
+        tokenOut,
+        amountIn,
+        minAmountOut,
+        feePayer: true,
+        gas: BigInt(800_000),
+      } as any);
+
       onClose();
-      window.location.reload();
-    } catch {
-      setError("Network error");
+      onSuccess();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error");
     } finally {
       setSwapping(false);
+      setStatus(null);
     }
   }
 
@@ -389,6 +473,7 @@ function SwapModal({
             <span>{quote ? "< $0.01" : "—"}</span>
           </div>
 
+          {status && <div style={{ fontSize: 12, opacity: 0.7 }}>{status}</div>}
           {error && <div className="spec-swap-error">{error}</div>}
         </div>
 
@@ -441,6 +526,7 @@ export function SpecimenWalletDashboard({
   chatMessages?: ChatMsg[];
   testnet?: boolean;
 }) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [swapFrom, setSwapFrom] = useState<Balance | null>(null);
@@ -696,6 +782,7 @@ export function SpecimenWalletDashboard({
           from={swapFrom}
           balances={balances}
           onClose={() => setSwapFrom(null)}
+          onSuccess={() => router.refresh()}
         />
       )}
       {sendFrom && (

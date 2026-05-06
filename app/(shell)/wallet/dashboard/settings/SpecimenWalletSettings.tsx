@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { WalletTabs } from "@/components/oli/WalletTabs";
 
@@ -35,18 +35,15 @@ function truncMid(s: string, head: number, tail: number): string {
 export function SpecimenWalletSettings({
   user,
   activeSessionCount,
+  chain,
   basePath = "/wallet",
 }: {
   user: User;
   activeSessionCount: number;
+  chain: { name: string; chainId: number; rpcUrl: string; explorerUrl: string };
   basePath?: string;
 }) {
   const [busy, setBusy] = useState<Busy>("none");
-  const [baseUrl, setBaseUrl] = useState<string>("");
-
-  useEffect(() => {
-    setBaseUrl(window.location.origin);
-  }, []);
 
   const onSignOut = async () => {
     setBusy("signOut");
@@ -140,13 +137,14 @@ export function SpecimenWalletSettings({
         <Field label="sign count" value={user.passkeySignCount.toString()} />
         <Field
           label="recovery"
-          value="single passkey · multi-credential coming in mainnet hardening"
+          value="single passkey · multi-credential coming soon"
         />
       </SettingsBlock>
 
-      <SettingsBlock title="ENVIRONMENT" meta="testnet · Moderato">
-        <Field label="base url" value={baseUrl || "—"} copyable copyValue={baseUrl} />
-        <Field label="chain" value="Tempo Moderato (chainId 42431)" />
+      <SettingsBlock title="ENVIRONMENT" meta={chain.name === "Presto" ? "mainnet · Presto" : "testnet · Moderato"}>
+        <Field label="chain" value={`Tempo ${chain.name} (chainId ${chain.chainId})`} />
+        <Field label="rpc" value={chain.rpcUrl} copyable />
+        <Field label="explorer" value={chain.explorerUrl} copyable />
         <Field label="user id" value={user.id} copyable />
       </SettingsBlock>
 

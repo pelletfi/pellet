@@ -1,6 +1,6 @@
-// Tempo chain + service constants. v0 ships Moderato (testnet) only;
-// Presto (mainnet) constants are present so chain branching code lights
-// up cleanly when we flip to mainnet.
+// Tempo chain + service constants. Production runs on Presto (mainnet)
+// via PELLET_TEMPO_CHAIN_ID=4217 in env. Moderato (testnet) is the
+// fallback default when the env var is unset.
 //
 // Source of truth verified 2026-04-29 against:
 //   docs.tempo.xyz/quickstart/connection-details
@@ -58,7 +58,7 @@ export const TEMPO_CHAINS: Record<TempoChainId, ChainConfig> = {
   [TEMPO_CHAIN_IDS.MODERATO_TESTNET]: MODERATO,
 };
 
-/** Default chain for v0 wallet flows — testnet only. */
+/** Default chain — overridden to Presto mainnet in production via env. */
 export function defaultTempoChainId(): TempoChainId {
   // Allow override via env for future mainnet flip; default Moderato today.
   const raw = process.env.PELLET_TEMPO_CHAIN_ID;
