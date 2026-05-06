@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerBalanceTool } from "./tools/balance";
 import { registerThreadTools } from "./tools/thread";
 import { registerSpendTools } from "./tools/spend";
+import { registerMppRequestTool } from "./tools/mpp-request";
 import type { McpAuthInfo } from "./auth";
 
 // Build a per-request McpServer with auth bound via closure. We don't
@@ -40,6 +41,7 @@ export function buildPelletMcpServer(auth: McpAuthInfo): McpServer {
   registerBalanceTool(server, getAuth);
   registerThreadTools(server, getAuth);
   registerSpendTools(server, getAuth);
+  registerMppRequestTool(server, getAuth);
 
   return server;
 }
