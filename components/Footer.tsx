@@ -45,6 +45,12 @@ export function Footer() {
               <Icon />
             </a>
           ))}
+          <a
+            href="/mcp-docs"
+            className="font-mono text-[11px] tracking-[0.04em] text-text-tertiary transition-colors duration-150 hover:text-text-primary"
+          >
+            Docs
+          </a>
         </div>
         <span className="font-mono text-[11px] tracking-[0.04em] text-text-tertiary">
           &copy; {new Date().getFullYear()} Pellet Network
