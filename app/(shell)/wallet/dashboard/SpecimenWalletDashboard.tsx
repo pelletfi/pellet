@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import gsap from "gsap";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
 import { Account, withRelay, tempoActions } from "viem/tempo";
@@ -586,6 +587,29 @@ export function SpecimenWalletDashboard({
           ? "pending"
           : "safe";
 
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const targets = [
+      el.querySelector(".spec-page-header"),
+      ...el.querySelectorAll(".spec-kpi-stack > *"),
+      el.querySelector(".spec-cols"),
+    ].filter(Boolean);
+
+    gsap.set(targets, { autoAlpha: 0, y: 14 });
+
+    const tl = gsap.timeline({ defaults: { duration: 0.55, ease: "power2.out" } });
+    tl.to(el.querySelector(".spec-page-header")!, { autoAlpha: 1, y: 0 }, 0)
+      .to(el.querySelectorAll(".spec-kpi-stack > *"), { autoAlpha: 1, y: 0, stagger: 0.06 }, 0.08)
+      .to(el.querySelector(".spec-cols")!, { autoAlpha: 1, y: 0 }, 0.22);
+
+    return () => { tl.kill(); };
+  }, []);
+
   const passkeyLabel = user.displayName?.trim() || "iCloud Keychain";
   const pairedDevices: string[] = user.displayName?.trim()
     ? [user.displayName.trim()]
@@ -619,7 +643,7 @@ export function SpecimenWalletDashboard({
   };
 
   return (
-    <div className="spec-wallet-float">
+    <div ref={shellRef} className="spec-wallet-float">
       <section className="spec-page-header">
         <div className="spec-page-header-row">
           <h1 className="spec-page-title">
