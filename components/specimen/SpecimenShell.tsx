@@ -8,10 +8,7 @@ import Footer from "@/components/Footer";
 
 const STORAGE_KEY = "specimen-theme";
 
-const NAV_LINKS = [
-  { label: "Docs", href: "/docs" },
-  { label: "CLI", href: "/cli" },
-];
+const NAV_LINKS: { label: string; href: string }[] = [];
 
 function TopBar({
   pathname,
