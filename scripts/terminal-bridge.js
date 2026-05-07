@@ -13,6 +13,7 @@ let scrollback = "";
 let interacted = false;
 let client = null;
 let sessionAddr = null;
+let cleanupTimer = null;
 
 function spawnPty() {
   const onboarded = require("fs").existsSync(
@@ -60,6 +61,11 @@ const wss = new WebSocketServer({ host: "127.0.0.1", port: PORT });
 console.log(`pellet terminal bridge listening on ws://localhost:${PORT}`);
 
 wss.on("connection", (ws) => {
+  if (cleanupTimer) {
+    clearTimeout(cleanupTimer);
+    cleanupTimer = null;
+  }
+
   if (client) {
     client.removeAllListeners?.();
     client.close(4001, "replaced by new connection");
@@ -106,6 +112,17 @@ wss.on("connection", (ws) => {
   setTimeout(() => sendInit(), 200);
 
   ws.on("close", () => {
-    if (client === ws) client = null;
+    if (client === ws) {
+      client = null;
+      cleanupTimer = setTimeout(() => {
+        if (!client && term) {
+          term.kill();
+          term = null;
+          scrollback = "";
+          interacted = false;
+          sessionAddr = null;
+        }
+      }, 5000);
+    }
   });
 });
