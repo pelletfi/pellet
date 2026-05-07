@@ -33,6 +33,7 @@ function spawnPty() {
       PELLET_WALLET: "1",
       TERM: "xterm-256color",
       SHELL: SHELL,
+      ZDOTDIR: require("path").resolve(__dirname, "pellet-shell"),
     },
   });
 

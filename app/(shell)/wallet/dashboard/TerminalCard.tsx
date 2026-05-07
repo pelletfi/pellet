@@ -124,6 +124,7 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
           if (!msg.fresh) {
             showBannerRef.current = false;
             bannerClearedRef.current = true;
+
             term.write("\x1b[2J\x1b[H");
             term.clear();
           }
