@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     url: "https://pellet.network",
     siteName: "Pellet",
     type: "website",
+    images: [{ url: "/og.png", width: 2400, height: 1260 }],
   },
   twitter: {
     card: "summary_large_image",
@@ -39,6 +40,7 @@ export const metadata: Metadata = {
     description:
       "The wallet that connects to your AI. Manage agent finances, approve spends, and monitor activity — all on Tempo.",
     site: "@pelletnetwork",
+    images: ["/og.png"],
   },
 };
 
