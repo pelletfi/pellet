@@ -727,7 +727,6 @@ export function SpecimenWalletDashboard({
     <>
     <div className="spec-mobile-gate">
       <div className="spec-mobile-gate-inner">
-        <span className="spec-mobile-gate-icon">⬡</span>
         <p className="spec-mobile-gate-title">pellet is built for desktop</p>
         <p className="spec-mobile-gate-body">
           open this page on a larger screen for the full experience.

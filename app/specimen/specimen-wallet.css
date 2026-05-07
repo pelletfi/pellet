@@ -1786,12 +1786,6 @@
     text-align: center;
     max-width: 280px;
   }
-  .spec-mobile-gate-icon {
-    font-size: 32px;
-    opacity: 0.25;
-    display: block;
-    margin-bottom: 20px;
-  }
   .spec-mobile-gate-title {
     font-family: var(--font-mono);
     font-size: 13px;
