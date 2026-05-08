@@ -7,12 +7,17 @@
 import { authStart, authStatus, authRevoke } from "./commands/auth.js";
 import { pay, type PayArgs } from "./commands/pay.js";
 import { runMcpServer } from "./commands/mcp.js";
+import { runAgentRepl } from "./commands/agent.js";
 
 const args = process.argv.slice(2);
 const [verb, sub, ...rest] = args;
 
 async function main(): Promise<number> {
-  if (!verb || verb === "help" || verb === "--help" || verb === "-h") {
+  if (!verb || verb === "agent") {
+    return runAgentRepl();
+  }
+
+  if (verb === "help" || verb === "--help" || verb === "-h") {
     printHelp();
     return 0;
   }
