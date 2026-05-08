@@ -291,65 +291,65 @@ body:has(.specimen-shell) main {
 }
 
 /* ── ⌘K command bar overrides ─────────────────────────────────────────────
- * The CommandBar's `oli-cmdk-*` styles (in globals.css) are tuned for the
- * old OLI shell: rounded modal + box-shadow + soft backdrop. Specimen
+ * The CommandBar's `wallet-cmdk-*` styles (in globals.css) are tuned for the
+ * old Wallet shell: rounded modal + box-shadow + soft backdrop. Specimen
  * strips radii and shadows, leaving the modal flush + visually weak. These
  * scoped overrides give the modal stronger contrast (ink backdrop, square
  * 1px ink border, left-edge marker for selected results) so the surface
  * feels deliberate inside the shell.
  */
-.specimen-shell .oli-cmdk-backdrop {
+.specimen-shell .wallet-cmdk-backdrop {
   background: color-mix(in oklch, var(--ink) 65%, transparent) !important;
   backdrop-filter: none !important;
 }
-.specimen-shell .oli-cmdk-modal {
+.specimen-shell .wallet-cmdk-modal {
   background: var(--bg) !important;
   border: 1px solid var(--fg) !important;
 }
-.specimen-shell .oli-cmdk-input-wrap {
+.specimen-shell .wallet-cmdk-input-wrap {
   border-bottom: 1px solid var(--line) !important;
 }
-.specimen-shell .oli-cmdk-input-prefix {
+.specimen-shell .wallet-cmdk-input-prefix {
   color: var(--fg) !important;
   opacity: 0.7;
 }
-.specimen-shell .oli-cmdk-input {
+.specimen-shell .wallet-cmdk-input {
   color: var(--fg) !important;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
   letter-spacing: 0.02em !important;
 }
-.specimen-shell .oli-cmdk-input::placeholder {
+.specimen-shell .wallet-cmdk-input::placeholder {
   color: var(--fg);
   opacity: 0.4;
 }
-.specimen-shell .oli-cmdk-hint {
+.specimen-shell .wallet-cmdk-hint {
   color: var(--fg) !important;
   opacity: 0.55;
 }
-.specimen-shell .oli-cmdk-spinner {
+.specimen-shell .wallet-cmdk-spinner {
   border-color: var(--line) !important;
   border-top-color: var(--fg) !important;
 }
-.specimen-shell .oli-cmdk-result[data-selected="true"] {
+.specimen-shell .wallet-cmdk-result[data-selected="true"] {
   background: color-mix(in oklch, var(--fg) 8%, transparent) !important;
   border-left: 2px solid var(--fg) !important;
   padding-left: 10px !important;
 }
-.specimen-shell .oli-cmdk-result-kind {
+.specimen-shell .wallet-cmdk-result-kind {
   color: var(--fg) !important;
   opacity: 0.55;
   border: 1px solid var(--line) !important;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
 }
-.specimen-shell .oli-cmdk-result[data-selected="true"] .oli-cmdk-result-kind {
+.specimen-shell .wallet-cmdk-result[data-selected="true"] .wallet-cmdk-result-kind {
   color: var(--fg) !important;
   opacity: 1;
   border-color: var(--fg) !important;
 }
-.specimen-shell .oli-cmdk-result-label {
+.specimen-shell .wallet-cmdk-result-label {
   color: var(--fg) !important;
 }
-.specimen-shell .oli-cmdk-result-sub {
+.specimen-shell .wallet-cmdk-result-sub {
   color: var(--fg) !important;
   opacity: 0.55;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important;
@@ -480,9 +480,9 @@ body:has(.specimen-shell) main {
   border: 1px solid var(--line) !important;
 }
 
-/* ── Live status strip (bottom of every OLI/wallet page) ────────────────── */
+/* ── Live status strip (bottom of every Wallet/wallet page) ────────────────── */
 /* Replaces the old keymap legend. Polls /api/wallet/status-strip every 30s
- * and listens to the OLI feed SSE for live last-event updates. Mono ticker-
+ * and listens to the Wallet feed SSE for live last-event updates. Mono ticker-
  * tape type per the chart aesthetic memory. */
 
 .spec-status-strip {

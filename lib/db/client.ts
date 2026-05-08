@@ -13,7 +13,7 @@ export const db = drizzle(pool, { schema });
 // requires a stable connection that doesn't get checked back in).
 export function listenPool(): Pool {
   return new Pool({
-    connectionString: process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL,
+    connectionString: process.env.POSTGRES_URL_NON_POWalletNG ?? process.env.POSTGRES_URL,
     max: 1,
   });
 }

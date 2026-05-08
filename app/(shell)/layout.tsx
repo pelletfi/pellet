@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { CommandBar } from "@/components/oli/CommandBar";
-import { LiquidGlass } from "@/components/oli/LiquidGlass";
+import { CommandBar } from "@/components/wallet/CommandBar";
+import { LiquidGlass } from "@/components/wallet/LiquidGlass";
 import { SpecimenShell } from "@/components/specimen/SpecimenShell";
-import "./oli-theme.css";
+import "./wallet-theme.css";
 import "../specimen/specimen.css";
 
 const OG_DESCRIPTION =
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
 
 export default function OliLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="oli-shader-wrap">
-      <LiquidGlass className="oli-shader-canvas" />
+    <div className="wallet-shader-wrap">
+      <LiquidGlass className="wallet-shader-canvas" />
       <SpecimenShell>
         {children}
         <CommandBar />

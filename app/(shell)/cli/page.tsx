@@ -3,8 +3,8 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-// Embeds the canonical /docs/wallet-cli MDX inside the OLI shell so users
-// reading OLI can pull up the CLI reference without leaving the sidebar
+// Embeds the canonical /docs/wallet-cli MDX inside the Wallet shell so users
+// reading Wallet can pull up the CLI reference without leaving the sidebar
 // context. Same source file, different shell. We render the MDX directly
 // rather than via fumadocs DocsPage primitives because those require a
 // DocsLayout ancestor that the specimen shell doesn't provide.

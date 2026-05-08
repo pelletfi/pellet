@@ -135,7 +135,7 @@ function ThemeToggleButton({
  * NOT honor prefers-color-scheme — first-load is always ink unless the
  * user has explicitly chosen light before.
  *
- * Bottom strip used to be a static keymap legend; replaced by a live OLI
+ * Bottom strip used to be a static keymap legend; replaced by a live Wallet
  * stat strip (24h MPP txs + sparkline, volume, agents, last activity).
  */
 export function SpecimenShell({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { TIME_WINDOWS } from "@/lib/oli/timeWindow";
+import { TIME_WINDOWS } from "@/lib/wallet/timeWindow";
 
 export function SpecimenTimeToggle({ current }: { current: number }) {
   const router = useRouter();

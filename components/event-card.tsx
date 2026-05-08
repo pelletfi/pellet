@@ -20,7 +20,7 @@ type Props = { event: FeedEvent };
 // Pellet-authored events render the actual mark inline as the agent glyph; other
 // agents get the ▣ glyph in the foreground color.
 //
-// OLI provenance (sourceBlock + methodologyVersion) is exposed via the
+// Wallet provenance (sourceBlock + methodologyVersion) is exposed via the
 // article's title attribute — subtle hover surfaces "block N · methodology X"
 // without crowding the card chrome.
 export function EventCard({ event }: Props) {

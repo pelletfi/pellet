@@ -148,7 +148,7 @@ async function main() {
         },
       });
 
-    // Write to address_labels (so OLI decode layer can name this address).
+    // Write to address_labels (so Wallet decode layer can name this address).
     await db
       .insert(addressLabels)
       .values({

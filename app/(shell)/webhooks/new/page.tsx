@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
-import { listMppServices } from "@/lib/oli/queries";
-import { NewWebhookForm } from "@/components/oli/NewWebhookForm";
+import { listMppServices } from "@/lib/wallet/queries";
+import { NewWebhookForm } from "@/components/wallet/NewWebhookForm";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

@@ -1,6 +1,6 @@
 // Upsert a row in address_labels for an attributed provider — handles both
 // real addresses (Pattern A) and fingerprint groups (Pattern B), keyed
-// uniformly so the OLI UI surfaces the label automatically the moment it
+// uniformly so the Wallet UI surfaces the label automatically the moment it
 // lands.
 //
 // Usage:
@@ -65,7 +65,7 @@ async function main() {
     });
 
   console.log(`✓ labeled ${key} → "${label}" (${category})`);
-  console.log(`  refresh /oli to see it surface across the UI.`);
+  console.log(`  refresh /wallet to see it surface across the UI.`);
   process.exit(0);
 }
 

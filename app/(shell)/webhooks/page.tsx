@@ -6,7 +6,7 @@ import {
   truncateMiddle,
   filterSummary,
   relativeTime,
-} from "@/lib/oli/webhooks";
+} from "@/lib/wallet/webhooks";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

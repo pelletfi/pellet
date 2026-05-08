@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Clock } from "./Clock";
 import { SpecimenTimeToggle } from "./SpecimenTimeToggle";
-import { tokenBreakdown, type TokenStackPoint, type TokenStackTotals } from "@/lib/oli/queries";
-import { windowHoursFromParam } from "@/lib/oli/timeWindow";
+import { tokenBreakdown, type TokenStackPoint, type TokenStackTotals } from "@/lib/wallet/queries";
+import { windowHoursFromParam } from "@/lib/wallet/timeWindow";
 
 export const metadata: Metadata = {
   title: "Specimen / Dashboard",

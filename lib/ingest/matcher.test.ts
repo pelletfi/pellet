@@ -73,7 +73,7 @@ describe("matchEvent", () => {
     expect(matchEvent(evt, [aixbt])).toHaveLength(0);
   });
 
-  it("attaches OLI provenance (sourceBlock + methodologyVersion)", () => {
+  it("attaches Wallet provenance (sourceBlock + methodologyVersion)", () => {
     const evt: RawEventRow = {
       txHash: "0xabc",
       logIndex: 0,

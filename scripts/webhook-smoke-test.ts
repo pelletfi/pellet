@@ -1,9 +1,9 @@
 import { createServer } from "http";
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db/client";
-import { oliWebhookSubscriptions, oliWebhookDeliveries } from "@/lib/db/schema";
-import { dispatchToWebhooks } from "@/lib/oli/webhooks/dispatcher";
-import { verify, SIGNATURE_HEADER } from "@/lib/oli/webhooks/signature";
+import { webhookSubscriptions, webhookDeliveries } from "@/lib/db/schema";
+import { dispatchToWebhooks } from "@/lib/wallet/webhooks/dispatcher";
+import { verify, SIGNATURE_HEADER } from "@/lib/wallet/webhooks/signature";
 import { eq } from "drizzle-orm";
 
 type Captured = {
@@ -46,10 +46,10 @@ async function main() {
   const callbackUrl = `http://127.0.0.1:${addr.port}/hook`;
   console.log(`receiver: ${callbackUrl}`);
 
-  await db.delete(oliWebhookSubscriptions).where(eq(oliWebhookSubscriptions.label, "smoke-test-1"));
+  await db.delete(webhookSubscriptions).where(eq(webhookSubscriptions.label, "smoke-test-1"));
 
   const [sub] = await db
-    .insert(oliWebhookSubscriptions)
+    .insert(webhookSubscriptions)
     .values({
       ownerUserId,
       callbackUrl,
@@ -69,8 +69,8 @@ async function main() {
 
   const deliveries1 = await db
     .select()
-    .from(oliWebhookDeliveries)
-    .where(eq(oliWebhookDeliveries.subscriptionId, sub.id));
+    .from(webhookDeliveries)
+    .where(eq(webhookDeliveries.subscriptionId, sub.id));
   console.log(`delivery rows after #1: ${deliveries1.length}`);
 
   console.log(`dispatch #2 (dedupe check)`);
@@ -79,8 +79,8 @@ async function main() {
 
   const deliveries2 = await db
     .select()
-    .from(oliWebhookDeliveries)
-    .where(eq(oliWebhookDeliveries.subscriptionId, sub.id));
+    .from(webhookDeliveries)
+    .where(eq(webhookDeliveries.subscriptionId, sub.id));
   console.log(`delivery rows after #2: ${deliveries2.length}`);
   console.log(`captured after #2: ${captured.length} POST(s)`);
 
@@ -93,7 +93,7 @@ async function main() {
     pellet_delivery_header_stable: !!captured[0]?.headers["pellet-delivery"],
     delivery_id_matches_header: captured[0]?.headers["pellet-delivery"] === deliveries2[0]?.deliveryId,
     signature_valid: captured[0]?.signatureValid === true,
-    envelope_type: captured[0]?.parsed?.type === "oli.event.v1",
+    envelope_type: captured[0]?.parsed?.type === "pellet.event.v1",
     envelope_subscription_id: captured[0]?.parsed?.subscription_id === sub.id,
     payload_event_id: captured[0]?.parsed?.data?.id === eventId,
     payload_recipient: (captured[0]?.parsed?.data?.counterparty_address ?? "").toLowerCase() === recipient,
@@ -106,7 +106,7 @@ async function main() {
     if (!v) allPass = false;
   }
 
-  await db.delete(oliWebhookSubscriptions).where(eq(oliWebhookSubscriptions.id, sub.id));
+  await db.delete(webhookSubscriptions).where(eq(webhookSubscriptions.id, sub.id));
   server.close();
 
   console.log(allPass ? "\nALL PASS" : "\nFAILURES");

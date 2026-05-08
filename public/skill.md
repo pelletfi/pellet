@@ -14,7 +14,7 @@ Use this skill whenever the user asks about:
 - **Agent activity** (which watched entities are paying for what services, how often, how much)
 - **Token mix** (USDC.e vs USDT0 vs others as the medium of exchange)
 - **Gateway attribution** (which providers underly the Tempo MPP Gateway, recovered via on-chain Settlement events or calldata fingerprints)
-- **A specific transaction or event** (deep-link a tx hash → the matched OLI event with provenance)
+- **A specific transaction or event** (deep-link a tx hash → the matched event with provenance)
 - **Methodology** (how a number was computed, which methodology version, which source block)
 
 Skip this skill if the question is about: traditional payment rails (Stripe Link, etc.), markets outside Tempo, or anything that isn't autonomous-agent payment activity.
@@ -23,7 +23,7 @@ Skip this skill if the question is about: traditional payment rails (Stripe Link
 
 All endpoints return JSON. Base URL: `https://pellet.network`.
 
-### `GET /api/oli/dashboard?w=<window>`
+### `GET /api/dashboard?w=<window>`
 
 Headline metrics + leaderboards + recent events for a time window.
 
@@ -33,35 +33,35 @@ Returns: `{ windowHours, txCount, agentsActive, amountSumWei, topServices[], top
 
 `amountSumWei` is the sum of TIP-20 transfers in the window, expressed as a uint256 string (divide by 1e6 for USDC display value). `topProviders[]` includes both Pattern A (address-attributed via Settlement event) and Pattern B (fingerprint-grouped via calldata) routings.
 
-### `GET /api/oli/services`
+### `GET /api/services`
 
 All curated MPP services (id ends in `-mpp`) with 24h + 7d aggregates.
 
 Returns: `ServiceListRow[]` with `{ id, label, category, settlementAddress, txCount24h, txCount7d, amountSumWei24h, amountSumWei7d, agentsLast7d }`.
 
-### `GET /api/oli/services/[id]`
+### `GET /api/services/[id]`
 
 Service detail: head metadata, 30-day trend, recent 50 events. For the `tempo-gateway-mpp` service, also includes a `providers[]` aggregate of underlying provider routings (both kinds).
 
-### `GET /api/oli/agents`
+### `GET /api/agents`
 
 All watched entities (non-MPP) with 24h aggregates.
 
 Returns: `AgentListRow[]` with `{ id, label, source, walletAddress, txCount24h, amountSumWei24h, lastActivity, topServiceLabel }`.
 
-### `GET /api/oli/agents/[id]`
+### `GET /api/agents/[id]`
 
-Agent detail: head metadata, trend, recent events. Same shape as `/api/oli/services/[id]` but presented from the agent perspective.
+Agent detail: head metadata, trend, recent events. Same shape as `/api/services/[id]` but presented from the agent perspective.
 
-### `GET /api/oli/events/[id]`
+### `GET /api/events/[id]`
 
 Single event detail with provenance: matched agent, counterparty, amount, tx hash, log index, source block, methodology version, related events from the same tx.
 
-### `GET /api/oli/search?q=<query>`
+### `GET /api/search?q=<query>`
 
 Unified search across events, agents, services, and labeled addresses. Min query length 2. Returns up to ~24 hits. Use this when the user pastes a tx hash, an address, or a partial agent name.
 
-### `GET /api/oli/feed` (SSE)
+### `GET /api/feed` (SSE)
 
 Server-sent events stream. Pushes new events as they're matched on-chain (cron runs hourly, but this stream is live for any in-flight ingestion). Each event arrives as a `data:` frame with the same shape as `recentEvents[]`. Use this for ambient monitoring, not for one-shot queries.
 
@@ -75,7 +75,7 @@ Server-sent events stream. Pushes new events as they're matched on-chain (cron r
 
 ## Attribution
 
-OLI tracks gateway routing via two paths, documented at [pellet.network/methodology](https://pellet.network/methodology):
+Pellet tracks gateway routing via two paths, documented at [pellet.network/methodology](https://pellet.network/methodology):
 
 - **Pattern A** — when the gateway forwards funds to a provider, its escrow contract emits a `Settlement` event whose `topic[2]` is the provider address. This recovers ~9% of gateway txs as named addresses.
 - **Pattern B** — user→gateway calldata carries a `bytes32 ref` whose bytes 5–14 are a stable per-service fingerprint set by Tempo's MPP client. This groups the remaining ~91% of gateway txs by service even when the provider address can't be recovered.
@@ -85,13 +85,13 @@ A Pattern A address can be human-labeled by adding a row to `address_labels`; a 
 ## Examples
 
 ```
-GET https://pellet.network/api/oli/dashboard?w=24h
+GET https://pellet.network/api/dashboard?w=24h
 → { txCount: 776, agentsActive: 6, topServices: [...], topProviders: [...] }
 
-GET https://pellet.network/api/oli/search?q=stargate
+GET https://pellet.network/api/search?q=stargate
 → { hits: [{ kind: "agent", id: "stargate-usdc", label: "stargate · USDC bridge", ... }] }
 
-GET https://pellet.network/api/oli/services/tempo-gateway-mpp
+GET https://pellet.network/api/services/tempo-gateway-mpp
 → { head: {...}, trend: [...], recent: [...], providers: [...] }
 ```
 

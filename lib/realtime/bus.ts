@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { listenPool } from "@/lib/db/client";
 import { getFeedRowById, type FeedRow } from "@/lib/db/agent-events";
-import { dispatchToWebhooks } from "@/lib/oli/webhooks/dispatcher";
+import { dispatchToWebhooks } from "@/lib/wallet/webhooks/dispatcher";
 import { getChatMessageById, type WalletChatRow } from "@/lib/db/wallet-chat";
 import { dispatchUserChatToWebhooks } from "@/lib/wallet/chat-webhook-dispatcher";
 
@@ -11,7 +11,7 @@ import { dispatchUserChatToWebhooks } from "@/lib/wallet/chat-webhook-dispatcher
 // hosting the SSE client.
 //
 // Three channels:
-//   * 'agent_events'       — public OLI feed (table-trigger backed)
+//   * 'agent_events'       — public Wallet feed (table-trigger backed)
 //   * 'wallet_chat'        — in-wallet messages (table-trigger backed)
 //   * 'wallet_chat_typing' — ephemeral typing pings (no row; fired directly
 //                            by chat routes/tools). Payload format is

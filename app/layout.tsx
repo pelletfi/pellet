@@ -80,7 +80,7 @@ export default function RootLayout({
         */}
         <RootProvider
           theme={{ enabled: false }}
-          // Disable the global fumadocs search at the root. /oli wraps its
+          // Disable the global fumadocs search at the root. /wallet wraps its
           // own SearchProvider that routes ⌘K + the visible trigger into
           // CommandBar; /docs doesn't have a wired search backend yet so
           // the bar was non-functional anyway. With this off, only one

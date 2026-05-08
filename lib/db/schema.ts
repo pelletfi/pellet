@@ -96,7 +96,7 @@ export const agents = pgTable("agents", {
 });
 
 // ── Agent events (new — v2) ───────────────────────────────────────────────
-// Joins raw events to agents with a human-legible summary + OLI provenance.
+// Joins raw events to agents with a human-legible summary + Wallet provenance.
 // One row per (event, agent) match — same event can match multiple agents.
 export const agentEvents = pgTable(
   "agent_events",
@@ -111,7 +111,7 @@ export const agentEvents = pgTable(
     kind: text("kind").notNull(),
     summary: text("summary").notNull(),
     targets: jsonb("targets").notNull().default({}),
-    // NEW: economic fields for OLI metrics. amount_wei is the raw uint256 from
+    // NEW: economic fields for Wallet metrics. amount_wei is the raw uint256 from
     // the Transfer event's data field; token_address identifies which TIP-20
     // (USDC.e, USDT0, etc.) was moved. Both nullable for non-Transfer events.
     amountWei: text("amount_wei"),                  // store as text — uint256 doesn't fit in JS number
@@ -247,7 +247,7 @@ export const walletSpendLog = pgTable(
   }),
 );
 
-// ── OLI Webhooks v1 ──────────────────────────────────────────────────────
+// ── Wallet Webhooks v1 ──────────────────────────────────────────────────────
 // Subscriptions own a callback_url + signing_secret + filter spec. Every
 // matching agent_events row produces a delivery row (idempotent via the
 // (subscription_id, event_id) unique index). signing_secret is the raw hex
@@ -259,8 +259,8 @@ export const walletSpendLog = pgTable(
 //   active         → paused            (manual pause OR 410 Gone from callback)
 //   active         → disabled_by_failures (5 consecutive non-2xx failures)
 //   *              → deleted           (soft delete; cascade still applies on user delete)
-export const oliWebhookSubscriptions = pgTable(
-  "oli_webhook_subscriptions",
+export const webhookSubscriptions = pgTable(
+  "webhook_subscriptions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     ownerUserId: uuid("owner_user_id")
@@ -282,23 +282,23 @@ export const oliWebhookSubscriptions = pgTable(
     lastDeliveredAt: timestamp("last_delivered_at", { withTimezone: true }),
   },
   (t) => ({
-    ownerIdx: index("oli_webhook_subs_owner_idx").on(t.ownerUserId),
-    statusIdx: index("oli_webhook_subs_status_idx").on(t.status),
+    ownerIdx: index("webhook_subs_owner_idx").on(t.ownerUserId),
+    statusIdx: index("webhook_subs_status_idx").on(t.status),
     // Expression index lets dispatchToWebhooks short-list subscriptions by
     // the event's recipient without scanning the whole table.
-    recipientIdx: index("oli_webhook_subs_recipient_idx").on(
+    recipientIdx: index("webhook_subs_recipient_idx").on(
       sql`(${t.filters} ->> 'recipient_address')`,
     ),
   }),
 );
 
-export const oliWebhookDeliveries = pgTable(
-  "oli_webhook_deliveries",
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     subscriptionId: uuid("subscription_id")
       .notNull()
-      .references(() => oliWebhookSubscriptions.id, { onDelete: "cascade" }),
+      .references(() => webhookSubscriptions.id, { onDelete: "cascade" }),
     eventId: integer("event_id")
       .notNull()
       .references(() => agentEvents.id, { onDelete: "cascade" }),
@@ -320,16 +320,16 @@ export const oliWebhookDeliveries = pgTable(
     // Hard idempotency: at most one delivery row per (subscription, event).
     // Both the bus path AND the inline match-runner path try to INSERT;
     // ON CONFLICT DO NOTHING + this index makes the double-call safe.
-    subEventUq: uniqueIndex("oli_webhook_deliveries_sub_event_uq").on(
+    subEventUq: uniqueIndex("webhook_deliveries_sub_event_uq").on(
       t.subscriptionId,
       t.eventId,
     ),
-    retryReadyIdx: index("oli_webhook_deliveries_retry_ready_idx").on(
+    retryReadyIdx: index("webhook_deliveries_retry_ready_idx").on(
       t.status,
       t.nextRetryAt,
     ),
-    deliveryIdIdx: index("oli_webhook_deliveries_delivery_id_idx").on(t.deliveryId),
-    subStatusIdx: index("oli_webhook_deliveries_sub_status_idx").on(
+    deliveryIdIdx: index("webhook_deliveries_delivery_id_idx").on(t.deliveryId),
+    subStatusIdx: index("webhook_deliveries_sub_status_idx").on(
       t.subscriptionId,
       t.status,
     ),

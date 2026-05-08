@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
-import { WalletTabs } from "@/components/oli/WalletTabs";
+import { WalletTabs } from "@/components/wallet/WalletTabs";
 import { fetchDirectory } from "@/lib/mpp";
 import { ServiceCatalog } from "./ServiceCatalog";
 

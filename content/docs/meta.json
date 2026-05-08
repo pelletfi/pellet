@@ -6,14 +6,10 @@
     "wallet",
     "wallet-cli",
     "wallet-mcp",
-    "oli-webhooks",
-    "---OLI---",
-    "oli",
-    "methodology",
-    "---API---",
-    "api",
+    "webhooks",
     "---Reference---",
-    "skills",
+    "api",
+    "methodology",
     "tempo-primer",
     "changelog"
   ]

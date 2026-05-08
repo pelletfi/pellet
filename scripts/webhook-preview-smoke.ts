@@ -9,8 +9,8 @@
 
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db/client";
-import { oliWebhookSubscriptions, oliWebhookDeliveries } from "@/lib/db/schema";
-import { verify, SIGNATURE_HEADER } from "@/lib/oli/webhooks/signature";
+import { webhookSubscriptions, webhookDeliveries } from "@/lib/db/schema";
+import { verify, SIGNATURE_HEADER } from "@/lib/wallet/webhooks/signature";
 import { eq } from "drizzle-orm";
 
 const PREVIEW = "https://pellet-git-pellet-pellet.vercel.app";
@@ -29,10 +29,10 @@ async function main() {
   console.log(`receiver: ${callbackUrl}`);
   console.log(`viewer:   ${WEBHOOK_SITE}/#!/${tokenUuid}`);
 
-  await db.delete(oliWebhookSubscriptions).where(eq(oliWebhookSubscriptions.label, "preview-smoke-1"));
+  await db.delete(webhookSubscriptions).where(eq(webhookSubscriptions.label, "preview-smoke-1"));
 
   const [sub] = await db
-    .insert(oliWebhookSubscriptions)
+    .insert(webhookSubscriptions)
     .values({
       ownerUserId,
       callbackUrl,
@@ -46,7 +46,7 @@ async function main() {
   console.log(`sub: ${sub.id}`);
 
   const [delivery] = await db
-    .insert(oliWebhookDeliveries)
+    .insert(webhookDeliveries)
     .values({
       subscriptionId: sub.id,
       eventId,
@@ -81,15 +81,15 @@ async function main() {
 
   const [after] = await db
     .select()
-    .from(oliWebhookDeliveries)
-    .where(eq(oliWebhookDeliveries.id, delivery.id));
+    .from(webhookDeliveries)
+    .where(eq(webhookDeliveries.id, delivery.id));
 
   const checks = {
     cron_http_200: cronRes.status === 200,
     delivery_id_header_matches: deliveryHeader === delivery.deliveryId,
     subscription_header_matches: subHeader === sub.id,
     signature_valid: sigValid,
-    envelope_type_v1: parsed?.type === "oli.event.v1",
+    envelope_type_v1: parsed?.type === "pellet.event.v1",
     envelope_subscription_id: parsed?.subscription_id === sub.id,
     payload_event_id: parsed?.data?.id === eventId,
     payload_recipient_lowercased: (parsed?.data?.counterparty_address ?? "").toLowerCase() === recipient,
@@ -105,7 +105,7 @@ async function main() {
     if (!v) ok = false;
   }
 
-  await db.delete(oliWebhookSubscriptions).where(eq(oliWebhookSubscriptions.id, sub.id));
+  await db.delete(webhookSubscriptions).where(eq(webhookSubscriptions.id, sub.id));
 
   console.log(ok ? "\nALL PASS" : "\nFAILURES");
   process.exit(ok ? 0 : 1);

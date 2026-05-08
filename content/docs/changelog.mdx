@@ -42,26 +42,26 @@ What's NOT shipped yet: mainnet sponsor (Tempo doesn't run one for Presto; we'll
 
 ---
 
-## 2026-04-29 · OLI · cross-rail framing + skill.md install convention
+## 2026-04-29 · cross-rail framing + skill.md install convention
 
-Pellet's positioning shifts from "Tempo OLI dashboard" to "open ledger of the agent economy, Tempo today." Three reference pages land on `/oli`:
+Pellet's positioning shifts to "open ledger of the agent economy, Tempo today." Three reference pages ship:
 
-- **[/oli/rails](/oli/rails)** — comparison of payment rails relevant to autonomous agents. Tempo MPP (indexed live), Stripe Link (documented, private rail), x402-direct (watching), MCP-native (watching). Card-per-rail with Pellet coverage notes.
-- **[/oli/skills](/oli/skills)** — curated registry of `skill.md` install manifests for agent-payment surfaces. Two entries on day one: `pellet-oli` (ours) and `stripe-link` (Stripe's, shipped same day).
-- **[/oli/methodology](/oli/methodology)** — five-section reference: ingestion, matching, Pattern A/B attribution, provenance, known gaps. Linked from every "recovered from settlement event topic[2]…" footer.
+- **[/rails](/rails)** — comparison of payment rails relevant to autonomous agents. Tempo MPP (indexed live), Stripe Link (documented, private rail), x402-direct (watching), MCP-native (watching). Card-per-rail with Pellet coverage notes.
+- **[/skills](/skills)** — curated registry of `skill.md` install manifests for agent-payment surfaces. Two entries on day one: Pellet (ours) and `stripe-link` (Stripe's, shipped same day).
+- **[/methodology](/methodology)** — five-section reference: ingestion, matching, Pattern A/B attribution, provenance, known gaps. Linked from every "recovered from settlement event topic[2]…" footer.
 
-OLI also gets a [`/skill.md`](/skill.md) at the apex — Anthropic-style skill manifest with frontmatter + endpoint docs, the install surface Stripe Link normalized for agent-payment SDKs.
+Pellet also gets a [`/skill.md`](/skill.md) at the apex — Anthropic-style skill manifest with frontmatter + endpoint docs, the install surface Stripe Link normalized for agent-payment SDKs.
 
 ---
 
-## 2026-04-29 · OLI · gateway routing attribution recovered on-chain
+## 2026-04-29 · gateway routing attribution recovered on-chain
 
 Tempo MPP Gateway settles to one address (`0xca4e835f…`) for ~17 underlying providers. Per-service attribution recovered via two paths:
 
 - **Pattern A** — escrow contract `0x33b9…4f25` emits a `Settlement` event whose `topic[2]` is the provider address. Decoded into `agent_events.routed_to_address`. ~9% of gateway txs.
 - **Pattern B** — user→gateway calldata `bytes32` ref's bytes 5–14 are a stable per-service fingerprint set by Tempo's MPP client. Decoded into `agent_events.routed_fingerprint`. ~91% of gateway txs (combined with Pattern A: essentially 100%).
 
-Surfaces: dashboard "Top providers (routed)" table, gateway service detail "Underlying providers" table, deep-link `/oli/providers/[address]` and `/oli/providers/fp_[hex]` pages. Once a provider/fingerprint is labeled in `address_labels` (one CLI command: `npm run label-provider -- <key> "<name>"`), the UI lights it up automatically across every surface.
+Surfaces: dashboard "Top providers (routed)" table, gateway service detail "Underlying providers" table, deep-link `/wallet/providers/[address]` and `/wallet/providers/fp_[hex]` pages. Once a provider/fingerprint is labeled in `address_labels` (one CLI command: `npm run label-provider -- <key> "<name>"`), the UI lights it up automatically across every surface.
 
 Methodology bumped to v0.2.
 
@@ -94,7 +94,7 @@ The deep briefing at `$0.200` ships today with a new final section: the **Covera
 - **Coverage flags** — per-section `complete | partial | unavailable` status with the pipeline's own `coverage_note` explaining every partial. No hidden gaps.
 - **Data lineage** — the on-chain primitive (precompile, contract, event table) that produced each section. Nothing inferred.
 
-This replaces the natural-language analyst note that earlier versions shipped, retired on 2026-04-17 per OLI discipline: Pellet ships measurements, not model synthesis. The briefing's defensibility at `$0.200` now rests on the composite — eight parallel on-chain aggregators plus a re-verifiable receipt — rather than on a prose paragraph that could be read from any source.
+This replaces the natural-language analyst note that earlier versions shipped, retired on 2026-04-17 per the measurement discipline: Pellet ships measurements, not model synthesis. The briefing's defensibility at `$0.200` now rests on the composite — eight parallel on-chain aggregators plus a re-verifiable receipt — rather than on a prose paragraph that could be read from any source.
 
 ### Principles
 
@@ -110,4 +110,4 @@ Three rules drove the schedule:
 - **Pellet Pro** subscribers see no per-call charge — the $49/mo tier continues to cover every endpoint.
 - **MPPScan directory** will re-crawl on the next paid tx against Pellet, typically within an hour of the deploy. Agents that route on price may briefly see a stale $0.05 display for the briefing until the re-crawl lands; the live 402 challenge always reflects the current schedule.
 
-See [Pricing](/docs/pricing) for the full live schedule and [OLI](/docs/oli) for the measurement discipline the prices are anchored against.
+See [Methodology](/docs/methodology) for the measurement discipline the prices are anchored against.

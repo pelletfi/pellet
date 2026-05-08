@@ -4,20 +4,18 @@ description: Every formula, threshold, and on-chain check Pellet uses. Versioned
 icon: BookText
 ---
 
-This document specifies how OLI decodes Tempo activity and how Pellet Wallet enforces caps. Versioned so changes don't silently mutate historical interpretations.
+This document specifies how Pellet decodes Tempo activity and how Pellet Wallet enforces caps. Versioned so changes don't silently mutate historical interpretations.
 
-**OLI methodology version: 0.2** *(2026-04-29)*
+**Methodology version: 0.2** *(2026-04-29)*
 **Wallet methodology: Phase 4 / 5 release (testnet)** *(2026-04-29)*
-
-For the rendered version with sidebar navigation, see [pellet.network/oli/methodology](/oli/methodology).
 
 ---
 
-## OLI — Open-Ledger Interface
+## Decoding Tempo activity
 
 ### Scope
 
-OLI's lens is the public Tempo ledger:
+Pellet's lens is the public Tempo ledger:
 
 - **In scope:** every TIP-20 stablecoin transfer on Tempo mainnet (Presto) — peg, supply, policy, reserves, role holders, flows. Plus the Moderato testnet for development surfaces.
 - **In scope:** the Tempo MPP Gateway escrow contract (`0x33b901018174ddabe4841042ab76ba85d4e24f25`) — `Settlement` events emitted there give per-provider attribution.
@@ -144,8 +142,8 @@ Defends against a malicious browser POSTing a forged hash to obtain an unauthori
 
 ## Source
 
-- OLI queries: [`lib/oli/queries.ts`](https://github.com/pelletnetwork/pellet/blob/main/lib/oli/queries.ts)
-- OLI ingestion: [`lib/ingest/`](https://github.com/pelletnetwork/pellet/tree/main/lib/ingest)
+- Queries: [`lib/wallet/queries.ts`](https://github.com/pelletnetwork/pellet/blob/main/lib/wallet/queries.ts)
+- Ingestion: [`lib/ingest/`](https://github.com/pelletnetwork/pellet/tree/main/lib/ingest)
 - Wallet endpoints: [`app/api/wallet/`](https://github.com/pelletnetwork/pellet/tree/main/app/api/wallet)
 - Wallet crypto: [`lib/wallet/`](https://github.com/pelletnetwork/pellet/tree/main/lib/wallet)
 - Phase 3.B research: [`docs/wallet/research-2026-04-29-phase-3b.md`](https://github.com/pelletnetwork/pellet/blob/main/docs/wallet/research-2026-04-29-phase-3b.md)

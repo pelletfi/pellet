@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("home renders the OLI landing", async ({ page }) => {
+test("home renders the landing", async ({ page }) => {
   await page.goto("/");
   // Wait for the framer-motion hero to mount + hydrate.
   await expect(page.locator("h1.landing-hero-h1")).toBeVisible();
@@ -42,31 +42,14 @@ test("/api/v1/health returns block height", async ({ request }) => {
   expect(typeof json.block).toBe("number");
 });
 
-test("/api/agents returns the seeded list (legacy v0 surface)", async ({ request }) => {
-  const res = await request.get("/api/agents");
-  expect(res.status()).toBe(200);
-  const json = await res.json();
-  expect(Array.isArray(json.agents)).toBe(true);
-});
-
-test("/oli renders the dashboard with sidebar", async ({ page }) => {
+test("/wallet renders the dashboard with sidebar", async ({ page }) => {
   await page.goto("/wallet");
-  await expect(page.locator("aside.oli-sidebar")).toBeVisible();
+  await expect(page.locator("aside.wallet-sidebar")).toBeVisible();
   await expect(page.locator("h1")).toContainText("Dashboard");
 });
 
-test("/oli/services lists services", async ({ request }) => {
-  const res = await request.get("/oli/services");
-  expect(res.status()).toBe(200);
-});
-
-test("/oli/agents lists agents", async ({ request }) => {
-  const res = await request.get("/oli/agents");
-  expect(res.status()).toBe(200);
-});
-
-test("/api/oli/dashboard returns snapshot shape", async ({ request }) => {
-  const res = await request.get("/api/oli/dashboard");
+test("/api/dashboard returns snapshot shape", async ({ request }) => {
+  const res = await request.get("/api/dashboard");
   expect(res.status()).toBe(200);
   const json = await res.json();
   expect(typeof json.txCount).toBe("number");
@@ -75,15 +58,15 @@ test("/api/oli/dashboard returns snapshot shape", async ({ request }) => {
   expect(Array.isArray(json.recentEvents)).toBe(true);
 });
 
-test("/api/oli/services returns list", async ({ request }) => {
-  const res = await request.get("/api/oli/services");
+test("/api/services returns list", async ({ request }) => {
+  const res = await request.get("/api/services");
   expect(res.status()).toBe(200);
   const json = await res.json();
   expect(Array.isArray(json.services)).toBe(true);
 });
 
-test("/api/oli/agents returns list", async ({ request }) => {
-  const res = await request.get("/api/oli/agents");
+test("/api/agents returns list", async ({ request }) => {
+  const res = await request.get("/api/agents");
   expect(res.status()).toBe(200);
   const json = await res.json();
   expect(Array.isArray(json.agents)).toBe(true);

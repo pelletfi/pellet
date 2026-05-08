@@ -29,7 +29,7 @@ export async function requireOwner(req: Request): Promise<OwnerContext | NextRes
     };
   }
 
-  // Cookie path — browser callers hitting /api/webhooks from the OLI UI.
+  // Cookie path — browser callers hitting /api/webhooks from the Wallet UI.
   const userId = await readUserSession();
   if (!userId) {
     return NextResponse.json(

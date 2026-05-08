@@ -23,8 +23,8 @@ Pellet's MCP server is bundled with [`@pelletnetwork/cli`](/docs/wallet-cli). Ru
 
 Works with Claude Code, Cursor, Cloudflare Agents, and the Anthropic API directly via stdio MCP.
 
-## Why isn't there a separate MCP for OLI?
+## Why isn't there a separate MCP for the read API?
 
-OLI is read-only and CORS-open at `/api/oli/*`. Any agent that can `fetch` can hit OLI directly — no MCP wrapper required. The skill manifest at [pellet.network/skill.md](/skill.md) teaches the agent the endpoints + when to use them.
+The read endpoints are CORS-open at `/api/*`. Any agent that can `fetch` can hit them directly — no MCP wrapper required. The skill manifest at [pellet.network/skill.md](/skill.md) teaches the agent the endpoints + when to use them.
 
-If you want an MCP-flavored OLI surface specifically (e.g. for runtimes that only invoke MCP tools, never raw HTTP), open an issue at [github.com/pelletnetwork/pellet/issues](https://github.com/pelletnetwork/pellet/issues) and we'll bundle one with the CLI.
+If you want an MCP-flavored read surface specifically (e.g. for runtimes that only invoke MCP tools, never raw HTTP), open an issue at [github.com/pelletnetwork/pellet/issues](https://github.com/pelletnetwork/pellet/issues) and we'll bundle one with the CLI.

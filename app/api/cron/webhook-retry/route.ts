@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { runCron } from "@/lib/ingest/cron-wrapper";
-import { processRetryQueue } from "@/lib/oli/webhooks/dispatcher";
+import { processRetryQueue } from "@/lib/wallet/webhooks/dispatcher";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

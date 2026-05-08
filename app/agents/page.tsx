@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AgentsRedirect() {
-  redirect("/oli/agents");
+  redirect("/wallet/dashboard/agents");
 }

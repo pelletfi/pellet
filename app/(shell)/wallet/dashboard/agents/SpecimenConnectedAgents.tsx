@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { WalletTabs } from "@/components/oli/WalletTabs";
+import { WalletTabs } from "@/components/wallet/WalletTabs";
 import { createWalletClient, http } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
 import { Account, withRelay, tempoActions } from "viem/tempo";

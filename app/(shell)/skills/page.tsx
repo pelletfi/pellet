@@ -20,17 +20,6 @@ type Skill = {
 
 const SKILLS: Skill[] = [
   {
-    id: "pellet-oli",
-    name: "Pellet",
-    vendor: "Pellet",
-    status: "live",
-    installUrl: "https://pellet.network/skill.md",
-    category: "observability",
-    bio: "Query autonomous economic activity on Tempo — live revenue, transaction counts, per-service attribution. Use when an agent or user asks about agent payments, MPP service revenue, gateway routing, or wants to deep-link a tx hash.",
-    shipped: "2026-04-29",
-    link: { label: "pellet.network", href: "/" },
-  },
-  {
     id: "pellet-wallet",
     name: "Pellet Wallet",
     vendor: "Pellet",

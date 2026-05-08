@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { recentFeed, type FeedRow } from "@/lib/db/agent-events";
 
-// Powers the bottom-of-page status strip across every wallet/OLI surface.
-// Chain-wide stats — not filtered by user. Matches the "OLI runs
+// Powers the bottom-of-page status strip across every wallet/Wallet surface.
+// Chain-wide stats — not filtered by user. Matches the "Wallet runs
 // underneath everything" thesis: same numbers everywhere, ambient signal.
 //
 // Query budget: 2 round-trips per /api/wallet/status-strip call.
@@ -12,7 +12,7 @@ import { recentFeed, type FeedRow } from "@/lib/db/agent-events";
 // Plus one separate call for the most-recent event row (lib/db/agent-events).
 //
 // Refreshes every 30s on the client. Live last-event updates piggyback on
-// the existing /api/oli/feed SSE bus — no new bus channel needed.
+// the existing /api/feed SSE bus — no new bus channel needed.
 
 const STABLE_DECIMALS = 6; // USDC.e + USDT0 are both 6-decimal TIP-20s
 

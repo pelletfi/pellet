@@ -78,7 +78,7 @@ export const TEMPO_EXPLORER_URL = tempoChainConfig().explorerUrl;
 export const ACCOUNT_KEYCHAIN_ADDRESS =
   "0xaAAAaaAA00000000000000000000000000000000" as const;
 
-// Settlement event topic (0x92ed5f...) is the OLI-ingest concern; the
+// Settlement event topic (0x92ed5f...) is the Wallet-ingest concern; the
 // authorize precompile address above is the wallet concern. Kept in
 // separate constant per separation of concerns.
 

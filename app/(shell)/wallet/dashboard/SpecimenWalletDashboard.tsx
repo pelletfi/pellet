@@ -7,8 +7,8 @@ import gsap from "gsap";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
 import { Account, withRelay, tempoActions } from "viem/tempo";
-import { AgentIdentityCard } from "@/components/oli/AgentIdentityCard";
-import { WalletTabs } from "@/components/oli/WalletTabs";
+import { AgentIdentityCard } from "@/components/wallet/AgentIdentityCard";
+import { WalletTabs } from "@/components/wallet/WalletTabs";
 import { MPP_PRESETS, MPP_SERVICES } from "@/lib/mpp";
 import { TerminalCard } from "@/app/(shell)/wallet/dashboard/TerminalCard";
 

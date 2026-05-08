@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { WalletTabs } from "@/components/oli/WalletTabs";
+import { WalletTabs } from "@/components/wallet/WalletTabs";
 
 type CardStatus = "live" | "guide" | "soon";
 

@@ -1,0 +1,878 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Pellet shell theme — system sans, paper/ink palette
+ * ───────────────────────────────────────────────────────────────────────────
+ * Scoped to .wallet-shell (mounted from (shell)/layout.tsx). Overrides the
+ * site-global tokens declared in app/globals.css for /wallet/* and related
+ * surfaces only.
+ *
+ * Two tokens, mirrored across modes:
+ *   --paper #bcbcbc — warm grey
+ *   --ink   #0a0a0a — near-black
+ *
+ * Light (default): bg paper, fg ink
+ * Dark (toggle):   bg ink,   fg paper
+ *
+ * System sans-serif throughout. Mono only for code blocks.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens scoped to Wallet ─────────────────────────────────────────────────── */
+
+.wallet-shell {
+  /* Two-token palette — locked. */
+  --paper: #bcbcbc;
+  --ink:   #0a0a0a;
+
+  /* Mode-mapped semantic tokens. Light is default, .wallet-dark mirrors. */
+  --wallet-bg: var(--paper);
+  --wallet-fg: var(--ink);
+  --wallet-fg-muted: color-mix(in oklch, var(--ink) 72%, var(--paper));
+  --wallet-fg-faint: color-mix(in oklch, var(--ink) 50%, var(--paper));
+  --wallet-line: var(--ink);
+  --wallet-line-thin: color-mix(in oklch, var(--ink) 40%, var(--paper));
+
+  /* Map back into existing site tokens so unmodified components inherit */
+  --color-bg-base: var(--wallet-bg);
+  --color-bg-subtle: transparent;
+  --color-bg-muted: transparent;
+  --color-bg-emphasis: transparent;
+
+  --color-border-subtle: var(--wallet-line-thin);
+  --color-border-default: var(--wallet-line);
+  --color-border-emphasis: var(--wallet-line);
+
+  --color-text-primary: var(--wallet-fg);
+  --color-text-secondary: var(--wallet-fg);
+  --color-text-tertiary: var(--wallet-fg-muted);
+  --color-text-quaternary: var(--wallet-fg-faint);
+
+  /* Strip the chromatic accent — fall back to body color so any leftover
+   * `var(--color-accent)` reference renders as plain ink. Belt-and-braces;
+   * we still grep-replace explicit references. */
+  --color-accent: var(--wallet-fg);
+
+  /* Fumadocs vars — keep the docs-shell internal sizing intact but recolor. */
+  --color-fd-card: var(--wallet-bg);
+  --color-fd-background: var(--wallet-bg);
+  --color-fd-foreground: var(--wallet-fg);
+  --color-fd-muted: var(--wallet-bg);
+  --color-fd-muted-foreground: var(--wallet-fg-muted);
+  --color-fd-popover: var(--wallet-bg);
+  --color-fd-popover-foreground: var(--wallet-fg);
+  --color-fd-accent: var(--wallet-bg);
+  --color-fd-accent-foreground: var(--wallet-fg);
+  --color-fd-border: var(--wallet-line);
+  --color-fd-ring: var(--wallet-line);
+  --color-fd-primary: var(--wallet-fg);
+  --color-fd-secondary: var(--wallet-bg);
+
+  background: var(--wallet-bg);
+  color: var(--wallet-fg);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dark mode — opt-in by adding `.wallet-dark` to .wallet-shell. Tokens mirror:
+ * paper → background, ink → foreground swap. Same two literals. */
+.wallet-shell.wallet-dark {
+  --wallet-bg: var(--ink);
+  --wallet-fg: var(--paper);
+  --wallet-fg-muted: color-mix(in oklch, var(--paper) 72%, var(--ink));
+  --wallet-fg-faint: color-mix(in oklch, var(--paper) 50%, var(--ink));
+  --wallet-line: var(--paper);
+  --wallet-line-thin: color-mix(in oklch, var(--paper) 40%, var(--ink));
+}
+
+/* Body backdrop matches the Wallet canvas so the page doesn't peek at the edges
+ * of the docs grid. Scoped via :has() so other surfaces are untouched. */
+body:has(.wallet-shell:not(.wallet-dark)) {
+  background: #bcbcbc;
+}
+body:has(.wallet-shell.wallet-dark) {
+  background: #0a0a0a;
+}
+
+/* Belt-and-braces: kill any leftover accent reference inside the shell. */
+.wallet-shell {
+  --color-accent: var(--wallet-fg);
+  --color-success: var(--wallet-fg);
+  --color-error: var(--wallet-fg);
+  --color-warning: var(--wallet-fg);
+}
+
+/* ── Square everything ────────────────────────────────────────────────────── */
+
+.wallet-shell,
+.wallet-shell *,
+.wallet-shell *::before,
+.wallet-shell *::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Strip site nav blur/sticky — render flat */
+body:has(.wallet-shell) .nav-header {
+  background: var(--wallet-bg, transparent);
+  border-bottom: 1px solid var(--wallet-line, transparent);
+  backdrop-filter: none !important;
+}
+
+/* ── Type ─────────────────────────────────────────────────────────────────── */
+
+/* Code blocks keep mono; everything else inherits system sans. */
+.wallet-shell code,
+.wallet-shell pre {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.wallet-shell a {
+  color: var(--wallet-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--wallet-line-thin);
+  transition: border-color 100ms linear;
+}
+.wallet-shell a:hover {
+  border-bottom-color: var(--wallet-line);
+}
+
+/* Selection / focus — 1px square outline, never a chromatic ring */
+.wallet-shell :focus-visible {
+  outline: 1px solid var(--wallet-fg) !important;
+  outline-offset: 0 !important;
+}
+
+::selection {
+  background: var(--wallet-fg, #0a0a0a);
+  color: var(--wallet-bg, #bcbcbc);
+}
+
+/* Scrollbars in Wallet subtree */
+.wallet-shell ::-webkit-scrollbar { width: 6px; height: 6px; }
+.wallet-shell ::-webkit-scrollbar-track { background: transparent; }
+.wallet-shell ::-webkit-scrollbar-thumb { background: var(--wallet-line-thin); }
+.wallet-shell ::-webkit-scrollbar-thumb:hover { background: var(--wallet-line); }
+
+
+/* ── Shader background wrapper ────────────────────────────────────────── */
+.wallet-shader-wrap {
+  position: relative;
+  min-height: 100vh;
+}
+.wallet-shader-canvas {
+  position: fixed !important;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.wallet-shader-wrap .specimen-shell {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+.wallet-shader-wrap body,
+body:has(.wallet-shader-wrap) {
+  background: transparent;
+}
+
+/* ── Page chrome ──────────────────────────────────────────────────────────── */
+
+/* Kill the radial-gradient atmosphere + scanline overlay from globals.css */
+.wallet-layout-shell::before,
+.wallet-layout-shell::after {
+  display: none !important;
+}
+
+/* Kill the old amber/blue brand-thread on page headers */
+.wallet-shell .wallet-page > header::before {
+  display: none !important;
+}
+.wallet-shell .wallet-page > header {
+  padding-left: 0 !important;
+}
+
+.wallet-shell .wallet-page {
+  padding: 24px 40px 80px;
+  max-width: 1280px;
+  gap: 32px;
+}
+
+/* Hero header `01 Dashboard` — big mono, top-left */
+.wallet-shell .wallet-page-h1,
+.wallet-shell .wallet-section-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  color: var(--wallet-fg) !important;
+  margin: 0 0 4px 0 !important;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.wallet-shell .wallet-section-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--wallet-fg);
+}
+
+.wallet-shell .wallet-section-title-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--wallet-fg);
+}
+
+/* Hide the old `(Wallet)` mono em label — redundant under the new numbering */
+.wallet-shell .wallet-page-h1-em {
+  display: none !important;
+}
+
+/* Body copy column — unjustified, narrow, breathing room */
+.wallet-shell .wallet-page > header p,
+.wallet-shell .wallet-meth-lede,
+.wallet-shell .wallet-page p {
+  max-width: 560px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--wallet-fg);
+  text-align: left;
+}
+
+/* Page-header label / kicker */
+.wallet-shell .label,
+.wallet-shell .wallet-meth-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wallet-fg-muted) !important;
+  font-weight: 400 !important;
+}
+
+/* ── Stat strip ───────────────────────────────────────────────────────────── */
+
+.wallet-shell .wallet-stat-strip {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line) !important;
+  gap: 0 !important;
+}
+.wallet-shell .wallet-stat {
+  background: transparent !important;
+  border-right: 1px solid var(--wallet-line);
+  padding: 14px 18px !important;
+}
+.wallet-shell .wallet-stat:last-child {
+  border-right: 0;
+}
+.wallet-shell .wallet-stat-value {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: var(--wallet-fg) !important;
+  letter-spacing: 0 !important;
+}
+
+/* ── Leaderboards / tables ───────────────────────────────────────────────── */
+
+.wallet-shell .wallet-leaderboard {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line) !important;
+}
+.wallet-shell .wallet-leaderboard-title {
+  background: transparent !important;
+  border-bottom: 1px solid var(--wallet-line) !important;
+  color: var(--wallet-fg) !important;
+}
+.wallet-shell .wallet-leaderboard-header {
+  background: transparent !important;
+  color: var(--wallet-fg-muted) !important;
+}
+.wallet-shell .wallet-leaderboard-row {
+  border-bottom: 1px solid var(--wallet-line-thin) !important;
+}
+.wallet-shell .wallet-leaderboard-row:last-child {
+  border-bottom: 0 !important;
+}
+.wallet-shell .wallet-leaderboard-link::before {
+  display: none !important;
+}
+.wallet-shell .wallet-leaderboard-link:hover {
+  background: transparent !important;
+  outline: 1px solid var(--wallet-fg);
+  outline-offset: -1px;
+}
+
+/* Stat-strip + tables fallback to body color for muted text */
+.wallet-shell [style*="--color-text-tertiary"],
+.wallet-shell [style*="color: var(--color-text-tertiary)"] {
+  color: var(--wallet-fg-muted) !important;
+}
+.wallet-shell [style*="--color-text-quaternary"],
+.wallet-shell [style*="color: var(--color-text-quaternary)"] {
+  color: var(--wallet-fg-faint) !important;
+}
+
+/* ── EventStream ──────────────────────────────────────────────────────────── */
+
+.wallet-shell .wallet-eventstream,
+.wallet-shell .wallet-eventstream-empty {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line) !important;
+}
+.wallet-shell .wallet-event-row {
+  border-bottom: 1px solid var(--wallet-line-thin) !important;
+}
+.wallet-shell .wallet-event-row:last-child {
+  border-bottom: 0 !important;
+}
+.wallet-shell .wallet-event-row-routed {
+  color: var(--wallet-fg) !important;
+}
+.wallet-shell .wallet-event-row-header:hover {
+  background: transparent !important;
+  outline: 1px solid var(--wallet-fg);
+  outline-offset: -1px;
+}
+.wallet-shell .wallet-event-detail {
+  background: transparent !important;
+  border-top: 1px solid var(--wallet-line-thin) !important;
+}
+.wallet-shell .wallet-event-detail-action-copied {
+  color: var(--wallet-fg) !important;
+}
+.wallet-shell .wallet-event-detail-raw-payload {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line-thin) !important;
+  color: var(--wallet-fg) !important;
+}
+
+/* ── TimeWindow toggle ────────────────────────────────────────────────────── */
+
+.wallet-shell .wallet-time-toggle {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line) !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+.wallet-shell .wallet-time-toggle-btn {
+  border-right: 1px solid var(--wallet-line-thin);
+  color: var(--wallet-fg-muted) !important;
+  background: transparent !important;
+}
+.wallet-shell .wallet-time-toggle-btn:last-child {
+  border-right: 0;
+}
+.wallet-shell .wallet-time-toggle-btn-active {
+  outline: 1px solid var(--wallet-fg);
+  outline-offset: -1px;
+  color: var(--wallet-fg) !important;
+  background: transparent !important;
+}
+
+/* ── Fumadocs sidebar — repaint to numbered nav ──────────────────────────── */
+
+.wallet-shell #nd-sidebar,
+.wallet-shell .wallet-docs-shell #nd-sidebar {
+  background: var(--wallet-bg) !important;
+  border-inline-end-color: var(--wallet-line) !important;
+}
+
+/* Section separators in sidebar — render as flat mono labels */
+.wallet-shell #nd-sidebar [data-separator],
+.wallet-shell #nd-sidebar p[data-separator] {
+  color: var(--wallet-fg-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+}
+
+/* Sidebar nav items — square, mono, 1px outline on active/hover */
+.wallet-shell #nd-sidebar a {
+  font-size: 13px !important;
+  border-radius: 0 !important;
+  border-bottom: 0 !important;
+  color: var(--wallet-fg) !important;
+  background: transparent !important;
+  transition: outline-color 100ms linear !important;
+}
+.wallet-shell #nd-sidebar a[data-active="true"],
+.wallet-shell #nd-sidebar a[aria-current="page"] {
+  outline: 1px solid var(--wallet-fg) !important;
+  outline-offset: -1px !important;
+  color: var(--wallet-fg) !important;
+  background: transparent !important;
+  font-weight: 700 !important;
+}
+.wallet-shell #nd-sidebar a:hover {
+  outline: 1px solid var(--wallet-fg) !important;
+  outline-offset: -1px !important;
+}
+
+/* Subnav (mobile + desktop top strip inside docs grid) */
+.wallet-shell #nd-subnav {
+  background: var(--wallet-bg) !important;
+  border-bottom: 1px solid var(--wallet-line) !important;
+}
+
+/* ── Buttons / inputs ─────────────────────────────────────────────────────── */
+
+.wallet-shell button,
+.wallet-shell input[type="button"],
+.wallet-shell input[type="submit"],
+.wallet-shell .button {
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--wallet-fg);
+  border: 1px solid var(--wallet-line);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: outline-color 100ms linear, background 100ms linear;
+}
+.wallet-shell button:hover,
+.wallet-shell .button:hover {
+  outline: 1px solid var(--wallet-fg);
+  outline-offset: 0;
+}
+
+/* Time-window buttons + sidebar collapse toggle should not get the square
+ * border — they have their own treatments above / are icon-only. */
+.wallet-shell .wallet-time-toggle-btn,
+.wallet-shell .wallet-sidebar-toggle,
+.wallet-shell button[aria-label*="sidebar" i],
+.wallet-shell button[aria-label*="theme" i] {
+  border: 0;
+}
+
+.wallet-shell input[type="text"],
+.wallet-shell input[type="url"],
+.wallet-shell input[type="email"],
+.wallet-shell input[type="search"],
+.wallet-shell input:not([type]),
+.wallet-shell textarea,
+.wallet-shell select {
+  background: transparent;
+  color: var(--wallet-fg);
+  border: 1px solid var(--wallet-line);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* ── Section headings inside cards ────────────────────────────────────────── */
+
+.wallet-shell h2,
+.wallet-shell h3 {
+  font-weight: 700;
+  color: var(--wallet-fg);
+}
+
+/* ── Keycap ───────────────────────────────────────────────────────────────── */
+
+.wallet-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--wallet-fg);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wallet-fg);
+  line-height: 1;
+  border-radius: 0;
+  letter-spacing: 0;
+  vertical-align: middle;
+  margin: 0 1px;
+  white-space: nowrap;
+}
+
+/* ── KeymapLegend ─────────────────────────────────────────────────────────── */
+
+.wallet-keymap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  background: var(--wallet-bg);
+  border-top: 1px solid var(--wallet-line);
+  padding: 8px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  font-size: 11px;
+  color: var(--wallet-fg);
+  line-height: 1.4;
+}
+
+.wallet-keymap-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wallet-keymap-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wallet-keymap-label {
+  color: var(--wallet-fg);
+  letter-spacing: 0;
+}
+
+/* Collapse the keymap on narrow screens — render as plain wrapped strip
+ * without fixed positioning so it doesn't eat the bottom of the page. */
+@media (max-width: 640px) {
+  .wallet-keymap {
+    position: static;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--wallet-line);
+    gap: 12px 18px;
+  }
+}
+
+/* Pad the bottom of the Wallet shell so the fixed legend doesn't cover content. */
+.wallet-shell {
+  padding-bottom: 56px;
+}
+@media (max-width: 640px) {
+  .wallet-shell {
+    padding-bottom: 0;
+  }
+  .kpi-sparkline {
+    display: none;
+  }
+}
+
+/* ── Charts (TokenStack, TxCount, Trend) ──────────────────────────────────── */
+
+/* The charts already use stepped lines + tabular nums (the canon Jake wants
+ * preserved). Just recolor: grids → 1px line, strokes → fg, labels → fg. */
+
+.wallet-shell svg {
+  color: var(--wallet-fg);
+}
+.wallet-shell svg text {
+  fill: var(--wallet-fg);
+}
+
+/* Charts that draw rgba(...) lines from accent — let CSS strokes win for
+ * the obvious cases. Recharts inline-styles override; we leave those alone
+ * because their colors are computed off the theme and re-coloring wholesale
+ * would gut the legend differentiation. */
+
+/* ── Suppress the page fade-up on Wallet surfaces (it adds 300ms before the
+ * grid settles, jarring against the static specimen aesthetic). ─────────── */
+body:has(.wallet-shell) main {
+  animation: none !important;
+}
+
+/* ── Webhook + form chrome ────────────────────────────────────────────────── */
+
+.wallet-shell .wallet-webhook-card,
+.wallet-shell .section-card,
+.wallet-shell .data-table {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line) !important;
+}
+
+/* ── Keep the docs main column from inheriting Geist Sans elsewhere ───────── */
+
+.wallet-docs-main,
+.wallet-docs-main * {
+}
+
+/* ── Methodology page — strip the "Reference" amber kicker pretreatment ──── */
+
+.wallet-shell .wallet-meth-kicker {
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.wallet-shell .wallet-meth-h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+/* Old amber-thread on header */
+.wallet-shell .wallet-page > header {
+  border-left: 0 !important;
+}
+
+/* ── Fade Linear-blue specifics in chart legends to body color ────────────── */
+/* Chart strokes are rendered via SVG attributes, not inline style — those keep
+ * their differentiation (data-viz). What we catch here is HTML inline-style
+ * leakage (status pills, webhook detail badges) where the brand blue used to
+ * read as a UI fill. Collapse to body color so it reads as a plain mono
+ * outline. Border + color both swept. */
+.wallet-shell [style*="#6080c0"],
+.wallet-shell [style*="#6080C0"] {
+  color: var(--wallet-fg) !important;
+  border-color: var(--wallet-fg) !important;
+  background-color: transparent !important;
+}
+
+/* ── Embedded /wallet page (rendered inside /wallet) ──────────────────── */
+/* The wallet landing is shipped as a single component with an inline <style>
+ * block keyed on `.wallet-page`. Most of its custom rules use site tokens
+ * which the Wallet shell already remaps, but a handful hardcode rgba(96,128,192,…)
+ * tints + the `.wallet-cmp` panel uses an explicit dark-card background. The
+ * rules below knock those down so the wallet landing reads paper/ink only. */
+
+.wallet-shell .wallet-pitch,
+.wallet-shell .wallet-stage-status-shipped,
+.wallet-shell .wallet-stage-status-current,
+.wallet-shell .wallet-stage-status-next {
+  background: transparent !important;
+  border: 1px solid var(--wallet-line-thin) !important;
+  color: var(--wallet-fg) !important;
+}
+
+.wallet-shell .wallet-cmp,
+.wallet-shell .wallet-cmp-col,
+.wallet-shell .wallet-cmp-cell,
+.wallet-shell .wallet-card,
+.wallet-shell .wallet-quote,
+.wallet-shell .wallet-pitch-blockquote {
+  background: transparent !important;
+  border-color: var(--wallet-line) !important;
+  color: var(--wallet-fg) !important;
+}
+
+.wallet-shell .wallet-kicker-dot {
+  background: var(--wallet-fg) !important;
+}
+
+/* The h1 italic uses --color-accent — already remapped, but be explicit so
+ * the serif word reads ink/paper, never blue. */
+.wallet-shell .wallet-h1-em {
+  color: var(--wallet-fg) !important;
+}
+
+/* `Pellet Wallet.` h1 — brand-mark moment in Instrument Serif. The shell's
+ * mono override would otherwise make it match every other `<h1>`. Whitelist
+ * the original family back so the serif treatment survives inside /wallet. */
+.wallet-shell .wallet-h1,
+.wallet-shell .wallet-h1 * {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+}
+
+/* ── Float treatment ─────────────────────────────────────────────────────── *
+ * Rounded pill / card aesthetic for switches, strips, tables, buttons.
+ * Uses !important to override the wallet-shell global border-radius:0 reset. */
+
+/* — Segmented toggles (spec-switch) ────────────────────────────────────── */
+.specimen-shell .spec-switch {
+  border: none !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 20px 60px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+.specimen-shell.dark .spec-switch {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+.specimen-shell .spec-switch-seg {
+  border-right: none !important;
+  transition: background 150ms ease, color 150ms ease;
+}
+.specimen-shell .spec-switch-seg:first-child {
+  border-radius: 14px 0 0 14px !important;
+}
+.specimen-shell .spec-switch-seg:last-child {
+  border-radius: 0 14px 14px 0 !important;
+}
+.specimen-shell .spec-switch-seg:not(.spec-switch-seg-active):hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+.specimen-shell.dark .spec-switch-seg:not(.spec-switch-seg-active):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* — Stat strips (detail pages) ─────────────────────────────────────────── */
+.specimen-shell .spec-strip {
+  border: none !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  margin-left: 0;
+  margin-right: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+.specimen-shell.dark .spec-strip {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+.specimen-shell .spec-strip-cell {
+  border-right: 1px solid var(--line-thin);
+}
+.specimen-shell .spec-strip-cell:last-child {
+  border-right: none;
+}
+
+/* — Section rhythm — consistent vertical + horizontal spacing ─────────── */
+.specimen-shell .spec-main {
+  gap: 24px;
+  padding: 0 24px 40px;
+}
+.specimen-shell .spec-page-header {
+  padding: 8px 8px 0;
+}
+.specimen-shell .spec-wallet-float {
+  padding: 0;
+  gap: 24px;
+}
+@media (max-width: 768px) {
+  .specimen-shell .spec-main {
+    gap: 16px;
+    padding: 0 12px 32px;
+  }
+  .specimen-shell .spec-page-header {
+    padding: 4px 4px 0;
+  }
+  .specimen-shell .spec-wallet-float {
+    gap: 16px;
+  }
+}
+
+/* — Tables wrapper ─────────────────────────────────────────────────────── */
+.specimen-shell .spec-tables {
+  border: none !important;
+  margin: 0;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* — Data tables ────────────────────────────────────────────────────────── */
+.specimen-shell .spec-table {
+  border: none !important;
+  border-radius: 16px !important;
+  overflow: clip;
+  padding: 22px 26px 26px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+.specimen-shell.dark .spec-table {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* — KPI cards (detail pages) ───────────────────────────────────────────── */
+.specimen-shell .spec-kpi-stack {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 20px;
+}
+.specimen-shell .spec-kpi-card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.specimen-shell.dark .spec-kpi-card {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+@media (max-width: 768px) {
+  .specimen-shell .spec-kpi-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .specimen-shell .spec-kpi-card {
+    padding: 16px 18px;
+    gap: 10px;
+    border-radius: 12px !important;
+  }
+  .specimen-shell .spec-kpi-card .spec-strip-value {
+    font-size: 26px;
+    line-height: 26px;
+  }
+}
+
+/* — Settings blocks ────────────────────────────────────────────────────── */
+.specimen-shell .spec-settings-block {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+.specimen-shell.dark .spec-settings-block {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* — Settings / agent action buttons ────────────────────────────────────── */
+.specimen-shell .spec-settings-action,
+.specimen-shell .spec-settings-copy,
+.specimen-shell .spec-agents-chat,
+.specimen-shell .spec-agents-revoke {
+  border: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+  transition: background 150ms ease, color 150ms ease;
+}
+.specimen-shell.dark .spec-settings-action,
+.specimen-shell.dark .spec-settings-copy,
+.specimen-shell.dark .spec-agents-chat,
+.specimen-shell.dark .spec-agents-revoke {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* — Agents table ───────────────────────────────────────────────────────── */
+.specimen-shell .spec-agents-table {
+  border: none !important;
+  border-radius: 16px !important;
+  overflow: clip;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+  padding: 0 22px;
+}
+.specimen-shell.dark .spec-agents-table {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+.specimen-shell .spec-agents-tag,
+.specimen-shell .spec-agents-scope,
+.specimen-shell .spec-agents-token-state {
+  border-radius: 10px !important;
+}
+
+/* — Pending cards ──────────────────────────────────────────────────────── */
+.specimen-shell .spec-pending-card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.10) !important;
+  background: color-mix(in oklch, var(--bg) 92%, white);
+}
+.specimen-shell.dark .spec-pending-card {
+  background: color-mix(in oklch, var(--fg) 6%, var(--bg));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+}
+.specimen-shell .spec-pending-actions {
+  border: none !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+}
+.specimen-shell.dark .spec-pending-actions {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+.specimen-shell .spec-pending-btn {
+  border-right: none !important;
+  border-radius: 0 !important;
+}
+.specimen-shell .spec-pending-btn:first-child {
+  border-radius: 14px 0 0 14px !important;
+}
+.specimen-shell .spec-pending-btn:last-child {
+  border-radius: 0 14px 14px 0 !important;
+}

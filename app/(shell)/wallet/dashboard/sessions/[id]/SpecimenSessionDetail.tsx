@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
+import { SpecimenPaymentRow } from "@/components/wallet/SpecimenPaymentRow";
 import { TEMPO_EXPLORER_URL } from "@/lib/wallet/tempo-config";
 
 type Session = {

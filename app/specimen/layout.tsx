@@ -4,7 +4,7 @@ import "./specimen.css";
 
 export const metadata: Metadata = {
   title: "Specimen — Pellet",
-  description: "Specimen sheet for the Pellet OLI dashboard.",
+  description: "Specimen sheet for the Pellet Wallet dashboard.",
 };
 
 export default function SpecimenLayout({

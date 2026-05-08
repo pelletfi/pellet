@@ -1,30 +1,30 @@
 ---
 title: REST API
-description: HTTP endpoints for OLI queries and Pellet Wallet operations. Hosted at https://pellet.network.
+description: HTTP endpoints for Pellet read queries and Wallet operations. Hosted at https://pellet.network.
 icon: Terminal
 ---
 
-All endpoints are hosted at `https://pellet.network`. Responses are JSON. CORS is open on the OLI read endpoints.
+All endpoints are hosted at `https://pellet.network`. Responses are JSON. CORS is open on the read endpoints.
 
 Two surfaces:
 
-- **OLI** — read-only queries against the public OLI ledger. Unauthenticated.
+- **Read** — read-only queries against the public ledger. Unauthenticated.
 - **Wallet** — pairing, authorize, and payment operations. Bearer-authenticated for `/pay`; cookie-session-authenticated for the `/device/*` flow.
 
-## OLI · `/api/oli/*`
+## Read · `/api/*`
 
-Live observability over autonomous economic activity on Tempo. Read more at [OLI](/docs/oli) and [Methodology](/docs/methodology).
+Live observability over autonomous economic activity on Tempo. See [Methodology](/docs/methodology).
 
 | Endpoint | Description |
 |---|---|
-| `GET /api/oli/dashboard?w=24h\|7d\|30d\|all` | Headline stats: tx count, agents active, service revenue, providers detected. Plus topServices, topAgents, topProviders, recentEvents arrays. Cache: 5min edge. |
-| `GET /api/oli/services` | All curated MPP services (id ends in `-mpp`) with 24h + 7d aggregates. |
-| `GET /api/oli/services/[id]` | Service detail: head metadata, 30-day trend, recent 50 events. For `tempo-gateway-mpp`: also includes a `providers[]` aggregate (Pattern A address-attributed + Pattern B fingerprint-grouped). |
-| `GET /api/oli/agents` | All watched non-MPP entities. |
-| `GET /api/oli/agents/[id]` | Agent detail. Same shape as service detail. |
-| `GET /api/oli/events/[id]` | Single event with provenance: agent, counterparty, amount, tx hash, log index, source block, methodology version, related events from the same tx. |
-| `GET /api/oli/search?q=<query>` | Unified search across events (by tx hash or counterparty), agents/services (by id, label, wallet), labeled addresses. Min query length 2. |
-| `GET /api/oli/feed` | Server-sent-events stream pushing new events as they're matched. Off by default — set `NEXT_PUBLIC_OLI_LIVE_FEED=1` to enable. |
+| `GET /api/dashboard?w=24h\|7d\|30d\|all` | Headline stats: tx count, agents active, service revenue, providers detected. Plus topServices, topAgents, topProviders, recentEvents arrays. Cache: 5min edge. |
+| `GET /api/services` | All curated MPP services (id ends in `-mpp`) with 24h + 7d aggregates. |
+| `GET /api/services/[id]` | Service detail: head metadata, 30-day trend, recent 50 events. For `tempo-gateway-mpp`: also includes a `providers[]` aggregate (Pattern A address-attributed + Pattern B fingerprint-grouped). |
+| `GET /api/agents` | All watched non-MPP entities. |
+| `GET /api/agents/[id]` | Agent detail. Same shape as service detail. |
+| `GET /api/events/[id]` | Single event with provenance: agent, counterparty, amount, tx hash, log index, source block, methodology version, related events from the same tx. |
+| `GET /api/search?q=<query>` | Unified search across events (by tx hash or counterparty), agents/services (by id, label, wallet), labeled addresses. Min query length 2. |
+| `GET /api/feed` | Server-sent-events stream pushing new events as they're matched. Off by default — set `NEXT_PUBLIC_LIVE_FEED=1` to enable. |
 
 ### Schema notes
 
@@ -37,7 +37,7 @@ Live observability over autonomous economic activity on Tempo. Read more at [OLI
 ### Example
 
 ```bash
-curl https://pellet.network/api/oli/dashboard?w=24h
+curl https://pellet.network/api/dashboard?w=24h
 # → {
 #   "windowHours": 24,
 #   "txCount": 837,
@@ -105,5 +105,5 @@ The bearer token is what the CLI persists to `~/.pellet/config.json` after `pell
 
 ## Source
 
-- OLI endpoints: [`app/api/oli/`](https://github.com/pelletnetwork/pellet/tree/main/app/api/oli)
+- API endpoints: [`app/api/`](https://github.com/pelletnetwork/pellet/tree/main/app/api)
 - Wallet endpoints: [`app/api/wallet/`](https://github.com/pelletnetwork/pellet/tree/main/app/api/wallet)

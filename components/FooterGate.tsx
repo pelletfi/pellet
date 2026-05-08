@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { Footer } from "./Footer";
 
 /**
- * Suppresses the site-wide footer on /oli and /specimen routes where each
+ * Suppresses the site-wide footer on /wallet and /specimen routes where each
  * surface renders its own shell + bottom keymap and the marketing footer
  * would visually clash.
  */

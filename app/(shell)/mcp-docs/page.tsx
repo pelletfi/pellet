@@ -3,7 +3,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-// Embeds the canonical /docs/wallet-mcp MDX inside the OLI shell. Same
+// Embeds the canonical /docs/wallet-mcp MDX inside the Wallet shell. Same
 // content as /docs/wallet-mcp, kept in lockstep because both pages read
 // from the same MDX source. We render the MDX directly rather than via
 // fumadocs DocsPage primitives because those require a DocsLayout ancestor

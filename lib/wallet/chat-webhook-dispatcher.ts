@@ -10,7 +10,7 @@ import type { WalletChatRow } from "@/lib/db/wallet-chat";
 //
 // Fire-and-forget: failures are logged but never block the bus or the
 // user's POST that triggered the message. A retry queue (mirroring the
-// oli_webhook_deliveries pattern) ships in v2.
+// webhook_deliveries pattern) ships in v2.
 //
 // Filter rule: only sender='user' messages dispatch. Agents don't need
 // to be notified of their own posts (sender='agent') or system events.

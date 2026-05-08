@@ -1,4 +1,4 @@
-import { LiquidGlass } from "@/components/oli/LiquidGlass";
+import { LiquidGlass } from "@/components/wallet/LiquidGlass";
 
 export default function ShaderPage() {
   return (

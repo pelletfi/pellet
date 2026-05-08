@@ -1,4 +1,4 @@
-// Specimen-shell helpers — shared by /oli pages. The big bar-chart components
+// Specimen-shell helpers — shared by /wallet pages. The big bar-chart components
 // (RevenueChart / TxChart / ChartsRow) were retired when the dashboard moved
 // to inline KPI sparklines; the static /specimen/page.tsx mock keeps its own
 // local copy of the chart for design-reference. What remains here:

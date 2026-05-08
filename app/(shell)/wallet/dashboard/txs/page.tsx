@@ -5,8 +5,8 @@ import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { db } from "@/lib/db/client";
 import { walletSpendLog } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { SpecimenPaymentRow } from "@/components/oli/SpecimenPaymentRow";
-import { WalletTabs } from "@/components/oli/WalletTabs";
+import { SpecimenPaymentRow } from "@/components/wallet/SpecimenPaymentRow";
+import { WalletTabs } from "@/components/wallet/WalletTabs";
 
 export const metadata: Metadata = {
   title: "Transactions — Pellet Wallet",

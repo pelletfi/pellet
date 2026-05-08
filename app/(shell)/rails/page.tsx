@@ -82,7 +82,7 @@ const RAILS: Rail[] = [
 export default function RailsPage() {
   return (
     <div
-      className="oli-page oli-rails"
+      className="wallet-page wallet-rails"
       style={{
         padding: "32px 48px",
         display: "flex",
@@ -92,9 +92,9 @@ export default function RailsPage() {
       }}
     >
       <header>
-        <span className="oli-meth-kicker">Reference</span>
-        <h1 className="oli-meth-h1">Rails</h1>
-        <p className="oli-meth-lede">
+        <span className="wallet-meth-kicker">Reference</span>
+        <h1 className="wallet-meth-h1">Rails</h1>
+        <p className="wallet-meth-lede">
           Pellet is rail-neutral. Wherever agent payments settle to a
           public ledger, the same methodology applies: ingest events, match
           to watched entities, attribute routing, surface provenance. Below
@@ -103,17 +103,17 @@ export default function RailsPage() {
         </p>
       </header>
 
-      <div className="oli-rails-list">
+      <div className="wallet-rails-list">
         {RAILS.map((rail) => (
           <RailCard key={rail.id} rail={rail} />
         ))}
       </div>
 
-      <p className="oli-meth-foot">
+      <p className="wallet-meth-foot">
         Missing a rail? Open an issue at{" "}
         <a
           href="https://github.com/pelletnetwork/pellet/issues"
-          className="oli-meth-link"
+          className="wallet-meth-link"
         >
           pelletnetwork/pellet
         </a>
@@ -126,18 +126,18 @@ export default function RailsPage() {
 
 function RailCard({ rail }: { rail: Rail }) {
   return (
-    <article className="oli-rail-card">
-      <header className="oli-rail-card-head">
-        <div className="oli-rail-card-id">
-          <h2 className="oli-rail-card-name">{rail.name}</h2>
-          <span className="oli-rail-card-vendor">{rail.vendor}</span>
+    <article className="wallet-rail-card">
+      <header className="wallet-rail-card-head">
+        <div className="wallet-rail-card-id">
+          <h2 className="wallet-rail-card-name">{rail.name}</h2>
+          <span className="wallet-rail-card-vendor">{rail.vendor}</span>
         </div>
         <StatusBadge status={rail.status} />
       </header>
 
-      <p className="oli-rail-card-bio">{rail.bio}</p>
+      <p className="wallet-rail-card-bio">{rail.bio}</p>
 
-      <dl className="oli-rail-card-fields">
+      <dl className="wallet-rail-card-fields">
         <Field label="Protocol" value={rail.protocol} />
         <Field label="Settlement" value={rail.settlement} />
         <Field label="Observability" value={rail.observability} />
@@ -149,7 +149,7 @@ function RailCard({ rail }: { rail: Rail }) {
         href={rail.link.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="oli-rail-card-link"
+        className="wallet-rail-card-link"
       >
         {rail.link.label} ↗
       </a>
@@ -163,7 +163,7 @@ function StatusBadge({ status }: { status: Rail["status"] }) {
     documented: "DOCUMENTED",
     watching: "WATCHING",
   };
-  return <span className={`oli-rail-status oli-rail-status-${status}`}>{labels[status]}</span>;
+  return <span className={`wallet-rail-status wallet-rail-status-${status}`}>{labels[status]}</span>;
 }
 
 function Field({
@@ -176,9 +176,9 @@ function Field({
   accent?: boolean;
 }) {
   return (
-    <div className="oli-rail-field">
+    <div className="wallet-rail-field">
       <dt>{label}</dt>
-      <dd className={accent ? "oli-rail-field-accent" : undefined}>{value}</dd>
+      <dd className={accent ? "wallet-rail-field-accent" : undefined}>{value}</dd>
     </div>
   );
 }

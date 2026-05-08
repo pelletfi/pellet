@@ -105,9 +105,9 @@ export function SpecimenStatusStrip() {
     };
   }, []);
 
-  // Live last-event updates via the existing OLI feed SSE bus.
+  // Live last-event updates via the existing Wallet feed SSE bus.
   useEffect(() => {
-    const es = new EventSource("/api/oli/feed");
+    const es = new EventSource("/api/feed");
     es.onmessage = (msg) => {
       try {
         const wire = JSON.parse(msg.data) as {

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Methodology",
   description:
-    "How Pellet OLI decodes autonomous economic activity on Tempo — event ingestion, agent matching, gateway attribution.",
+    "How Pellet Wallet decodes autonomous economic activity on Tempo — event ingestion, agent matching, gateway attribution.",
 };
 
 export default function MethodologyPage() {
@@ -18,7 +18,7 @@ export default function MethodologyPage() {
         </div>
         <div className="spec-page-subhead">
           <span>
-            How OLI decodes autonomous economic activity on Tempo. Every datapoint here comes from on-chain state — no off-chain sources, no self-reporting. The pipeline is open and reproducible.
+            How Wallet decodes autonomous economic activity on Tempo. Every datapoint here comes from on-chain state — no off-chain sources, no self-reporting. The pipeline is open and reproducible.
           </span>
         </div>
       </section>
@@ -78,7 +78,7 @@ export default function MethodologyPage() {
 
         <Section n="04" title="Provenance">
           <p>
-            Every row in OLI carries a <Mono>methodology_version</Mono> tag plus a <Mono>source_block</Mono> reference. The ringed ◍ badge throughout the UI exposes both. Re-deriving any number is a matter of running the matcher against the raw <Mono>events</Mono> table — no opaque steps, no off-chain inputs.
+            Every row in Wallet carries a <Mono>methodology_version</Mono> tag plus a <Mono>source_block</Mono> reference. The ringed ◍ badge throughout the UI exposes both. Re-deriving any number is a matter of running the matcher against the raw <Mono>events</Mono> table — no opaque steps, no off-chain inputs.
           </p>
           <p>
             Time windows on the dashboard (<Mono>?w=24h|7d|30d|all</Mono>) are also surfaced; every leaderboard, chart, and aggregate is derived from the same SQL filter.
@@ -100,7 +100,7 @@ export default function MethodologyPage() {
           <a href="https://github.com/pelletnetwork/pellet" className="spec-prose-link">
             pelletnetwork/pellet
           </a>{" "}
-          repo on GitHub. SQL lives in <Mono>lib/oli/queries.ts</Mono>; attribution lives in <Mono>lib/ingest/gateway-attribution.ts</Mono>.
+          repo on GitHub. SQL lives in <Mono>lib/wallet/queries.ts</Mono>; attribution lives in <Mono>lib/ingest/gateway-attribution.ts</Mono>.
         </p>
       </article>
     </>

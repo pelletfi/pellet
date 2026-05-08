@@ -1,17 +1,12 @@
 ---
 title: Introduction
-description: Pellet — open agent wallet on Tempo, plus the public ledger every payment writes to.
+description: Pellet — open agent wallet on Tempo.
 icon: BookOpen
 ---
 
-Pellet is an open agent wallet on Tempo, and the public ledger every Pellet payment writes to.
+Pellet is an open agent wallet on Tempo. A passkey-rooted, self-custody wallet that lets an agent pay autonomously within caps you set on-chain.
 
-There are two halves:
-
-- **[Pellet Wallet](/docs/wallet)** — a passkey-rooted, self-custody agent wallet. Your passkey signs an on-chain `AccountKeychain.authorizeKey` once with caps you choose; from there an agent can spend autonomously within those caps. The chain enforces them. Sponsored gas. USDC-native. Public on-chain receipts.
-- **[OLI](/docs/oli)** — the Open-Ledger Interface. A live observability layer over autonomous economic activity on Tempo. Every Pellet payment surfaces here automatically, alongside every other MPP transfer the chain emits. Per-event provenance, per-service revenue, per-provider attribution recovered on-chain.
-
-Together: an agent can pay through Pellet Wallet, and you can audit the result through OLI. Same primitive, both halves observable.
+Your passkey signs an on-chain `AccountKeychain.authorizeKey` once with caps you choose; from there an agent can spend autonomously within those caps. The chain enforces them. Sponsored gas. USDC-native. Public on-chain receipts.
 
 ## Where to start
 
@@ -19,14 +14,11 @@ Together: an agent can pay through Pellet Wallet, and you can audit the result t
 |---|---|
 | Pair an agent and pay something on Tempo | [Wallet · CLI](/docs/wallet-cli) |
 | Plug Pellet into Claude Code, Cursor, or the Anthropic API | [Wallet · MCP](/docs/wallet-mcp) |
-| Query live economic activity on Tempo | [OLI](/docs/oli) |
-| Understand how OLI attributes gateway-routed payments | [Methodology](/docs/methodology) |
+| Subscribe to events as they hit the chain | [Webhooks](/docs/webhooks) |
 | Call the JSON API directly | [API reference](/docs/api) |
-| Install Pellet capabilities in any agent runtime | [Skills](/docs/skills) |
 
 ## What's currently shipped
 
-- **OLI dashboard, attribution, deep-link event pages** — live at [pellet.network/oli](/oli). All MPP txs ingested every six hours; gateway routing recovered via Pattern A (`Settlement` event from the escrow contract) and Pattern B (calldata fingerprint). Methodology documented at [/oli/methodology](/oli/methodology).
 - **Pellet Wallet — passkey-rooted, on-chain authorize, sponsored gas, autonomous payments within caps** — live on [Moderato testnet](https://explore.testnet.tempo.xyz). Mainnet release pending sponsor + key custody hardening.
 - **Pellet MCP server** — remote MCP server at `/mcp` with OAuth 2.1 auth, seven tools, and real-time chat push via MCP session notifications. One config line connects Claude Code, Cursor, Codex, or any Streamable HTTP client. See [MCP docs](/docs/wallet-mcp).
 - **Real-time agent chat** — in-wallet chat with three delivery tiers: MCP SSE push (instant, baked into the connection), `wallet.thread.await` long-poll (55s block on pg_notify), and webhooks. The wallet chat is the user's interface to their connected agent.
@@ -38,8 +30,7 @@ See [the changelog](/docs/changelog) for dated milestones.
 
 - **Mainnet release.** We need a production sponsor + a second-passkey recovery path before real funds touch the wallet. Testnet flows are exercised end-to-end.
 - **`pellet pay <402-url>` auto-mode.** Today the CLI's `pay` is manual: pass `--to` and `--amount`. Auto-parsing of x402 challenges from a URL is the next CLI commit.
-- **Pattern B fingerprint labels.** OLI has 7 fingerprint groups attributed via Pattern B but not yet named. The `address_labels` table accepts `fp_<hex>` keys; one `npm run label-provider -- fp_8bdb… "Anthropic"` call lights them up across the UI.
 
 ## Open
 
-Full source: [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet). Methodology, schema, attribution logic, signing recipes — all readable.
+Full source: [github.com/pelletnetwork/pellet](https://github.com/pelletnetwork/pellet). Methodology, schema, signing recipes — all readable.
