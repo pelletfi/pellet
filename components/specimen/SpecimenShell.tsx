@@ -146,18 +146,9 @@ export function SpecimenShell({
   const pathname = usePathname() ?? "/";
   const [dark, setDark] = useState(true);
 
-  // The wallet dashboard is dark-only by design — agent terminal,
-  // ticker-tape, and chart aesthetics are calibrated for ink. Marketing
-  // pages still respect the toggle.
-  const forceDark = pathname.startsWith("/wallet/dashboard");
-
   // Hydrate from storage; URL `?theme=dark|light` overrides for screenshots.
   // Default is dark — only an explicit stored "light" flips it.
   useEffect(() => {
-    if (forceDark) {
-      setDark(true);
-      return;
-    }
     let initial = true;
     try {
       initial = window.localStorage.getItem(STORAGE_KEY) !== "light";
@@ -169,12 +160,10 @@ export function SpecimenShell({
       /* noop */
     }
     setDark(initial);
-  }, [forceDark]);
+  }, []);
 
-  // M key — toggle theme. Skip when focus is in form controls. Disabled on
-  // dashboard (force-dark).
+  // M key — toggle theme. Skip when focus is in form controls.
   useEffect(() => {
-    if (forceDark) return;
     function onKey(ev: KeyboardEvent) {
       if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
       const tag = (ev.target as HTMLElement | null)?.tagName?.toLowerCase();
@@ -195,10 +184,9 @@ export function SpecimenShell({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [forceDark]);
+  }, []);
 
   function toggleTheme() {
-    if (forceDark) return;
     setDark((prev) => {
       const next = !prev;
       try {
