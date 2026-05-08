@@ -55,8 +55,16 @@ async function streamNl(text: string): Promise<void> {
     process.stdout.write(`  ${body.message ?? "quota exhausted"}\n`);
     return;
   }
+  if (res.status === 401 || res.status === 403) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
+    const msg = body.detail ?? body.error ?? `auth failed (${res.status})`;
+    process.stdout.write(`  ${msg}\n`);
+    process.stdout.write(`  → run \`pellet auth start\` to re-pair your session.\n`);
+    return;
+  }
   if (!res.ok || !res.body) {
-    process.stdout.write(`  request failed: ${res.status}\n`);
+    const text = await res.text().catch(() => "");
+    process.stdout.write(`  request failed: ${res.status}${text ? ` — ${text.slice(0, 200)}` : ""}\n`);
     return;
   }
 
