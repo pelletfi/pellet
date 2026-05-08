@@ -8,6 +8,7 @@ import {
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
 import { generateSessionKey } from "@/lib/wallet/session-keys";
 import { tempoChainConfig, ACCOUNT_KEYCHAIN_ADDRESS } from "@/lib/wallet/tempo-config";
+import { webauthnEnv } from "@/lib/wallet/webauthn";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
@@ -137,7 +138,7 @@ export async function POST(req: Request) {
     credential_id: user.passkeyCredentialId,
     public_key_uncompressed: user.publicKeyUncompressed,
     managed_address: user.managedAddress,
-    rp_id: process.env.NEXT_PUBLIC_RP_ID ?? "pellet.network",
+    rp_id: webauthnEnv().rpId,
     agent_key_address: sessionKey.address,
     agent_private_key: sessionKey.privateKey,
     chain: {
