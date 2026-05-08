@@ -233,17 +233,17 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
               writeBanner(term, term.cols, address, paired, agents);
               bannerDone = true;
               const launchAgent = () => {
-                if (
-                  msg.fresh &&
-                  !typeAbort.signal.aborted &&
-                  ws?.readyState === WebSocket.OPEN
-                ) {
+                if (!typeAbort.signal.aborted && ws?.readyState === WebSocket.OPEN) {
                   ws.send("pellet\r");
                 }
               };
               if (sessions === 0 && agents === 0) {
+                // Onboarding path: always launch after the welcome,
+                // regardless of whether the PTY is fresh.
                 typeLines(term, buildOnboardText(address), typeAbort.signal).then(launchAgent);
-              } else {
+              } else if (msg.fresh) {
+                // No onboarding, fresh PTY: launch directly.
+                // On non-fresh PTY, scrollback restore keeps the prior state.
                 launchAgent();
               }
             }
