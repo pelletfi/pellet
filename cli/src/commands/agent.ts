@@ -18,13 +18,7 @@ export function parseInput(line: string): ParsedInput {
 
 const HELP = `
   /balance              show current balances
-  /spend [days]         recent spend
-  /services [query]     list MPP services
-  /call <id>            call a service (interactive)
-  /send                 start a guided send
-  /swap                 start a guided swap
-  /history              show recent chat history
-  /budget               show session budget
+  /services [query]     list MPP services (filter by id/name/category)
   /help                 show this help
   /clear                clear screen
   /exit                 quit
