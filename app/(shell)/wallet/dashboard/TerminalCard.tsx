@@ -286,8 +286,19 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
             if (!bannerDone) {
               writeBanner(term, term.cols, address, paired, agents);
               bannerDone = true;
+              const launchAgent = () => {
+                if (
+                  msg.fresh &&
+                  !typeAbort.signal.aborted &&
+                  ws?.readyState === WebSocket.OPEN
+                ) {
+                  ws.send("pellet\r");
+                }
+              };
               if (sessions === 0 && agents === 0) {
-                typeLines(term, buildOnboardText(address), typeAbort.signal);
+                typeLines(term, buildOnboardText(address), typeAbort.signal).then(launchAgent);
+              } else {
+                launchAgent();
               }
             }
             return;
