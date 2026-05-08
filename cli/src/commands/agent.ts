@@ -17,23 +17,50 @@ export function parseInput(line: string): ParsedInput {
   return { kind: "nl", text: trimmed };
 }
 
-const HELP = `
-  /balance              show current balances
-  /services [query]     list MPP services (filter by id/name/category)
-  /auth                 re-pair this CLI session (use when bearer expires)
-  /help                 show this help
-  /clear                clear screen
-  /exit                 quit
+function buildHelp(): string {
+  const row = (cmd: string, desc: string) =>
+    `  ${C.cyan}${cmd.padEnd(20)}${C.rst}  ${C.dim}${desc}${C.rst}`;
+  return [
+    "",
+    row("/balance", "show current balances"),
+    row("/services [query]", "list MPP services (filter by id/name/category)"),
+    row("/auth", "re-pair this CLI session (use when bearer expires)"),
+    row("/help", "show this help"),
+    row("/clear", "clear screen"),
+    row("/exit", "quit"),
+    "",
+    `  ${C.dim}Or just type a question — Pellet Agent will answer.${C.rst}`,
+    "",
+  ].join("\n");
+}
 
-  Or just type a question — Pellet Agent will answer.
-`;
+// Terminal palette — 256-color values matching the wallet's TerminalCard
+// banner so the CLI feels like part of the same surface.
+const C = {
+  rst: "\x1b[0m",
+  dim: "\x1b[2m",
+  bold: "\x1b[1m",
+  blue: "\x1b[38;5;67m",   // muted accent — used for the >_ prompt and brand marks
+  cyan: "\x1b[38;5;109m",  // softer accent — used for slashes and bullets
+  green: "\x1b[38;5;108m", // success / live state
+  red: "\x1b[38;5;167m",   // error
+};
 
 function dim(s: string): string {
-  return `\x1b[2m${s}\x1b[0m`;
+  return `${C.dim}${s}${C.rst}`;
 }
 
 function bold(s: string): string {
-  return `\x1b[1m${s}\x1b[0m`;
+  return `${C.bold}${s}${C.rst}`;
+}
+
+function accent(s: string): string {
+  return `${C.blue}${s}${C.rst}`;
+}
+
+// Wrap ANSI in \x01..\x02 so readline doesn't count them toward prompt width.
+function rlPrompt(visible: string, ansi: string): string {
+  return `\x01${ansi}\x02${visible}\x01${C.rst}\x02`;
 }
 
 async function streamNl(text: string): Promise<void> {
@@ -60,8 +87,8 @@ async function streamNl(text: string): Promise<void> {
   if (res.status === 401 || res.status === 403) {
     const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
     const msg = body.detail ?? body.error ?? `auth failed (${res.status})`;
-    process.stdout.write(`  ${msg}\n`);
-    process.stdout.write(`  → type /auth to re-pair your session.\n`);
+    process.stdout.write(`  ${C.red}${msg}${C.rst}\n`);
+    process.stdout.write(`  ${C.dim}→ type${C.rst} ${accent("/auth")} ${C.dim}to re-pair your session.${C.rst}\n`);
     return;
   }
   if (!res.ok || !res.body) {
@@ -113,7 +140,7 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
   const baseUrl = session?.baseUrl ?? defaultBaseUrl();
   switch (verb) {
     case "help":
-      process.stdout.write(HELP);
+      process.stdout.write(buildHelp());
       return;
     case "clear":
       process.stdout.write("\x1b[2J\x1b[H");
@@ -133,7 +160,9 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
       });
       const body = (await res.json()) as { balances?: Array<{ symbol: string; display: string }> };
       for (const b of body.balances ?? []) {
-        process.stdout.write(`  ${b.symbol.padEnd(10)} ${b.display}\n`);
+        process.stdout.write(
+          `  ${C.bold}${b.symbol.padEnd(10)}${C.rst}${C.dim}${b.display}${C.rst}\n`,
+        );
       }
       return;
     }
@@ -150,22 +179,28 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
         : body.services ?? [];
       for (const s of filtered) {
         const name = s.label ?? s.name ?? s.id;
-        process.stdout.write(`  ${s.id.padEnd(20)} ${name.padEnd(20)} ${dim(s.category)}\n`);
+        process.stdout.write(
+          `  ${C.cyan}${s.id.padEnd(20)}${C.rst}  ${name.padEnd(20)}  ${dim(s.category)}\n`,
+        );
       }
       return;
     }
     case "exit":
       process.exit(0);
     default:
-      process.stdout.write(`  unknown command: /${verb}. Try /help.\n`);
+      process.stdout.write(
+        `  ${C.red}unknown command:${C.rst} /${verb}. Try ${accent("/help")}.\n`,
+      );
   }
 }
 
 export async function runAgentRepl(): Promise<number> {
-  process.stdout.write(`\n  ${bold("Pellet Agent")} ready. Ask anything, or /help for commands.\n\n`);
+  process.stdout.write(
+    `\n  ${C.blue}${C.bold}>_${C.rst} ${bold("Pellet Agent")} ready. Ask anything, or type ${accent("/help")}.\n\n`,
+  );
   const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
 
-  rl.setPrompt("pellet> ");
+  rl.setPrompt(rlPrompt("pellet> ", `${C.bold}${C.blue}`));
   rl.prompt();
 
   for await (const line of rl) {
