@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // Allow tool call → tool result → follow-up text. Default is 1 step,
     // which would cut off after the tool call before the model summarizes.
     stopWhen: stepCountIs(5),
-    maxOutputTokens: 512,
+    maxOutputTokens: 2048,
     providerOptions: {
       anthropic: {
         cacheControl: { type: "ephemeral", ttl: "1h" },
