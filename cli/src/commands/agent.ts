@@ -91,7 +91,7 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
       process.stdout.write("\x1b[2J\x1b[H");
       return;
     case "balance": {
-      const res = await fetch(`${baseUrl}/api/wallet/dashboard/balance`, {
+      const res = await fetch(`${baseUrl}/api/wallet/balance`, {
         headers: { authorization: `Bearer ${session!.bearer}` },
       });
       const body = (await res.json()) as { balances?: Array<{ symbol: string; display: string }> };
@@ -101,16 +101,19 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
       return;
     }
     case "services": {
-      const q = args.join(" ");
-      const url = q
-        ? `${baseUrl}/api/services?q=${encodeURIComponent(q)}`
-        : `${baseUrl}/api/services`;
-      const res = await fetch(url, {
-        headers: { authorization: `Bearer ${session!.bearer}` },
-      });
-      const body = (await res.json()) as { services?: Array<{ id: string; name: string; category: string }> };
-      for (const s of body.services ?? []) {
-        process.stdout.write(`  ${s.id.padEnd(20)} ${s.name.padEnd(20)} ${dim(s.category)}\n`);
+      const res = await fetch(`${baseUrl}/api/services`);
+      const body = (await res.json()) as {
+        services?: Array<{ id: string; label?: string; name?: string; category: string }>;
+      };
+      const q = args.join(" ").toLowerCase();
+      const filtered = q
+        ? (body.services ?? []).filter((s) =>
+            [s.id, s.label, s.name, s.category].some((f) => f?.toLowerCase().includes(q)),
+          )
+        : body.services ?? [];
+      for (const s of filtered) {
+        const name = s.label ?? s.name ?? s.id;
+        process.stdout.write(`  ${s.id.padEnd(20)} ${name.padEnd(20)} ${dim(s.category)}\n`);
       }
       return;
     }
