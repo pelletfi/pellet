@@ -140,22 +140,36 @@ function SendModal({
     try {
       const parsed = parseFloat(amount);
       if (isNaN(parsed) || parsed <= 0) { setError("Invalid amount"); setSending(false); return; }
-      const amountWei = BigInt(Math.round(parsed * 1e6)).toString();
-      const res = await fetch("/api/wallet/pay", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          token: from.address as `0x${string}`,
-          to,
-          amount_wei: amountWei,
-        }),
-      });
-      const d = await res.json();
-      if (!res.ok) { setError(d.error ?? "Send failed"); return; }
+      const amountWei = BigInt(Math.round(parsed * 1e6));
+
+      const chainRes = await fetch("/api/wallet/chain-config");
+      const cfg = await chainRes.json();
+      if (!chainRes.ok) throw new Error(cfg.error ?? "failed to load chain config");
+
+      const userAccount = Account.fromWebAuthnP256(
+        { id: cfg.credential_id, publicKey: cfg.public_key_uncompressed },
+        { rpId: cfg.rp_id },
+      );
+      const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const transport = cfg.sponsor_url
+        ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
+        : http(cfg.rpc_url);
+      const client = createWalletClient({ account: userAccount, chain, transport }).extend(tempoActions());
+
+      await client.token.transferSync({
+        account: userAccount,
+        token: from.address as `0x${string}`,
+        to: to as `0x${string}`,
+        amount: amountWei,
+        feePayer: true,
+        gas: BigInt(500_000),
+      } as any);
+
       onClose();
       window.location.reload();
-    } catch {
-      setError("Network error");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error");
     } finally {
       setSending(false);
     }
@@ -396,21 +410,26 @@ function SwapModal({
     setError(null);
     setQuote(null);
     try {
-      const res = await fetch("/api/wallet/swap", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          token_in: from.address,
-          token_out: toBalance.address,
-          amount,
-          quote_only: true,
-        }),
+      const parsed = parseFloat(amount);
+      if (isNaN(parsed) || parsed <= 0) { setError("Invalid amount"); return; }
+      const amountIn = BigInt(Math.round(parsed * 1_000_000));
+
+      const chainRes = await fetch("/api/wallet/chain-config");
+      const cfg = await chainRes.json();
+      if (!chainRes.ok) throw new Error(cfg.error ?? "failed to load chain config");
+
+      const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
+      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const readClient = createPublicClient({ chain, transport: http(cfg.rpc_url) }).extend(tempoActions());
+
+      const amountOut = await readClient.dex.getSellQuote({
+        tokenIn: from.address as `0x${string}`,
+        tokenOut: toBalance.address as `0x${string}`,
+        amountIn,
       });
-      const d = await res.json();
-      if (!res.ok) { setError(d.error ?? "Quote failed"); return; }
-      setQuote(d.amount_out);
-    } catch {
-      setError("Network error");
+      setQuote((Number(amountOut) / 1_000_000).toFixed(2));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Quote failed");
     } finally {
       setQuoting(false);
     }
