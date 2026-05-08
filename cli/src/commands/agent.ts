@@ -40,7 +40,7 @@ async function streamNl(text: string): Promise<void> {
     process.stdout.write("  not authenticated — run `pellet auth start` first.\n");
     return;
   }
-  const baseUrl = defaultBaseUrl();
+  const baseUrl = session?.baseUrl ?? defaultBaseUrl();
   const res = await fetch(`${baseUrl}/api/wallet/agent/chat`, {
     method: "POST",
     headers: {
@@ -76,7 +76,7 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
     process.stdout.write("  not authenticated — run `pellet auth start` first.\n");
     return;
   }
-  const baseUrl = defaultBaseUrl();
+  const baseUrl = session?.baseUrl ?? defaultBaseUrl();
   switch (verb) {
     case "help":
       process.stdout.write(HELP);
