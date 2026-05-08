@@ -52,7 +52,7 @@ export function Footer() {
             Docs
           </a>
         </div>
-        <span className="font-mono text-[11px] tracking-[0.04em] text-text-tertiary">
+        <span className="font-sans text-[11px] text-text-tertiary">
           &copy; {new Date().getFullYear()} Pellet Network
         </span>
       </div>
