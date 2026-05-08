@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages } from "ai";
+import { streamText, type ModelMessage } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/wallet/bearer-auth";
@@ -44,8 +44,12 @@ export async function POST(req: Request) {
     managedAddress: user.managedAddress as `0x${string}`,
   });
 
-  // convertToModelMessages is async in AI SDK v6
-  const messages = await convertToModelMessages(body.messages as any);
+  // The CLI sends simple { role, content } messages — that's already the
+  // ModelMessage shape streamText wants. No conversion needed.
+  const messages: ModelMessage[] = body.messages.map((m) => ({
+    role: m.role as ModelMessage["role"],
+    content: m.content,
+  }));
 
   const result = streamText({
     model: gateway(selectModel()),
