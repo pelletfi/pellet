@@ -135,6 +135,22 @@ interface TerminalCardProps {
 export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 0 }: TerminalCardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLSpanElement>(null);
+  const termRef = useRef<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  function handleClear() {
+    const term = termRef.current;
+    const ws = wsRef.current;
+    if (!term) return;
+    // Reset xterm display + scrollback so the only thing on screen is the
+    // banner we re-draw next.
+    term.reset();
+    writeBanner(term, term.cols, address, paired, agents);
+    // Ctrl+L (form-feed) tells readline (running inside the agent REPL) to
+    // redraw its prompt on the next line — preserves the shell prompt as
+    // the user requested.
+    if (ws?.readyState === WebSocket.OPEN) ws.send("\x0c");
+  }
 
   useEffect(() => {
     const root = containerRef.current;
@@ -191,6 +207,7 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
         theme: { background: bg, foreground: fg, cursor: fg },
         allowProposedApi: true,
       });
+      termRef.current = term;
 
       fit = new FitAddon();
       term.loadAddon(fit);
@@ -230,6 +247,7 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
       setStatus("connecting");
 
       ws = new WebSocket("ws://localhost:7778/");
+      wsRef.current = ws;
 
       ws.onopen = () => {
         setStatus("connected");
@@ -277,8 +295,10 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
       disposed = true;
       typeAbort.abort();
       if (ws) { ws.onclose = null; ws.close(); ws = null; }
+      wsRef.current = null;
       if (ro) ro.disconnect();
       if (term) term.dispose();
+      termRef.current = null;
     };
   }, [address, paired, agents, sessions]);
 
@@ -287,6 +307,15 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
       <div className="spec-terminal-head">
         <span className="spec-col-head-left">TERMINAL</span>
         <span className="spec-col-head-right">
+          <button
+            type="button"
+            className="spec-terminal-clear"
+            onClick={handleClear}
+            aria-label="Clear terminal output"
+            title="Clear terminal output (keeps banner + prompt)"
+          >
+            CLEAR
+          </button>
           <span ref={statusRef} className="spec-terminal-status" data-status="connecting">
             CONNECTING
           </span>

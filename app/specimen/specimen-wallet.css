@@ -210,6 +210,28 @@
   padding-bottom: 12px;
 }
 
+.spec-terminal-head .spec-col-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spec-terminal-clear {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  color: inherit;
+  opacity: 0.4;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 3px;
+  transition: opacity 120ms ease, background 120ms ease;
+}
+.spec-terminal-clear:hover { opacity: 0.85; background: rgba(127, 127, 127, 0.08); }
+.spec-terminal-clear:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; opacity: 0.85; }
+
 .spec-terminal-status {
   font-size: 10px;
   letter-spacing: 0.06em;
