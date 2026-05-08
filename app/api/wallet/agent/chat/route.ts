@@ -44,12 +44,13 @@ export async function POST(req: Request) {
     managedAddress: user.managedAddress as `0x${string}`,
   });
 
-  // The CLI sends simple { role, content } messages — that's already the
-  // ModelMessage shape streamText wants. No conversion needed.
-  const messages: ModelMessage[] = body.messages.map((m) => ({
-    role: m.role as ModelMessage["role"],
+  // The CLI sends simple { role, content } messages — already valid for
+  // streamText. ModelMessage is a discriminated union per role, so cast
+  // through `unknown` to satisfy TS without a per-role narrowing dance.
+  const messages = body.messages.map((m) => ({
+    role: m.role,
     content: m.content,
-  }));
+  })) as unknown as ModelMessage[];
 
   const result = streamText({
     model: gateway(selectModel()),
