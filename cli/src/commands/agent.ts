@@ -1,5 +1,6 @@
 import { createInterface } from "node:readline";
 import { defaultBaseUrl, readSession } from "../config.js";
+import { authStart } from "./auth.js";
 
 export type ParsedInput =
   | { kind: "slash"; verb: string; args: string[] }
@@ -19,6 +20,7 @@ export function parseInput(line: string): ParsedInput {
 const HELP = `
   /balance              show current balances
   /services [query]     list MPP services (filter by id/name/category)
+  /auth                 re-pair this CLI session (use when bearer expires)
   /help                 show this help
   /clear                clear screen
   /exit                 quit
@@ -59,7 +61,7 @@ async function streamNl(text: string): Promise<void> {
     const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string };
     const msg = body.detail ?? body.error ?? `auth failed (${res.status})`;
     process.stdout.write(`  ${msg}\n`);
-    process.stdout.write(`  → run \`pellet auth start\` to re-pair your session.\n`);
+    process.stdout.write(`  → type /auth to re-pair your session.\n`);
     return;
   }
   if (!res.ok || !res.body) {
@@ -80,8 +82,14 @@ async function streamNl(text: string): Promise<void> {
 
 async function runSlash(verb: string, args: string[]): Promise<void> {
   const session = await readSession();
-  if (!session && verb !== "help" && verb !== "clear" && verb !== "exit") {
-    process.stdout.write("  not authenticated — run `pellet auth start` first.\n");
+  if (
+    !session &&
+    verb !== "help" &&
+    verb !== "clear" &&
+    verb !== "exit" &&
+    verb !== "auth"
+  ) {
+    process.stdout.write("  not authenticated — type /auth to pair.\n");
     return;
   }
   const baseUrl = session?.baseUrl ?? defaultBaseUrl();
@@ -92,6 +100,15 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
     case "clear":
       process.stdout.write("\x1b[2J\x1b[H");
       return;
+    case "auth": {
+      const baseFlag = args.find((a) => a.startsWith("--base="))?.slice("--base=".length);
+      const labelFlag = args.find((a) => a.startsWith("--label="))?.slice("--label=".length);
+      await authStart({
+        baseUrl: baseFlag ?? session?.baseUrl,
+        agentLabel: labelFlag,
+      });
+      return;
+    }
     case "balance": {
       const res = await fetch(`${baseUrl}/api/wallet/balance`, {
         headers: { authorization: `Bearer ${session!.bearer}` },
