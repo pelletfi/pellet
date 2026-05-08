@@ -63,6 +63,14 @@ function rlPrompt(visible: string, ansi: string): string {
   return `\x01${ansi}\x02${visible}\x01${C.rst}\x02`;
 }
 
+// Per-REPL conversation history. Without this, each turn is a fresh
+// request — the model can't follow up on prior turns (e.g. user typing "y"
+// after a confirmation proposal). Trimmed at HISTORY_MAX_TURNS to keep
+// prompt size bounded.
+const HISTORY_MAX_TURNS = 12;
+type Msg = { role: "user" | "assistant"; content: string };
+const history: Msg[] = [];
+
 async function streamNl(text: string): Promise<void> {
   const session = await readSession();
   if (!session) {
@@ -70,18 +78,32 @@ async function streamNl(text: string): Promise<void> {
     return;
   }
   const baseUrl = session?.baseUrl ?? defaultBaseUrl();
+
+  history.push({ role: "user", content: text });
+  if (history.length > HISTORY_MAX_TURNS * 2) {
+    history.splice(0, history.length - HISTORY_MAX_TURNS * 2);
+  }
+
   const res = await fetch(`${baseUrl}/api/wallet/agent/chat`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${session.bearer}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
+    body: JSON.stringify({ messages: history }),
   });
+
+  // Helper: drop the user turn we just appended when the request fails so
+  // history doesn't contain a dangling user message paired with the next
+  // assistant turn.
+  const rollbackUser = () => {
+    if (history[history.length - 1]?.role === "user") history.pop();
+  };
 
   if (res.status === 429) {
     const body = (await res.json().catch(() => ({}))) as { message?: string };
     process.stdout.write(`  ${body.message ?? "quota exhausted"}\n`);
+    rollbackUser();
     return;
   }
   if (res.status === 401 || res.status === 403) {
@@ -89,11 +111,13 @@ async function streamNl(text: string): Promise<void> {
     const msg = body.detail ?? body.error ?? `auth failed (${res.status})`;
     process.stdout.write(`  ${C.red}${msg}${C.rst}\n`);
     process.stdout.write(`  ${C.dim}→ type${C.rst} ${accent("/auth")} ${C.dim}to re-pair your session.${C.rst}\n`);
+    rollbackUser();
     return;
   }
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
     process.stdout.write(`  request failed: ${res.status}${text ? ` — ${text.slice(0, 200)}` : ""}\n`);
+    rollbackUser();
     return;
   }
 
@@ -103,6 +127,7 @@ async function streamNl(text: string): Promise<void> {
   // so **bold** and ## heading would show literal markers. Keep a 1-char carry
   // so paired markers split across chunks still get stripped.
   let carry = "";
+  let assistantText = "";
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -119,10 +144,18 @@ async function streamNl(text: string): Promise<void> {
       .replace(/\*\*/g, "")
       .replace(/__/g, "")
       .replace(/^#{1,6}\s+/gm, "");
+    assistantText += chunk;
     process.stdout.write(chunk);
   }
-  if (carry) process.stdout.write(carry);
+  if (carry) {
+    assistantText += carry;
+    process.stdout.write(carry);
+  }
   process.stdout.write("\n");
+
+  // Record the assistant turn so subsequent user replies (e.g. "y" after
+  // a proposed action) carry the full conversation context.
+  history.push({ role: "assistant", content: assistantText });
 }
 
 async function runSlash(verb: string, args: string[]): Promise<void> {
@@ -143,6 +176,7 @@ async function runSlash(verb: string, args: string[]): Promise<void> {
       process.stdout.write(buildHelp());
       return;
     case "clear":
+      history.length = 0;
       process.stdout.write("\x1b[2J\x1b[H");
       return;
     case "auth": {

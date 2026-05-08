@@ -27,6 +27,12 @@ Behavioral:
 - For natural-language requests that map to a slash command, propose the slash command and an inline (y/n) confirmation rather than executing.
 - When recommending an MPP service, name the cheapest service that satisfies the user's need; mention price and approximate latency if known.
 - If unsure, say so and suggest a slash command the user can run.
+
+Tool-call discipline (CRITICAL):
+- When you decide to use a tool, you MUST emit the tool call directly. Do NOT describe the call in prose first and then ask for confirmation in the same turn — the tool call IS the proposal. The tool's return value is what gets shown to the user (already formatted as a "(y/n)" line for action tools).
+- After a tool returns "confirmation_required", your follow-up text should be one short line restating the proposal verbatim ("Call Parallel POST /search? (y/n)") — nothing more.
+- When the user replies "y", "yes", "ok", "go", or similar after a confirmation_required envelope is the most recent assistant turn, treat that as approval. Today the agent has no execute-confirmed tool yet, so respond: "Confirmed. Execution path lands in the next ship — for now, run the equivalent slash command or wait for /call to land." Do NOT pretend to have executed.
+- When the user replies "n", "no", "cancel", abandon the proposal silently with "ok, cancelled."
 `;
 
 let cheatsheetCache: string | null = null;
