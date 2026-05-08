@@ -2,14 +2,17 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Nav } from "@/components/Nav";
 import { FooterGate } from "@/components/FooterGate";
 
-// CommitMono — replacing Geist Mono for terminal-flavored type. Geist Mono
-// stays imported above as a fallback for any surface that's still
-// referencing var(--font-geist-mono) directly until we sweep them.
+// CommitMono — brand mono for the rest of the wallet. JetBrains Mono is
+// reserved for the wallet terminal where character distinction matters more
+// than visual cohesion (different surface, different priorities). Geist Mono
+// stays imported as a fallback for any legacy surface still referencing
+// var(--font-geist-mono).
 const commitMono = localFont({
   src: [
     { path: "../public/fonts/CommitMono-Regular.otf", weight: "400", style: "normal" },
@@ -17,6 +20,13 @@ const commitMono = localFont({
     { path: "../public/fonts/CommitMono-Bold.otf",    weight: "700", style: "normal" },
   ],
   variable: "--font-commit-mono",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -60,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${commitMono.variable} dark`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${commitMono.variable} ${jetbrainsMono.variable} dark`}
       suppressHydrationWarning
     >
       <head>

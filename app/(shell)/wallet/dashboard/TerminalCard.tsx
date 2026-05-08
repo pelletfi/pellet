@@ -169,11 +169,25 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
       const bg = styles.getPropertyValue("--term-bg").trim() || "#ffffff";
       const fg = styles.getPropertyValue("--term-fg").trim() || "#1a1a1a";
 
+      // xterm samples font metrics at open() time — if JetBrains Mono isn't
+      // loaded yet (next/font/google is lazy), it falls back to monospace and
+      // the swap-in mid-render produces misaligned columns. Force-load both
+      // weights before constructing the terminal.
+      try {
+        await Promise.all([
+          document.fonts.load('13px "JetBrains Mono"'),
+          document.fonts.load('700 13px "JetBrains Mono"'),
+        ]);
+      } catch {
+        // Font load failures are non-fatal — xterm will use the fallback.
+      }
+      if (disposed) return;
+
       term = new Terminal({
         cursorBlink: true,
         fontSize: 13,
         lineHeight: 1.4,
-        fontFamily: "'Commit Mono', ui-monospace, 'SFMono-Regular', monospace",
+        fontFamily: "'JetBrains Mono', 'Commit Mono', ui-monospace, 'SFMono-Regular', monospace",
         theme: { background: bg, foreground: fg, cursor: fg },
         allowProposedApi: true,
       });
