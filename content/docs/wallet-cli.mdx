@@ -71,10 +71,10 @@ Drop the local bearer (clears `~/.pellet/config.json`).
 
 ```bash
 $ pellet auth revoke
-  ✓ local bearer cleared. (server-side revoke ships in phase 3.)
+  ✓ local bearer cleared.
 ```
 
-Server-side revoke (mark `wallet_sessions.revoked_at`, invalidate any future calls with the bearer hash) lands in Phase 6. Until then, the bearer remains valid until natural expiry — re-pair if you need to rotate immediately.
+Server-side revoke is enforced: any session with `wallet_sessions.revoked_at` set is rejected with 403 by the bearer-auth path. Use the wallet dashboard to revoke a session and the bearer will stop working immediately.
 
 ## `pellet pay`
 

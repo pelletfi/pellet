@@ -136,7 +136,7 @@ Defends against a malicious browser POSTing a forged hash to obtain an unauthori
 - **Mainnet sponsor.** Tempo doesn't run a public mainnet sponsor; we'll run our own. Until then mainnet release is paused.
 - **Recovery.** Register a second passkey at enroll time as a guardian. Phase 5+.
 - **TEE / MPC custody.** AES-256-GCM at rest is reasonable for testnet + small-cap mainnet. For high-cap production accounts, key custody should move to a TEE (Privy/Turnkey pattern) or MPC (Para/Lit pattern).
-- **Server-side revoke.** `wallet_sessions.revoked_at` exists in schema; the runtime check ships in Phase 6.
+- **Server-side revoke.** Enforced. The bearer-auth path checks `wallet_sessions.revoked_at` and rejects revoked sessions with 403.
 
 ---
 
