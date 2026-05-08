@@ -220,7 +220,15 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
       ro = new ResizeObserver(() => fit?.fit());
       ro.observe(root);
 
+      // xterm auto-replies to terminal queries (Device Attributes, etc.)
+      // by emitting escape sequences via onData. Those must NOT be
+      // forwarded to the PTY — the shell would echo them as input
+      // (e.g. `\x1b[?1;2c` shows up as "/1;2c" at the prompt). The `?`
+      // prefix distinguishes terminal replies from real user input like
+      // arrow keys (`\x1b[A`) which we DO want to forward.
+      const TERMINAL_REPLY = /^\x1b\[\?[\d;]*[a-zA-Z]$/;
       term.onData((data: string) => {
+        if (TERMINAL_REPLY.test(data)) return;
         typeAbort.abort();
         if (ws?.readyState === WebSocket.OPEN) ws.send(data);
       });
