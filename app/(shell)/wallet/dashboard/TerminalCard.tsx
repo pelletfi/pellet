@@ -141,15 +141,13 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
   function handleClear() {
     const term = termRef.current;
     const ws = wsRef.current;
-    if (!term) return;
-    // Reset xterm display + scrollback so the only thing on screen is the
-    // banner we re-draw next.
-    term.reset();
-    writeBanner(term, term.cols, address, paired, agents);
-    // Ctrl+L (form-feed) tells readline (running inside the agent REPL) to
-    // redraw its prompt on the next line — preserves the shell prompt as
-    // the user requested.
-    if (ws?.readyState === WebSocket.OPEN) ws.send("\x0c");
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    // term.clear() wipes xterm scrollback while keeping the prompt line as
+    // line 0. Ctrl+L (form-feed) then tells the active program (agent REPL
+    // or zsh) to redraw its prompt. Banner is part of terminal scrollback,
+    // so it goes — that's accepted.
+    term?.clear();
+    ws.send("\x0c");
   }
 
   useEffect(() => {
@@ -312,7 +310,7 @@ export function TerminalCard({ address = "", paired = 0, agents = 0, sessions = 
             className="spec-terminal-clear"
             onClick={handleClear}
             aria-label="Clear terminal output"
-            title="Clear terminal output (keeps banner + prompt)"
+            title="Clear terminal output"
           >
             CLEAR
           </button>
