@@ -72,11 +72,29 @@ async function streamNl(text: string): Promise<void> {
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
+  // Strip markdown emphasis/headings as we stream — terminal renders raw text,
+  // so **bold** and ## heading would show literal markers. Keep a 1-char carry
+  // so paired markers split across chunks still get stripped.
+  let carry = "";
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
-    process.stdout.write(decoder.decode(value));
+    const raw = carry + decoder.decode(value, { stream: true });
+    let chunk = raw;
+    const last = chunk.charCodeAt(chunk.length - 1);
+    if (last === 42 /* * */ || last === 95 /* _ */) {
+      carry = chunk.slice(-1);
+      chunk = chunk.slice(0, -1);
+    } else {
+      carry = "";
+    }
+    chunk = chunk
+      .replace(/\*\*/g, "")
+      .replace(/__/g, "")
+      .replace(/^#{1,6}\s+/gm, "");
+    process.stdout.write(chunk);
   }
+  if (carry) process.stdout.write(carry);
   process.stdout.write("\n");
 }
 
