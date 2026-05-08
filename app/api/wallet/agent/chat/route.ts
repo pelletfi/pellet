@@ -1,4 +1,4 @@
-import { streamText, type ModelMessage } from "ai";
+import { streamText, stepCountIs, type ModelMessage } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/wallet/bearer-auth";
@@ -57,6 +57,9 @@ export async function POST(req: Request) {
     system,
     messages,
     tools,
+    // Allow tool call → tool result → follow-up text. Default is 1 step,
+    // which would cut off after the tool call before the model summarizes.
+    stopWhen: stepCountIs(5),
     maxOutputTokens: 512,
     providerOptions: {
       anthropic: {

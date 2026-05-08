@@ -9,6 +9,6 @@ export function formatCatalogForPrompt(services: RegistryEntry[]): string {
     "Available MPP / x402 services (by id):",
     ...rows,
     "",
-    "Use these ids with `/call <id>` or by referring to them by name in natural language.",
+    "When a user asks to use a service, refer to it by name in natural language and propose a `callMppService` tool call (which renders an inline confirmation).",
   ].join("\n");
 }
