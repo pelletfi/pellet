@@ -45,13 +45,16 @@ export async function POST(req: Request) {
   if (!/^0x[0-9a-fA-F]+$/.test(body.raw_tx)) {
     return NextResponse.json({ error: "raw_tx must be 0x hex" }, { status: 400 });
   }
-  // Tempo type-0x76 envelope; quick sanity check on the leading byte so we
-  // don't store junk.
-  if (!body.raw_tx.toLowerCase().startsWith("0x76")) {
+  // Tempo envelope types: 0x76 (without feePayerSignature) and 0x78
+  // (with it). Both are valid here — feePayer:true means the relay
+  // attaches a sig later. Sanity-check the leading byte so we don't store
+  // junk like a bare ECDSA legacy tx.
+  const prefix = body.raw_tx.slice(0, 4).toLowerCase();
+  if (prefix !== "0x76" && prefix !== "0x78") {
     return NextResponse.json(
       {
-        error: "raw_tx is not a Tempo type-0x76 envelope",
-        detail: `prefix=${body.raw_tx.slice(0, 4)}`,
+        error: "raw_tx is not a Tempo envelope (type 0x76 or 0x78)",
+        detail: `prefix=${prefix}`,
       },
       { status: 400 },
     );
