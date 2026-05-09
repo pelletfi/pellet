@@ -592,7 +592,7 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
             <a
               href="/wallet/dashboard"
               className="spec-signin-cta"
-              style={{ textDecoration: "none", textAlign: "center" }}
+              style={{ textDecoration: "none", textAlign: "center", color: "var(--bg)" }}
             >
               GO TO DASHBOARD
             </a>
