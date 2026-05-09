@@ -19,7 +19,10 @@ const CONFIG_DIR = join(homedir(), ".pellet");
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 export function defaultBaseUrl(): string {
-  return process.env.PELLET_BASE_URL ?? "https://pellet.network";
+  // Note: must be `www.` apex. The bare apex 307s to www, and Node's
+  // fetch (and most clients) strip the Authorization header across the
+  // redirect — every chat / balance / pay call would 401. Pin to www.
+  return process.env.PELLET_BASE_URL ?? "https://www.pellet.network";
 }
 
 export async function readSession(): Promise<StoredSession | null> {
