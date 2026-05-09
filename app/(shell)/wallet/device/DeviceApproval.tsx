@@ -296,6 +296,12 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
         transport: captureTransport,
       }).extend(tempoActions());
 
+      // The capture transport always throws after stashing bytes. viem
+      // wraps that throw in its own RpcRequestError so we can't reliably
+      // tag-match by class — instead we treat "captured bytes set" as the
+      // success signal and surface whatever caught error is in scope only
+      // if no bytes were captured.
+      let signError: unknown = null;
       try {
         await client.accessKey.authorizeSync({
           accessKey,
@@ -329,16 +335,12 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
             { address: STABLECOIN_DEX, selector: SWAP_EXACT_AMOUNT_IN },
           ],
         });
-        // Should be unreachable — the capture transport always throws.
-        throw new Error("authorize tx broadcast was not intercepted");
       } catch (err) {
-        if (!(err instanceof Error && (err as { pelletCaptured?: boolean }).pelletCaptured)) {
-          throw err;
-        }
+        signError = err;
       }
 
       if (!captured) {
-        throw new Error("authorize tx capture produced no bytes");
+        throw signError ?? new Error("authorize tx capture produced no bytes");
       }
       rawTx = captured;
     } catch (e) {
