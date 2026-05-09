@@ -245,7 +245,12 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
 
       const baseChain =
         init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-      const chain = { ...baseChain, feeToken: init.chain.usdc_e };
+      // Use demo_stable (pathUSD on mainnet) for gas — usdc_e FeeAMM pool
+      // ran dry on Presto 2026-05-09, blocking signup. pathUSD is Tempo's
+      // canonical fee-bearing stable. Falls back to usdc_e if demo_stable
+      // isn't configured for this chain.
+      const feeToken = init.chain.demo_stable ?? init.chain.usdc_e;
+      const chain = { ...baseChain, feeToken };
 
       const transport = init.chain.sponsor_url
         ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url), {
