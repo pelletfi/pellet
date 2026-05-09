@@ -187,6 +187,14 @@ export const walletSessions = pgTable(
     // wires the actual chain call.
     authorizeTxHash: text("authorize_tx_hash"),
     onChainAuthorizedAt: timestamp("on_chain_authorized_at", { withTimezone: true }),
+    // Deferred-authorize state. Pre-2026-05-09 the browser broadcast the
+    // authorize tx inline; now the browser passkey-signs and stores raw
+    // bytes here. Server lazy-broadcasts on first spend. See drizzle/0017.
+    authorizeTxSigned: text("authorize_tx_signed"),
+    authorizeState: text("authorize_state").notNull().default("pending"),
+    authorizeAttempts: integer("authorize_attempts").notNull().default(0),
+    authorizeLastError: text("authorize_last_error"),
+    authorizeValidBefore: timestamp("authorize_valid_before", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({

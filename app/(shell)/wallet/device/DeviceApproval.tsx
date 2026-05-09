@@ -5,9 +5,9 @@ import {
   startRegistration,
   startAuthentication,
 } from "@simplewebauthn/browser";
-import { createWalletClient, http } from "viem";
+import { createTransport, createWalletClient, http, type Transport } from "viem";
 import { tempoModerato, tempo as tempoMainnet } from "viem/chains";
-import { Account, Actions, withRelay, tempoActions } from "viem/tempo";
+import { Account, tempoActions } from "viem/tempo";
 
 type Runtime = "claude" | "cursor" | "cli";
 
@@ -87,8 +87,8 @@ type ApprovalState =
   | { kind: "input" }
   | { kind: "auth"; code: string }
   | { kind: "confirming"; code: string; userId: string; managedAddress: string }
-  | { kind: "submitting"; stage: "init" | "signing" | "broadcasting" | "finalizing" }
-  | { kind: "approved"; txHash: string; explorerUrl: string }
+  | { kind: "submitting"; stage: "init" | "signing" | "finalizing" }
+  | { kind: "approved" }
   | { kind: "error"; message: string };
 
 const PRESET_CAPS = [
@@ -229,7 +229,8 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
     }
 
     setState({ kind: "submitting", stage: "signing" });
-    let txHash: `0x${string}`;
+    let rawTx: `0x${string}`;
+    let validBeforeUnix: number;
     try {
       const userAccount = Account.fromWebAuthnP256(
         {
@@ -245,85 +246,106 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
 
       const baseChain =
         init.chain.id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-      // Use demo_stable (pathUSD on mainnet) for gas — usdc_e FeeAMM pool
-      // ran dry on Presto 2026-05-09, blocking signup. pathUSD is Tempo's
-      // canonical fee-bearing stable. Falls back to usdc_e if demo_stable
-      // isn't configured for this chain.
+      // feeToken is stripped from the envelope when feePayer:true (the
+      // relay picks its own at submit time), so this just hints intent.
       const feeToken = init.chain.demo_stable ?? init.chain.usdc_e;
       const chain = { ...baseChain, feeToken };
 
-      const transport = init.chain.sponsor_url
-        ? withRelay(http(init.chain.rpc_url), http(init.chain.sponsor_url), {
-            policy: "sign-only",
-          })
-        : http(init.chain.rpc_url);
+      // Tempo's chainConfig defaults validBefore to now+25s for expiring
+      // nonces. That's fine for atomic broadcast but we're deferring —
+      // server may take minutes to broadcast at first spend. Override to
+      // 24h so the user's signature stays valid through normal usage.
+      validBeforeUnix = Math.floor(Date.now() / 1000) + 86400;
+
+      // Capture transport: passkey-signs the authorize tx but intercepts
+      // eth_sendRawTransactionSync to grab the bytes instead of broadcasting.
+      // Server stores the raw bytes and lazy-broadcasts on first spend, so
+      // signup never depends on Tempo's protocol/relay availability.
+      let captured: `0x${string}` | null = null;
+      const captureTransport = ((config: Parameters<Transport>[0]) => {
+        const inner = http(init.chain.rpc_url)(config);
+        const request = (async (
+          { method, params }: { method: string; params: unknown },
+          options: unknown,
+        ) => {
+          if (
+            method === "eth_sendRawTransactionSync" ||
+            method === "eth_sendRawTransaction"
+          ) {
+            captured = (params as [`0x${string}`])[0];
+            throw Object.assign(new Error("PELLET_CAPTURED"), {
+              pelletCaptured: true,
+            });
+          }
+          return (inner.request as unknown as (a: unknown, b: unknown) => unknown)(
+            { method, params },
+            options,
+          );
+        }) as never;
+        return createTransport({
+          key: "pellet-capture",
+          name: "Pellet capture",
+          type: "pellet-capture",
+          request,
+        });
+      }) as Transport;
 
       const client = createWalletClient({
         account: userAccount,
         chain,
-        transport,
+        transport: captureTransport,
       }).extend(tempoActions());
 
-      setState({ kind: "submitting", stage: "broadcasting" });
-      const result = await client.accessKey.authorizeSync({
-        accessKey,
-        expiry: init.expiry_unix,
-        feePayer: true,
-        gas: BigInt(10_000_000),
-        limits: [
-          {
-            token: init.chain.usdc_e,
-            limit: BigInt(init.spend_cap_wei),
-            period: 86400,
-          },
-          ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
-            ? [{
-                token: init.chain.demo_stable,
-                limit: BigInt(init.spend_cap_wei),
-                period: 86400,
-              }]
-            : []),
-        ],
-        scopes: [
-          { address: init.chain.usdc_e, selector: TRANSFER_WITH_MEMO },
-          { address: init.chain.usdc_e, selector: APPROVE },
-          ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
-            ? [
-                { address: init.chain.demo_stable, selector: TRANSFER_WITH_MEMO },
-                { address: init.chain.demo_stable, selector: APPROVE },
-              ]
-            : []),
-          { address: STABLECOIN_DEX, selector: SWAP_EXACT_AMOUNT_IN },
-        ],
-      });
-      txHash = result.receipt.transactionHash as `0x${string}`;
-
-      // Pre-approve stablecoin DEX from the user's passkey so the access
-      // key never needs the approve scope (which older keys lack).
-      const maxUint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-      const tokens = [init.chain.usdc_e];
-      if (init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e) {
-        tokens.push(init.chain.demo_stable);
-      }
-      for (const tkn of tokens) {
-        try {
-          await client.token.approveSync({
-            account: userAccount,
-            token: tkn as `0x${string}`,
-            spender: STABLECOIN_DEX,
-            amount: maxUint,
-            feePayer: true,
-            gas: BigInt(500_000),
-          } as any);
-        } catch {
-          // Non-fatal — swap will prompt approve later if needed.
+      try {
+        await client.accessKey.authorizeSync({
+          accessKey,
+          expiry: init.expiry_unix,
+          feePayer: true,
+          gas: BigInt(10_000_000),
+          validBefore: validBeforeUnix,
+          limits: [
+            {
+              token: init.chain.usdc_e,
+              limit: BigInt(init.spend_cap_wei),
+              period: 86400,
+            },
+            ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
+              ? [{
+                  token: init.chain.demo_stable,
+                  limit: BigInt(init.spend_cap_wei),
+                  period: 86400,
+                }]
+              : []),
+          ],
+          scopes: [
+            { address: init.chain.usdc_e, selector: TRANSFER_WITH_MEMO },
+            { address: init.chain.usdc_e, selector: APPROVE },
+            ...(init.chain.demo_stable && init.chain.demo_stable !== init.chain.usdc_e
+              ? [
+                  { address: init.chain.demo_stable, selector: TRANSFER_WITH_MEMO },
+                  { address: init.chain.demo_stable, selector: APPROVE },
+                ]
+              : []),
+            { address: STABLECOIN_DEX, selector: SWAP_EXACT_AMOUNT_IN },
+          ],
+        });
+        // Should be unreachable — the capture transport always throws.
+        throw new Error("authorize tx broadcast was not intercepted");
+      } catch (err) {
+        if (!(err instanceof Error && (err as { pelletCaptured?: boolean }).pelletCaptured)) {
+          throw err;
         }
       }
+
+      if (!captured) {
+        throw new Error("authorize tx capture produced no bytes");
+      }
+      rawTx = captured;
     } catch (e) {
       setState({
         kind: "error",
         message:
-          "on-chain authorize failed: " +
+          "authorize sign failed: " +
           (e instanceof Error ? e.message : String(e)),
       });
       return;
@@ -334,17 +356,20 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
       const finRes = await fetch("/api/wallet/device/approve-finalize", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: state.code, tx_hash: txHash }),
+        body: JSON.stringify({
+          code: state.code,
+          raw_tx: rawTx,
+          valid_before_unix: validBeforeUnix,
+        }),
       });
       const finData = await finRes.json();
       if (!finRes.ok) {
         setState({
           kind: "error",
           message:
-            "tx confirmed but server rejected finalize: " +
+            "server rejected finalize: " +
             (finData.error ?? "unknown") +
-            (finData.detail ? ` (${finData.detail})` : "") +
-            ` · tx ${txHash}`,
+            (finData.detail ? ` (${finData.detail})` : ""),
         });
         return;
       }
@@ -352,17 +377,12 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
       setState({
         kind: "error",
         message:
-          "tx confirmed but finalize POST failed: " +
-          (e instanceof Error ? e.message : String(e)),
+          "finalize POST failed: " + (e instanceof Error ? e.message : String(e)),
       });
       return;
     }
 
-    setState({
-      kind: "approved",
-      txHash,
-      explorerUrl: `${init.chain.explorer_url}/tx/${txHash}`,
-    });
+    setState({ kind: "approved" });
   };
 
   // Left column: explain text adapts per state
@@ -370,10 +390,10 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
     if (state.kind === "approved") {
       return {
         title: "Connected",
-        lede: "Your agent is authorized on Tempo. The CLI received a bearer token and is ready to make calls against your wallet.",
+        lede: "Your agent is paired and the CLI received a bearer token. On-chain registration finalizes the first time the agent spends — your passkey signature is held server-side until then.",
         bullets: [
-          "Agent key is live with on-chain spend caps.",
-          "Every call signs and posts to Tempo.",
+          "Agent key is paired with your spend caps.",
+          "First spend posts the on-chain authorize tx.",
           "Revoke any time from your wallet dashboard.",
         ],
       };
@@ -549,8 +569,7 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
             <h2 className="spec-signin-h2">Working…</h2>
             <div style={{ fontSize: 12, lineHeight: 2, opacity: 0.8 }}>
               <div style={{ opacity: state.stage === "init" ? 1 : 0.4 }}>· preparing agent key</div>
-              <div style={{ opacity: state.stage === "signing" ? 1 : state.stage === "init" ? 0.4 : 0.4 }}>· waiting for passkey</div>
-              <div style={{ opacity: state.stage === "broadcasting" ? 1 : 0.4 }}>· broadcasting tx</div>
+              <div style={{ opacity: state.stage === "signing" ? 1 : 0.4 }}>· waiting for passkey</div>
               <div style={{ opacity: state.stage === "finalizing" ? 1 : 0.4 }}>· finalizing</div>
             </div>
           </>
@@ -564,8 +583,9 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
             </div>
             <h2 className="spec-signin-h2">Approved</h2>
             <p className="spec-signin-sub">
-              Agent key authorized on Tempo. Your CLI should pick up the bearer
-              token within a couple seconds.
+              Your CLI should pick up the bearer token within a couple seconds.
+              On-chain registration is deferred to first spend — your passkey
+              already signed the authorize tx.
             </p>
             <a
               href="/wallet/dashboard"
@@ -582,14 +602,6 @@ export function DeviceApproval({ initialCode }: { initialCode: string }) {
                 triggers automatically on first use.
               </p>
               <RuntimeTabs mcpUrl={mcpUrl} />
-              <a
-                href={state.explorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: 11, opacity: 0.6, textDecoration: "none", color: "inherit", marginTop: 8 }}
-              >
-                view tx ↗
-              </a>
             </div>
           </>
         )}

@@ -4,6 +4,7 @@ import { and, eq, isNull, isNotNull, gt, desc } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { walletSessions, walletUsers } from "@/lib/db/schema";
 import { readUserSession } from "@/lib/wallet/challenge-cookie";
+import { ensureOnChainAuthorized } from "@/lib/wallet/lazy-authorize";
 
 // Shared bearer-token → session resolver for wallet-scoped API routes.
 // Mirrors the auth steps from /api/wallet/pay so we don't duplicate the
@@ -65,10 +66,25 @@ export async function requireSession(
     return NextResponse.json({ error: "session expired" }, { status: 403 });
   }
   if (opts.requireOnChainAuthorize && !session.authorizeTxHash) {
-    return NextResponse.json(
-      { error: "session not yet on-chain authorized" },
-      { status: 403 },
-    );
+    // Deferred-authorize: pair-time captured the user-signed tx but didn't
+    // broadcast. Lazy-broadcast now (relay co-sign + RPC send + receipt verify).
+    // On success, the session row is updated with authorizeTxHash; we refetch
+    // so downstream code sees the post-broadcast state.
+    const result = await ensureOnChainAuthorized(session.id);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error, detail: result.detail },
+        { status: result.status },
+      );
+    }
+    const refreshed = await db
+      .select()
+      .from(walletSessions)
+      .where(eq(walletSessions.id, session.id))
+      .limit(1);
+    if (refreshed[0]) {
+      Object.assign(session, refreshed[0]);
+    }
   }
 
   const userRows = await db
@@ -117,16 +133,21 @@ export async function requireSessionOrCookie(
     return NextResponse.json({ error: "wallet user missing" }, { status: 500 });
   }
 
+  // Latest non-revoked unexpired session. When requireOnChainAuthorize is
+  // set, we accept either a confirmed session (authorize_tx_hash set) or a
+  // deferred one (authorize_tx_signed set, ready for lazy broadcast).
+  const baseConditions = [
+    eq(walletSessions.userId, userId),
+    isNull(walletSessions.revokedAt),
+    gt(walletSessions.expiresAt, new Date()),
+  ];
   const sessionRows = await db
     .select()
     .from(walletSessions)
     .where(
-      and(
-        eq(walletSessions.userId, userId),
-        isNull(walletSessions.revokedAt),
-        isNotNull(walletSessions.authorizeTxHash),
-        gt(walletSessions.expiresAt, new Date()),
-      ),
+      opts.requireOnChainAuthorize
+        ? and(...baseConditions, isNotNull(walletSessions.authorizeTxSigned))
+        : and(...baseConditions),
     )
     .orderBy(desc(walletSessions.createdAt))
     .limit(1);
@@ -136,6 +157,24 @@ export async function requireSessionOrCookie(
       { error: "no active authorized session" },
       { status: 403 },
     );
+  }
+
+  if (opts.requireOnChainAuthorize && !session.authorizeTxHash) {
+    const result = await ensureOnChainAuthorized(session.id);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error, detail: result.detail },
+        { status: result.status },
+      );
+    }
+    const refreshed = await db
+      .select()
+      .from(walletSessions)
+      .where(eq(walletSessions.id, session.id))
+      .limit(1);
+    if (refreshed[0]) {
+      Object.assign(session, refreshed[0]);
+    }
   }
 
   return { session, user };
