@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .pltn-page {
-  --paper: #f4f2ef;          /* matches the hero video's native bg so no filter is needed */
+  --paper: #ffffff;          /* pure white — hero video bg is keyed transparent (webm/vp9 alpha) */
   --ink:   #0a0a0c;          /* near-black, no navy */
   --gold:  #b89456;          /* used exactly once — slightly deeper for legibility on light */
 

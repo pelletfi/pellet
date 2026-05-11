@@ -13,7 +13,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-const HERO_VIDEO = "/pellet-finance.mp4";
+// WebM with VP9 + alpha: bg keyed transparent so the sphere blends edge-to-edge
+// on any page color, no filter trickery needed.
+const HERO_VIDEO_WEBM = "/pellet-finance.webm";
+const HERO_VIDEO_MP4 = "/pellet-finance.mp4";
 
 export function Sphere() {
   const reduced = useReducedMotion();
@@ -49,7 +52,6 @@ export function Sphere() {
           <video
             ref={videoRef}
             className="pltn-sphere-video"
-            src={HERO_VIDEO}
             autoPlay
             loop
             muted
@@ -58,7 +60,10 @@ export function Sphere() {
             onCanPlay={() => setVideoReady(true)}
             onError={() => setVideoFailed(true)}
             aria-hidden
-          />
+          >
+            <source src={HERO_VIDEO_WEBM} type="video/webm" />
+            <source src={HERO_VIDEO_MP4} type="video/mp4" />
+          </video>
         )}
       </motion.div>
     </div>
