@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 .pltn-page {
-  --paper: #ffffff;          /* pure white. video bg is filtered up to match. */
+  --paper: #f4f2ef;          /* matches the hero video's native bg so no filter is needed */
   --ink:   #0a0a0c;          /* near-black, no navy */
   --gold:  #b89456;          /* used exactly once — slightly deeper for legibility on light */
 
@@ -229,15 +229,6 @@ html:has(.pltn-page) { color-scheme: light; }
   object-fit: contain;
   background: transparent;
   pointer-events: none;
-}
-/* iOS Safari hardware-decodes <video> in its own layer and silently ignores
- * `filter` applied directly to the element. Applying the filter on the
- * wrapping container forces compositing through CSS so the brightness/
- * contrast clamp lifts the beige (~244,242,239) bg to pure white on device
- * as well as on desktop. */
-.pltn-sphere {
-  filter: brightness(1.18) contrast(1.18);
-  -webkit-filter: brightness(1.18) contrast(1.18);
 }
 .pltn-sphere-floor {
   position: absolute;
