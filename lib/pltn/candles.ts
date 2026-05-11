@@ -15,6 +15,7 @@ const SYNC_TOPIC =
 
 export type SyncEvent = {
   blockNumber: number;
+  txHash: `0x${string}`;
   timestamp: number; // unix seconds
   reserve0: bigint; // pathUSD raw (6 dec)
   reserve1: bigint; // PLTN raw (6 dec)
@@ -71,6 +72,7 @@ export async function fetchSyncEvents(
 type RawLog = {
   blockNumber: string;
   blockTimestamp?: string;
+  transactionHash: `0x${string}`;
   data: string;
 };
 
@@ -84,6 +86,7 @@ function parseSyncLog(log: RawLog): SyncEvent | null {
   const price = Number(reserve0) / Number(reserve1);
   return {
     blockNumber: parseInt(log.blockNumber, 16),
+    txHash: log.transactionHash,
     timestamp: parseInt(log.blockTimestamp, 16),
     reserve0,
     reserve1,

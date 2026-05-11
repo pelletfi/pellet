@@ -4,6 +4,7 @@ import { PriceChart } from "./PriceChart";
 import { BuyWidget } from "./BuyWidget";
 import { Socials } from "./Socials";
 import { Sphere } from "./Sphere";
+import { InfoPanel } from "./InfoPanel";
 import { PelletGlobe } from "@/components/pellet-globe";
 import { TempoWordmark } from "./TempoWordmark";
 import { Reveal } from "./motion";
@@ -61,8 +62,13 @@ export default function PLTNPage() {
         <PriceChart />
       </Reveal>
 
+      {/* ── Holders / contracts / trades ──────────────────────────── */}
+      <Reveal step={5}>
+        <InfoPanel />
+      </Reveal>
+
       {/* ── Buy ───────────────────────────────────────────────────── */}
-      <Reveal className="pltn-buy-frame" step={5}>
+      <Reveal className="pltn-buy-frame" step={6}>
         <BuyWidget />
       </Reveal>
 
