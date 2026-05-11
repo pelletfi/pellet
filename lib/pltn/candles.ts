@@ -29,28 +29,39 @@ export type Candle = {
   close: number;
 };
 
-export async function fetchSyncEvents(
-  fromBlock: bigint = GENESIS_BLOCK,
-): Promise<SyncEvent[]> {
+// Tempo's RPC caps eth_getLogs at 100k blocks per query, so chunk across the
+// full history. Genesis-to-head is already >100k blocks as of 2026-05-11.
+const MAX_BLOCK_RANGE = 100_000n;
+
+async function rpcCall<T>(method: string, params: unknown[]): Promise<T> {
   const res = await fetch(RPC_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "eth_getLogs",
-      params: [
-        {
-          address: PAIR,
-          topics: [SYNC_TOPIC],
-          fromBlock: `0x${fromBlock.toString(16)}`,
-          toBlock: "latest",
-        },
-      ],
-      id: 1,
-    }),
+    body: JSON.stringify({ jsonrpc: "2.0", method, params, id: 1 }),
   });
-  const json = (await res.json()) as { result?: RawLog[] };
-  const logs = json.result ?? [];
+  const json = (await res.json()) as { result?: T; error?: { message: string } };
+  if (json.error) throw new Error(json.error.message);
+  return json.result as T;
+}
+
+export async function fetchSyncEvents(
+  fromBlock: bigint = GENESIS_BLOCK,
+): Promise<SyncEvent[]> {
+  const headHex = await rpcCall<string>("eth_blockNumber", []);
+  const head = BigInt(headHex);
+  const logs: RawLog[] = [];
+  for (let start = fromBlock; start <= head; start += MAX_BLOCK_RANGE) {
+    const end = start + MAX_BLOCK_RANGE - 1n < head ? start + MAX_BLOCK_RANGE - 1n : head;
+    const chunk = await rpcCall<RawLog[]>("eth_getLogs", [
+      {
+        address: PAIR,
+        topics: [SYNC_TOPIC],
+        fromBlock: `0x${start.toString(16)}`,
+        toBlock: `0x${end.toString(16)}`,
+      },
+    ]);
+    logs.push(...chunk);
+  }
   return logs
     .map(parseSyncLog)
     .filter((e): e is SyncEvent => e !== null)
