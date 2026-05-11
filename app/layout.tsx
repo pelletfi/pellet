@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Fraunces } from "next/font/google";
 import localFont from "next/font/local";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Nav } from "@/components/Nav";
@@ -27,6 +27,15 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+
+// Fraunces — transitional serif used for /pltn editorial display.
+// Variable font; next/font/google 16 rejects discrete weights for variable
+// fonts. CSS chooses weight via font-weight; opsz pulled by font-optical-sizing.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
   display: "swap",
 });
 
@@ -70,7 +79,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${commitMono.variable} ${jetbrainsMono.variable} dark`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${commitMono.variable} ${jetbrainsMono.variable} ${fraunces.variable} dark`}
       suppressHydrationWarning
     >
       <head>

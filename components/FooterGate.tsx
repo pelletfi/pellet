@@ -20,5 +20,6 @@ export function FooterGate() {
   if (pathname?.startsWith("/methodology")) return null;
   if (pathname?.startsWith("/rails")) return null;
   if (pathname?.startsWith("/specimen")) return null;
+  if (pathname?.startsWith("/pltn")) return null;
   return <Footer />;
 }

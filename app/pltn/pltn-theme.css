@@ -1,0 +1,499 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * /pltn — Cinema Editorial
+ * ───────────────────────────────────────────────────────────────────────────
+ * Hero: liquid chrome anchor + Fraunces display serif.
+ * Body: system sans + JetBrains Mono numerals.
+ * One sliver of cold gold beneath the buy CTA — the only chromatic moment.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.pltn-page {
+  --paper: #ffffff;          /* pure white. video bg is filtered up to match. */
+  --ink:   #0a0a0c;          /* near-black, no navy */
+  --gold:  #b89456;          /* used exactly once — slightly deeper for legibility on light */
+
+  --bg:  var(--paper);
+  --fg:  var(--ink);
+  --fg-2: color-mix(in oklch, var(--ink) 65%, var(--paper));
+  --fg-3: color-mix(in oklch, var(--ink) 38%, var(--paper));
+  --rule:    color-mix(in oklch, var(--ink) 28%, var(--paper));
+  --rule-2:  color-mix(in oklch, var(--ink) 14%, var(--paper));
+
+  --color-bg-base: var(--bg);
+  --color-text-primary: var(--fg);
+  --color-text-tertiary: var(--fg-2);
+  --color-text-quaternary: var(--fg-3);
+  --color-border-subtle: var(--rule-2);
+  --color-border-default: var(--rule);
+  --color-accent: var(--fg);
+
+  --sans:  system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono:  var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+  --serif: var(--font-fraunces), "Tiempos Headline", Georgia, "Times New Roman", serif;
+
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body:has(.pltn-page) { background: var(--paper); }
+
+.pltn-page,
+.pltn-page *,
+.pltn-page *::before,
+.pltn-page *::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+::selection { background: var(--paper); color: var(--ink); }
+.pltn-page :focus-visible { outline: 1px solid var(--fg); outline-offset: 0; }
+
+.pltn-page a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.pltn-page a:hover { border-bottom-color: var(--fg); }
+
+/* Haze removed — was adding a faint corner gradient that broke the uniform
+ * bg, making the video's flat-color rectangle visible against the page. */
+
+/* ═══════════════ Shell ═══════════════ */
+
+.pltn-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 32px 56px 64px;
+}
+@media (max-width: 720px) {
+  .pltn-shell { padding: 16px 18px 40px; }
+}
+
+.pltn-block {
+  border-bottom: 1px solid var(--rule);
+}
+.pltn-block:last-of-type { border-bottom: 0; }
+
+/* ═══════════════ Marque ═══════════════ */
+
+.pltn-marque {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+  padding: 0 0 18px;
+  margin-bottom: 0;
+}
+.pltn-marque-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg);
+}
+.pltn-marque-left .pltn-mark {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  color: var(--fg);
+}
+.pltn-marque-left .pltn-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.pltn-marque-right {
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg);
+}
+.pltn-built-on {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fg-3);
+  letter-spacing: 0;
+}
+.pltn-marque-right svg {
+  height: 9px;
+  width: auto;
+  display: block;
+}
+.pltn-marque-c {
+  font-size: 0.55em;
+  margin-left: 3px;
+  vertical-align: super;
+  font-weight: 400;
+  color: var(--fg-3);
+  font-feature-settings: "sups";
+}
+
+/* ═══════════════ Hero ═══════════════ */
+
+.pltn-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+  padding: 60px 0 72px;
+  border-bottom: 1px solid var(--rule);
+}
+@media (max-width: 860px) {
+  .pltn-hero { grid-template-columns: 1fr; gap: 18px; padding: 28px 0 32px; }
+}
+
+.pltn-hero-text { display: flex; flex-direction: column; gap: 28px; }
+@media (max-width: 720px) { .pltn-hero-text { gap: 18px; } }
+
+.pltn-display-h {
+  font-family: var(--serif);
+  font-size: clamp(38px, 9vw, 92px);
+  line-height: 1.04;
+  letter-spacing: -0.005em;
+  font-weight: 300;
+  margin: 0;
+  color: var(--fg);
+  font-feature-settings: "ss01", "liga";
+  font-optical-sizing: auto;
+}
+.pltn-display-h .slash {
+  color: var(--fg-2);
+  font-style: normal;
+  margin: 0 0.04em;
+}
+.pltn-display-lede {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  margin: 0;
+  max-width: 36ch;
+}
+@media (max-width: 720px) {
+  .pltn-display-lede { font-size: 14px; }
+}
+
+/* Sphere wrapper sits in the right column */
+.pltn-sphere-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 520px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 720px) {
+  .pltn-sphere-wrap { max-width: 280px; margin: 0 auto; }
+}
+.pltn-sphere {
+  position: relative;
+  width: 92%;
+  height: 92%;
+  border-radius: 50% !important;
+  overflow: visible;
+}
+.pltn-sphere-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  border-radius: 50% !important;
+}
+.pltn-sphere-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  pointer-events: none;
+  /* Push the video's beige bg (~244,242,239) past 255 so it clamps to pure
+   * white, matching the page's #ffffff. Contrast bump compensates for the
+   * brightness lift on the wireframe lines so they stay close to black. */
+  filter: brightness(1.1) contrast(1.12);
+}
+.pltn-sphere-floor {
+  position: absolute;
+  left: 8%; right: 8%;
+  bottom: -2%;
+  height: 8%;
+  background: radial-gradient(ellipse 50% 100% at 50% 0%, rgba(0,0,0,0.55), transparent 70%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* ═══════════════ Stats row ═══════════════ */
+
+.pltn-quotes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+@media (max-width: 720px) {
+  .pltn-quotes { grid-template-columns: repeat(2, 1fr); }
+  .pltn-quote:nth-child(2) { border-right: 0; }
+  .pltn-quote:nth-child(-n+2) { border-bottom: 1px solid var(--rule-2); }
+}
+.pltn-quote {
+  padding: 24px 28px 26px;
+  border-right: 1px solid var(--rule-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pltn-quote:last-child { border-right: 0; }
+.pltn-quote-k {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.pltn-quote-v {
+  font-family: var(--mono);
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.pltn-quote-v[data-loading="1"] { color: var(--fg-3); }
+
+/* ═══════════════ Chart ═══════════════ */
+
+.pltn-chart-frame {
+  border-bottom: 1px solid var(--rule);
+}
+.pltn-chart-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 4px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.pltn-chart-h-pair { color: var(--fg); letter-spacing: 0.10em; }
+.pltn-chart {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: #0a0a0c;
+}
+@media (max-width: 720px) {
+  .pltn-chart { height: 300px; }
+}
+.pltn-chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  pointer-events: none;
+}
+
+/* ═══════════════ Buy widget ═══════════════ */
+
+.pltn-buy-frame {
+  border-bottom: 1px solid var(--rule);
+  padding: 32px 0 28px;
+}
+.pltn-buy-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .pltn-buy-row { grid-template-columns: 1fr; }
+  .pltn-buy-swap { display: none; }
+}
+.pltn-buy-side {
+  padding: 18px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--rule-2);
+}
+.pltn-buy-k {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.pltn-buy-v {
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 32px;
+  letter-spacing: -0.012em;
+  padding: 0;
+  width: 100%;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.pltn-buy-v[readonly] { color: var(--fg-2); }
+.pltn-buy-token {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.pltn-buy-swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--fg-3);
+  font-size: 18px;
+  font-family: var(--mono);
+}
+
+.pltn-dl {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px 18px;
+  padding: 18px 4px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  align-items: center;
+}
+.pltn-dl-k {
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 10px;
+}
+.pltn-dl-v {
+  margin: 0;
+  text-align: right;
+  color: var(--fg);
+  grid-column: 3;
+  font-variant-numeric: tabular-nums;
+}
+.pltn-dl-leader {
+  height: 1px;
+  background-image: radial-gradient(circle, var(--rule-2) 0.5px, transparent 0.5px);
+  background-size: 4px 1px;
+  background-position: bottom;
+  background-repeat: repeat-x;
+  align-self: end;
+  margin-bottom: 4px;
+}
+.pltn-dl-pill {
+  background: transparent;
+  border: 1px solid var(--rule-2);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: border-color 100ms linear, color 100ms linear;
+}
+.pltn-dl-pill:hover { border-color: var(--fg); color: var(--fg); }
+.pltn-dl-pill[data-active="1"] { border-color: var(--fg); color: var(--fg); }
+
+/* The CTA — and the page's only chromatic moment, a sliver of cold gold */
+.pltn-action {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--fg);
+  padding: 22px 24px;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms linear, color 120ms linear, border-color 120ms linear;
+}
+.pltn-action:hover:not(:disabled) {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+.pltn-action:disabled {
+  color: var(--fg-3);
+  border-color: var(--rule-2);
+  cursor: not-allowed;
+}
+/* The single chromatic accent — a 36px gold rule centered beneath the button */
+.pltn-action-accent {
+  display: block;
+  width: 56px;
+  height: 2px;
+  background: var(--gold);
+  margin: 14px auto 0;
+}
+
+.pltn-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--fg-2);
+  margin-top: 12px;
+  text-align: center;
+}
+.pltn-status a {
+  color: var(--fg);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* ═══════════════ Colophon ═══════════════ */
+
+.pltn-colophon {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 4px 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.pltn-socials {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+.pltn-social-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg-3);
+  border-bottom: 0 !important;
+  transition: color 100ms linear;
+}
+.pltn-social-link:hover { color: var(--fg); }

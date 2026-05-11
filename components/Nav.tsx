@@ -25,6 +25,7 @@ function Logo() {
 export function Nav() {
   const pathname = usePathname();
   if (pathname === "/") return null;
+  if (pathname?.startsWith("/pltn")) return null;
   return <NavContent />;
 }
 
