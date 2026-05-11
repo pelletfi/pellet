@@ -162,7 +162,6 @@ function SendModal({
         token: from.address as `0x${string}`,
         to: to as `0x${string}`,
         amount: amountWei,
-        feePayer: true,
         gas: BigInt(500_000),
       } as any);
 
@@ -377,7 +376,6 @@ async function passkeyApproveDex(tokenAddress: `0x${string}`) {
     token: tokenAddress,
     spender: STABLECOIN_DEX,
     amount: maxUint,
-    feePayer: true,
     gas: BigInt(500_000),
   } as any);
 }
@@ -476,7 +474,6 @@ function SwapModal({
           token: tokenIn,
           spender: STABLECOIN_DEX,
           amount: maxUint,
-          feePayer: true,
           gas: BigInt(500_000),
         } as any);
       }
@@ -492,7 +489,6 @@ function SwapModal({
         tokenOut,
         amountIn,
         minAmountOut,
-        feePayer: true,
         gas: BigInt(800_000),
       } as any);
 
