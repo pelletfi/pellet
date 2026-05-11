@@ -121,7 +121,12 @@ html:has(.pltn-page) { color-scheme: light; }
   width: 100%;
   height: 100%;
   display: block;
+  color: #000;
 }
+/* Pin strokes to CSS-pixel width so they render full-pixel at 26px display.
+ * Without this the viewBox-200/size-26 mapping makes the 1.2-unit stroke paint
+ * at 0.16 CSS px — sub-pixel AA-fuzz that iOS Safari renders as light gray. */
+.pltn-marque-left .pltn-mark svg * { vector-effect: non-scaling-stroke; }
 .pltn-marque-right {
   height: 20px;
   display: inline-flex;
