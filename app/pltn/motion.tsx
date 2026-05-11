@@ -101,7 +101,9 @@ export function Phrase({
   as?: keyof typeof motion;
 }) {
   // Allow string tag or motion[tag] — defaults to span.
-  const M = (motion as Record<string, typeof motion.span>)[Tag as string] ?? motion.span;
+  const M =
+    (motion as unknown as Record<string, typeof motion.span>)[Tag as string] ??
+    motion.span;
   return (
     <M
       initial={{ opacity: 0, y: 8 }}

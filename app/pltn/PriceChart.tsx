@@ -21,9 +21,11 @@ export function PriceChart() {
 
   useEffect(() => {
     let cancelled = false;
-    let chart: ReturnType<LWC["createChart"]> | null = null;
-    let candleSeries: ReturnType<NonNullable<typeof chart>["addSeries"]> | null = null;
-    let lineSeries: ReturnType<NonNullable<typeof chart>["addSeries"]> | null = null;
+    type Chart = ReturnType<LWC["createChart"]>;
+    type Series = ReturnType<Chart["addSeries"]>;
+    let chart: Chart | null = null;
+    let candleSeries: Series | null = null;
+    let lineSeries: Series | null = null;
     let pollId: ReturnType<typeof setInterval> | null = null;
     let resizeObs: ResizeObserver | null = null;
     let events: SyncEvent[] = [];
