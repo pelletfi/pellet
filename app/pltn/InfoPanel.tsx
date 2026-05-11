@@ -185,6 +185,12 @@ export function InfoPanel() {
             </div>
           ))}
         </div>
+        <p className="pltn-info-note">
+          No tokens have been transferred to <code>0x…dEaD</code>. What was
+          burned at deploy is the admin and issuer roles on the TIP-20 token —
+          neither can ever be re-granted. The LP (5M PLTN + $200 pathUSD) is
+          locked permanently in the pair contract; supply is fixed at 100M.
+        </p>
       </section>
 
       <section className="pltn-info-block">

@@ -571,6 +571,20 @@ html:has(.pltn-page) { color-scheme: light; }
 }
 .pltn-info-side[data-side="buy"] { color: var(--fg); }
 .pltn-info-side[data-side="sell"] { color: var(--fg-3); }
+.pltn-info-note {
+  padding: 14px 4px 0;
+  margin: 0;
+  max-width: 64ch;
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg-3);
+}
+.pltn-info-note code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-2);
+}
 .pltn-info-empty {
   padding: 18px 4px;
   color: var(--fg-3);
