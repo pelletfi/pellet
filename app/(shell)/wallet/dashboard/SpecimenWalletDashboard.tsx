@@ -151,7 +151,7 @@ function SendModal({
         { rpId: cfg.rp_id },
       );
       const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const chain = { ...baseChain, feeToken: (cfg.demo_stable ?? cfg.usdc_e) as `0x${string}` };
       const transport = cfg.sponsor_url
         ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
         : http(cfg.rpc_url);
@@ -364,7 +364,7 @@ async function passkeyApproveDex(tokenAddress: `0x${string}`) {
   );
 
   const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-  const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+  const chain = { ...baseChain, feeToken: (cfg.demo_stable ?? cfg.usdc_e) as `0x${string}` };
   const transport = cfg.sponsor_url
     ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
     : http(cfg.rpc_url);
@@ -419,7 +419,7 @@ function SwapModal({
       if (!chainRes.ok) throw new Error(cfg.error ?? "failed to load chain config");
 
       const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const chain = { ...baseChain, feeToken: (cfg.demo_stable ?? cfg.usdc_e) as `0x${string}` };
       const readClient = createPublicClient({ chain, transport: http(cfg.rpc_url) }).extend(tempoActions());
 
       const amountOut = await readClient.dex.getSellQuote({
@@ -451,7 +451,7 @@ function SwapModal({
         { rpId: cfg.rp_id },
       );
       const baseChain = cfg.chain_id === tempoMainnet.id ? tempoMainnet : tempoModerato;
-      const chain = { ...baseChain, feeToken: cfg.usdc_e as `0x${string}` };
+      const chain = { ...baseChain, feeToken: (cfg.demo_stable ?? cfg.usdc_e) as `0x${string}` };
       const transport = cfg.sponsor_url
         ? withRelay(http(cfg.rpc_url), http(cfg.sponsor_url), { policy: "sign-only" })
         : http(cfg.rpc_url);
