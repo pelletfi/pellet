@@ -240,13 +240,8 @@ body:has(.pltn-page) { background: var(--paper); }
 
 .pltn-quotes {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--rule);
-}
-@media (max-width: 720px) {
-  .pltn-quotes { grid-template-columns: repeat(2, 1fr); }
-  .pltn-quote:nth-child(2) { border-right: 0; }
-  .pltn-quote:nth-child(-n+2) { border-bottom: 1px solid var(--rule-2); }
 }
 .pltn-quote {
   padding: 24px 28px 26px;
@@ -272,6 +267,13 @@ body:has(.pltn-page) { background: var(--paper); }
   font-variant-numeric: tabular-nums;
 }
 .pltn-quote-v[data-loading="1"] { color: var(--fg-3); }
+@media (max-width: 720px) {
+  .pltn-quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pltn-quote { padding: 18px 16px 20px; }
+  .pltn-quote-v { font-size: 17px; }
+  .pltn-quote:nth-child(2) { border-right: 0; }
+  .pltn-quote:nth-child(-n+2) { border-bottom: 1px solid var(--rule-2); }
+}
 
 /* ═══════════════ Chart ═══════════════ */
 
