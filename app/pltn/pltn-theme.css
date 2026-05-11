@@ -327,6 +327,7 @@ html:has(.pltn-page) { color-scheme: light; }
 .pltn-buy-frame {
   border-bottom: 1px solid var(--rule);
   padding: 32px 0 28px;
+  scroll-margin-top: 24px;
 }
 .pltn-buy-tabs {
   display: inline-flex;

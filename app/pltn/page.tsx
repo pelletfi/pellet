@@ -68,7 +68,7 @@ export default function PLTNPage() {
       </Reveal>
 
       {/* ── Buy ───────────────────────────────────────────────────── */}
-      <Reveal className="pltn-buy-frame" step={6}>
+      <Reveal id="trade" className="pltn-buy-frame" step={6}>
         <BuyWidget />
       </Reveal>
 

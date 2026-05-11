@@ -32,16 +32,19 @@ export function Reveal({
   as = "section",
   className,
   delay = 0,
+  id,
 }: {
   step?: number;
   children: ReactNode;
   as?: "section" | "div" | "header" | "footer";
   className?: string;
   delay?: number;
+  id?: string;
 }) {
   const Tag = motion[as];
   return (
     <Tag
+      id={id}
       className={className}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
