@@ -38,9 +38,17 @@
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Force the light scheme on this route. The root <html> has class="dark"
+   * + metadata themeColor "#0a0a0a"; iOS Safari uses that as a signal that
+   * the whole document is dark and applies its system dark-mode color shift
+   * to inherited / currentColor SVGs — the marque globe renders gray on
+   * device but ink-black in desktop emulators. Declaring color-scheme:light
+   * here opts /pltn out of that auto-tint. */
+  color-scheme: light;
 }
 
-body:has(.pltn-page) { background: var(--paper); }
+body:has(.pltn-page) { background: var(--paper); color-scheme: light; }
+html:has(.pltn-page) { color-scheme: light; }
 
 .pltn-page,
 .pltn-page *,

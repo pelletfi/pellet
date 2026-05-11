@@ -1,5 +1,5 @@
 import "./pltn-theme.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "$PLTN — Pellet",
@@ -17,6 +17,12 @@ export const metadata: Metadata = {
     description: "An open wallet for the agentic web.",
     site: "@pelletnetwork",
   },
+};
+
+// Override the root layout's themeColor "#0a0a0a" so iOS Safari treats /pltn
+// as a light page (status bar, system color shifts on SVG/text inherit).
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
 };
 
 export default function PLTNLayout({ children }: { children: React.ReactNode }) {
