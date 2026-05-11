@@ -20,7 +20,9 @@ import {
   TEMPO_CHAIN_ID,
   V2_ROUTER,
 } from "@/lib/pltn/constants";
-import { quoteBuy, formatCompactPLTN } from "@/lib/pltn/pair";
+import { quoteBuy, quoteSell, formatCompactPLTN, formatCompactUSD } from "@/lib/pltn/pair";
+
+type Side = "buy" | "sell";
 
 declare global {
   interface Window {
@@ -56,10 +58,26 @@ type Status =
 export function BuyWidget() {
   const [account, setAccount] = useState<Address | null>(null);
   const [chainOk, setChainOk] = useState(false);
+  const [side, setSide] = useState<Side>("buy");
   const [amountIn, setAmountIn] = useState("10");
   const [quoteOut, setQuoteOut] = useState<bigint>(0n);
   const [slippageBps, setSlippageBps] = useState(100); // 1.0%
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  const tokenIn = side === "buy" ? PATH_USD : PLTN;
+  const tokenOut = side === "buy" ? PLTN : PATH_USD;
+  const symbolIn = side === "buy" ? "pathUSD" : "PLTN";
+  const symbolOut = side === "buy" ? "PLTN" : "pathUSD";
+  const formatOut = side === "buy" ? formatCompactPLTN : formatCompactUSD;
+
+  // Reset amount + quote when flipping side — different decimals/magnitudes
+  // make the previous input meaningless.
+  const flipSide = useCallback(() => {
+    setSide((s) => (s === "buy" ? "sell" : "buy"));
+    setAmountIn(side === "buy" ? "100000" : "10");
+    setQuoteOut(0n);
+    setStatus({ kind: "idle" });
+  }, [side]);
 
   // Listen to wallet account/chain changes
   useEffect(() => {
@@ -90,7 +108,7 @@ export function BuyWidget() {
     };
   }, []);
 
-  // Live quote whenever amount changes
+  // Live quote whenever amount or side changes
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -101,7 +119,7 @@ export function BuyWidget() {
       }
       try {
         const raw = parseUnits(trimmed, 6);
-        const out = await quoteBuy(raw);
+        const out = side === "buy" ? await quoteBuy(raw) : await quoteSell(raw);
         if (!cancelled) setQuoteOut(out);
       } catch {
         if (!cancelled) setQuoteOut(0n);
@@ -111,7 +129,7 @@ export function BuyWidget() {
     return () => {
       cancelled = true;
     };
-  }, [amountIn]);
+  }, [amountIn, side]);
 
   const priceImpactPct = usePriceImpact(amountIn, quoteOut);
 
@@ -165,7 +183,7 @@ export function BuyWidget() {
     }
   }, []);
 
-  const buy = useCallback(async () => {
+  const swap = useCallback(async () => {
     const eth = typeof window !== "undefined" ? window.ethereum : undefined;
     if (!eth || !account) return;
     const amt = amountIn.trim();
@@ -186,9 +204,9 @@ export function BuyWidget() {
         transport: custom(eth),
       }).extend(tempoActions());
 
-      // 1. Check + bump pathUSD allowance
+      // 1. Approve the token being sold to the router if needed.
       const allowance = (await publicClient.readContract({
-        address: PATH_USD,
+        address: tokenIn,
         abi: ERC20_ABI,
         functionName: "allowance",
         args: [account, V2_ROUTER],
@@ -197,7 +215,7 @@ export function BuyWidget() {
       if (allowance < amountInRaw) {
         setStatus({ kind: "approving" });
         const approveHash = await wallet.writeContract({
-          address: PATH_USD,
+          address: tokenIn,
           abi: ERC20_ABI,
           functionName: "approve",
           args: [V2_ROUTER, amountInRaw],
@@ -207,13 +225,13 @@ export function BuyWidget() {
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
-      // 2. Swap pathUSD → PLTN
+      // 2. Swap along the directional path.
       setStatus({ kind: "swapping" });
       const swapHash = await wallet.writeContract({
         address: V2_ROUTER,
         abi: ROUTER_ABI,
         functionName: "swapExactTokensForTokens",
-        args: [amountInRaw, minOut, [PATH_USD, PLTN], account, deadline],
+        args: [amountInRaw, minOut, [tokenIn, tokenOut], account, deadline],
         feeToken: PATH_USD,
       } as Parameters<typeof wallet.writeContract>[0]);
       setStatus({ kind: "swapping", hash: swapHash });
@@ -224,24 +242,26 @@ export function BuyWidget() {
       const msg = e instanceof Error ? e.message : String(e);
       setStatus({ kind: "error", message: short(msg) });
     }
-  }, [account, amountIn, quoteOut, slippageBps]);
+  }, [account, amountIn, quoteOut, slippageBps, tokenIn, tokenOut]);
 
   const ready = !!account && chainOk;
   const buttonLabel = useMemo(() => {
     if (status.kind === "connecting") return "Connecting…";
     if (status.kind === "switching") return "Switching to Tempo…";
-    if (status.kind === "approving") return "Approve pathUSD…";
+    if (status.kind === "approving") return `Approve ${symbolIn}…`;
     if (status.kind === "swapping") return "Confirming swap…";
-    if (status.kind === "success") return "Bought ✓ buy more";
+    if (status.kind === "success")
+      return side === "buy" ? "Bought ✓ buy more" : "Sold ✓ sell more";
     if (!account) return "Connect wallet";
     if (!chainOk) return "Switch to Tempo";
     if (!amountIn || quoteOut === 0n) return "Enter an amount";
-    return `Buy ${formatCompactPLTN(quoteOut)} PLTN`;
-  }, [status, account, chainOk, amountIn, quoteOut]);
+    const verb = side === "buy" ? "Buy" : "Sell for";
+    return `${verb} ${formatOut(quoteOut)} ${symbolOut}`;
+  }, [status, account, chainOk, amountIn, quoteOut, side, symbolIn, symbolOut, formatOut]);
 
   const onClick = () => {
     if (!account || !chainOk) return connect();
-    return buy();
+    return swap();
   };
   const busy =
     status.kind === "connecting" ||
@@ -251,6 +271,28 @@ export function BuyWidget() {
 
   return (
     <>
+      <div className="pltn-buy-tabs" role="tablist" aria-label="Trade direction">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={side === "buy"}
+          className="pltn-buy-tab"
+          data-active={side === "buy" ? 1 : 0}
+          onClick={() => side !== "buy" && flipSide()}
+        >
+          Buy
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={side === "sell"}
+          className="pltn-buy-tab"
+          data-active={side === "sell" ? 1 : 0}
+          onClick={() => side !== "sell" && flipSide()}
+        >
+          Sell
+        </button>
+      </div>
       <div className="pltn-buy-row">
         <div className="pltn-buy-side">
           <div className="pltn-buy-k">Pay</div>
@@ -260,21 +302,28 @@ export function BuyWidget() {
             value={amountIn}
             onChange={(e) => setAmountIn(e.target.value)}
             spellCheck={false}
-            aria-label="pathUSD amount"
+            aria-label={`${symbolIn} amount`}
           />
-          <div className="pltn-buy-token">pathUSD</div>
+          <div className="pltn-buy-token">{symbolIn}</div>
         </div>
-        <div className="pltn-buy-swap" aria-hidden>⇄</div>
+        <button
+          type="button"
+          className="pltn-buy-swap"
+          aria-label="Flip direction"
+          onClick={flipSide}
+        >
+          ⇄
+        </button>
         <div className="pltn-buy-side">
           <div className="pltn-buy-k">Receive</div>
           <input
             className="pltn-buy-v"
-            value={quoteOut === 0n ? "—" : formatCompactPLTN(quoteOut)}
+            value={quoteOut === 0n ? "—" : formatOut(quoteOut)}
             readOnly
             tabIndex={-1}
-            aria-label="PLTN amount"
+            aria-label={`${symbolOut} amount`}
           />
-          <div className="pltn-buy-token">PLTN</div>
+          <div className="pltn-buy-token">{symbolOut}</div>
         </div>
       </div>
 

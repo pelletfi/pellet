@@ -328,6 +328,26 @@ html:has(.pltn-page) { color-scheme: light; }
   border-bottom: 1px solid var(--rule);
   padding: 32px 0 28px;
 }
+.pltn-buy-tabs {
+  display: inline-flex;
+  border: 1px solid var(--rule-2);
+  margin-bottom: 14px;
+}
+.pltn-buy-tab {
+  background: transparent;
+  border: 0;
+  padding: 8px 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  cursor: pointer;
+  transition: background-color 120ms linear, color 120ms linear;
+}
+.pltn-buy-tab + .pltn-buy-tab { border-left: 1px solid var(--rule-2); }
+.pltn-buy-tab:hover { color: var(--fg); }
+.pltn-buy-tab[data-active="1"] { background: var(--fg); color: var(--bg); }
 .pltn-buy-row {
   position: relative;
   display: grid;
@@ -382,7 +402,12 @@ html:has(.pltn-page) { color-scheme: light; }
   color: var(--fg-3);
   font-size: 18px;
   font-family: var(--mono);
+  background: transparent;
+  border: 1px solid var(--rule-2);
+  cursor: pointer;
+  transition: color 120ms linear, border-color 120ms linear;
 }
+.pltn-buy-swap:hover { color: var(--fg); border-color: var(--fg); }
 
 .pltn-dl {
   display: grid;

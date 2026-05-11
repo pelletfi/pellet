@@ -65,6 +65,17 @@ export async function quoteBuy(amountInRaw: bigint): Promise<bigint> {
   return out[1];
 }
 
+export async function quoteSell(amountInRaw: bigint): Promise<bigint> {
+  if (amountInRaw <= 0n) return 0n;
+  const out = (await publicClient.readContract({
+    address: V2_ROUTER,
+    abi: ROUTER_ABI,
+    functionName: "getAmountsOut",
+    args: [amountInRaw, [PLTN, PATH_USD]],
+  })) as bigint[];
+  return out[1];
+}
+
 export async function totalSupplyOf(token: Address): Promise<bigint> {
   return (await publicClient.readContract({
     address: token,
