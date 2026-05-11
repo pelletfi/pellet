@@ -15,7 +15,6 @@ export function Sphere() {
   const reduced = useReducedMotion();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoReady, setVideoReady] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -32,23 +31,18 @@ export function Sphere() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
-        {videoFailed ? (
-          <ChromeFallback reduced={!!reduced} />
-        ) : (
-          <video
-            ref={videoRef}
-            className="pltn-sphere-video"
-            src={HERO_VIDEO}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            onCanPlay={() => setVideoReady(true)}
-            onError={() => setVideoFailed(true)}
-            aria-hidden
-          />
-        )}
+        <video
+          ref={videoRef}
+          className="pltn-sphere-video"
+          src={HERO_VIDEO}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          onCanPlay={() => setVideoReady(true)}
+          aria-hidden
+        />
       </motion.div>
     </div>
   );
