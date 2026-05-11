@@ -1,43 +1,17 @@
 "use client";
 
 /**
- * Sphere — chrome anchor for the /pltn hero.
+ * Sphere — wireframe anchor for the /pltn hero.
  *
- * Tries to load /public/pltn-sphere.png first. If that 404s (placeholder mode),
- * falls back to a pure abstract chrome SVG — no architectural detail, just a
- * mercurial liquid feel built from soft blobs and specular highlights.
- *
- * To replace with the real chrome render: save it to /public/pltn-sphere.png
- * with a transparent background. The SVG fallback disappears automatically.
+ * Switched from a video to an inline SVG (PelletGlobe scaled up). Video bg
+ * required either chromakey + alpha-encoded codec (HEVC alpha is iOS-only,
+ * VP9 alpha doesn't work on iOS Safari) or a matching page bg color — both
+ * fragile. SVG is inherently transparent and renders crisp at any density.
  */
-import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-
-// WebM with VP9 + alpha: bg keyed transparent so the sphere blends edge-to-edge
-// on any page color, no filter trickery needed.
-const HERO_VIDEO_WEBM = "/pellet-finance.webm";
-const HERO_VIDEO_MP4 = "/pellet-finance.mp4";
+import { motion } from "framer-motion";
+import { PelletGlobe } from "@/components/pellet-globe";
 
 export function Sphere() {
-  const reduced = useReducedMotion();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [videoReady, setVideoReady] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
-
-  // If the user prefers reduced motion, freeze the video on its first frame.
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (reduced) {
-      v.pause();
-    } else {
-      v.play().catch(() => {});
-    }
-  }, [reduced, videoReady]);
-
-  // Page bg is set statically in CSS to match the video's displayed pixel
-  // exactly (sampled from screen). No runtime override needed.
-
   return (
     <div className="pltn-sphere-wrap">
       <motion.div
@@ -46,25 +20,9 @@ export function Sphere() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
-        {videoFailed ? (
-          <ChromeFallback reduced={!!reduced} />
-        ) : (
-          <video
-            ref={videoRef}
-            className="pltn-sphere-video"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            onCanPlay={() => setVideoReady(true)}
-            onError={() => setVideoFailed(true)}
-            aria-hidden
-          >
-            <source src={HERO_VIDEO_WEBM} type="video/webm" />
-            <source src={HERO_VIDEO_MP4} type="video/mp4" />
-          </video>
-        )}
+        <div className="pltn-sphere-svg">
+          <PelletGlobe size={520} />
+        </div>
       </motion.div>
     </div>
   );
