@@ -1,17 +1,29 @@
 "use client";
 
 /**
- * Sphere — wireframe anchor for the /pltn hero.
+ * Sphere — chrome anchor for the /pltn hero.
  *
- * Switched from a video to an inline SVG (PelletGlobe scaled up). Video bg
- * required either chromakey + alpha-encoded codec (HEVC alpha is iOS-only,
- * VP9 alpha doesn't work on iOS Safari) or a matching page bg color — both
- * fragile. SVG is inherently transparent and renders crisp at any density.
+ * The mp4 has the white bg already baked in (re-encoded via ffmpeg colorlevels)
+ * so no runtime filter is needed — iOS Safari renders identically to desktop.
  */
-import { motion } from "framer-motion";
-import { PelletGlobe } from "@/components/pellet-globe";
+import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+
+const HERO_VIDEO = "/pellet-finance.mp4";
 
 export function Sphere() {
+  const reduced = useReducedMotion();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (reduced) v.pause();
+    else v.play().catch(() => {});
+  }, [reduced, videoReady]);
+
   return (
     <div className="pltn-sphere-wrap">
       <motion.div
@@ -20,9 +32,23 @@ export function Sphere() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className="pltn-sphere-svg">
-          <PelletGlobe size={520} />
-        </div>
+        {videoFailed ? (
+          <ChromeFallback reduced={!!reduced} />
+        ) : (
+          <video
+            ref={videoRef}
+            className="pltn-sphere-video"
+            src={HERO_VIDEO}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            onCanPlay={() => setVideoReady(true)}
+            onError={() => setVideoFailed(true)}
+            aria-hidden
+          />
+        )}
       </motion.div>
     </div>
   );
