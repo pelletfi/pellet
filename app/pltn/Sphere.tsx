@@ -28,6 +28,7 @@ export function Sphere() {
           ref={videoRef}
           className="pltn-sphere-video"
           src={HERO_VIDEO}
+          poster="/pellet-finance-poster.jpg"
           autoPlay
           loop
           muted
