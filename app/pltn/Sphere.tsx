@@ -1,13 +1,15 @@
 "use client";
 
 /**
- * Sphere — chrome anchor for the /pltn hero.
+ * Sphere — wireframe anchor for the /pltn hero.
  *
- * The mp4 has the white bg already baked in (re-encoded via ffmpeg colorlevels)
- * so no runtime filter is needed — iOS Safari renders identically to desktop.
+ * Static SVG base layer; the mp4 paints on top once it's decoded and ready.
+ * If the video stalls (autoplay block, HMR cache, slow network) the SVG
+ * remains visible so the hero always has the globe — no empty box.
  */
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { PelletGlobe } from "@/components/pellet-globe";
 
 const HERO_VIDEO = "/pellet-finance.mp4";
 
@@ -31,6 +33,9 @@ export function Sphere() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
       >
+        <div className="pltn-sphere-svg" aria-hidden>
+          <PelletGlobe size={520} />
+        </div>
         <video
           ref={videoRef}
           className="pltn-sphere-video"
@@ -40,6 +45,7 @@ export function Sphere() {
           muted
           playsInline
           preload="auto"
+          data-ready={videoReady ? 1 : 0}
           onCanPlay={() => setVideoReady(true)}
           aria-hidden
         />
