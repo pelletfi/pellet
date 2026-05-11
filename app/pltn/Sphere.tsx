@@ -12,8 +12,27 @@ export function Sphere() {
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (reduced) v.pause();
-    else v.play().catch(() => {});
+    if (reduced) {
+      v.pause();
+      return;
+    }
+    // Chrome occasionally blocks muted autoplay on the first paint of a new
+    // tab. Retry briefly, then fall back to starting on the user's first
+    // interaction so the sphere always animates eventually.
+    let attempts = 0;
+    const tryPlay = () => {
+      v.play().catch(() => {
+        if (++attempts < 4) setTimeout(tryPlay, 300);
+      });
+    };
+    tryPlay();
+    const onInteract = () => v.play().catch(() => {});
+    document.addEventListener("pointerdown", onInteract, { once: true });
+    document.addEventListener("scroll", onInteract, { once: true, passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", onInteract);
+      document.removeEventListener("scroll", onInteract);
+    };
   }, [reduced]);
 
   return (
